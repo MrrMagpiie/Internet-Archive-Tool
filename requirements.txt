@@ -1,0 +1,13 @@
+certifi==2025.11.12
+charset-normalizer==3.4.4
+idna==3.11
+internetarchive==5.7.1
+jsonpatch==1.33
+jsonpointer==3.0.0
+PyQt6==6.10.0
+PyQt6-Qt6==6.10.0
+PyQt6_sip==13.10.2
+requests==2.32.5
+tqdm==4.67.1
+urllib3==2.5.0
+Wand==0.6.13

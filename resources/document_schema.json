@@ -1,0 +1,33 @@
+{
+        "newspaper_comet":{
+            "fields":{
+                    "year":"",
+                    "month":"",
+                    "day":""
+            },
+            "defaults":{
+            "identifier":"{year}_{month}_{day}_UCWV_Comet",
+            "title":"",
+            "date":"{year}-{month}-{day}",
+            "language":"en",
+            "creator":"Schoenbaum Library",
+            "mediatype":"text",
+            "collection":""
+            }
+        },
+        "year_book":{
+            "fields":{
+                "year":""
+            },
+            "defaults":{
+            "identifier":"{year}_UCWV_Yearbook",
+            "title":"{year} UCWV Yearbook",
+            "date":"[{year}]",
+            "language":"en",
+            "creator":"Schoenbaum Library",
+            "mediatype":"text",
+            "collection":""
+            }
+        }
+
+}
