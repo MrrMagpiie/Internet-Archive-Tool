@@ -65,7 +65,7 @@ class MainWindow(QMainWindow):
         self._main_dashboard()
         self._single_doc()
         self._step_dashboard()
-        
+        self._settings()
 
     def _main_dashboard(self):
         self.dashboard = self.gui_manager.DashboardPage(self.stack)
@@ -82,6 +82,11 @@ class MainWindow(QMainWindow):
         self.single_doc = self.gui_manager.SingleDocumentPage()
         self.stack.addWidget(self.single_doc)
         self.views['single_doc'] = self.single_doc
+
+    def _settings(self):
+        self.settings = self.gui_manager.SettingsPage()
+        self.stack.addWidget(self.settings)
+        self.views['settings'] = self.settings
 
     @pyqtSlot(dict) # Connect this to your pipeline_finished signal
     def on_discovery_complete(self, documents):

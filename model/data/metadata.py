@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Optional, Type
 
 
 with open(RESOURCES_PATH / 'IAMetadataKeys.json','r') as f:
-    METADATA_SCHEMA = json.load(f) 
+    METADATA_SCHEMA = json.load(f)
 
 # Mapping from schema type strings to actual Python types for validation
 TYPE_MAPPING: Dict[str, Type] = {

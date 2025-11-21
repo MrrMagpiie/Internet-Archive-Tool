@@ -1,404 +1,404 @@
-[
-  {
-    "name": "adaptive_ocr",
-    "label": "Adaptive OCR",
-    "description": "Allows deriver to skip a page that would otherwise disrupt OCR",
-    "type": "boolean",
-    "enum": [
-      true
-    ]
-  },
-  {
-    "name": "aspect_ratio",
-    "label": "Aspect Ratio",
-    "description": "Ratio of the pixel width and height of a video stream",
-    "type": "string"
-  },
-  {
-    "name": "betterpdf",
-    "label": "Better PDF",
-    "description": "Indicates that the derive module should create a higher quality PDF derivative (distinguishes text from background better).",
-    "type": "boolean",
-    "enum": [
-      true
-    ]
-  },
-  {
-    "name": "bookreader-defaults",
-    "label": "Bookreader defaults",
-    "description": "Indicates whether the bookreader should display one or two pages by default",
-    "type": "string",
-    "enum": [
-      "mode/1up",
-      "mode/2up",
-      "mode/thumb"
-    ]
-  },
-  {
-    "name": "bwocr",
-    "label": "Black and White OCR",
-    "description": "Allows deriver to OCR specific pages as B&amp;W if color is causing failure.",
-    "type": "string"
-  },
-  {
-    "name": "call_number",
-    "label": "Call Number",
-    "description": "Contributing library&#39;s local call number",
-    "type": "string"
-  },
-  {
-    "name": "camera",
-    "label": "Camera",
-    "description": "Camera model used during digitization process",
-    "type": "string"
-  },
-  {
-    "name": "ccnum",
-    "label": "Closed Captioning Number",
-    "description": "Indicates which closed captioning file should be used for display and search",
-    "type": "string",
-    "enum": [
-      "cc#",
-      "asr",
-      "ocr",
-      "#",
-      ""
-    ]
-  },
-  {
-    "name": "closed_captioning",
-    "label": "Closed Captioning",
-    "description": "Indicates whether item contains closed captioning files",
-    "type": "string",
-    "enum": [
-      "yes",
-      "no"
-    ]
-  },
-  {
-    "name": "collection",
-    "label": "Collections",
-    "description": "Indicates to the website what collection(s) this item belongs to.",
-    "type": "string"
-  },
-  {
-    "name": "color",
-    "label": "Color",
-    "description": "Indicates whether media is in color or black and white",
-    "type": "string"
-  },
-  {
-    "name": "condition",
-    "label": "Condition",
-    "description": "condition of media",
-    "type": "string",
-    "enum": [
-      "Mint",
-      "Near Mint",
-      "Very Good",
-      "Good",
-      "Fair",
-      "Worn",
-      "Poor",
-      "Fragile",
-      "Incomplete"
-    ]
-  },
-  {
-    "name": "condition-visual",
-    "label": "Visual Condition",
-    "description": "condition of the artwork or printed materials that accompany a media item",
-    "type": "string",
-    "enum": [
-      "Mint",
-      "Near Mint",
-      "Very Good",
-      "Good",
-      "Fair",
-      "Worn",
-      "Poor",
-      "Fragile",
-      "Incomplete",
-      "None",
-      "Unknown"
-    ]
-  },
-  {
-    "name": "contributor",
-    "label": "Contributor",
-    "description": "The person or organization that provided the physical or digital media.",
-    "type": "string"
-  },
-  {
-    "name": "coverage",
-    "label": "Coverage",
-    "description": "Geographic or subject area covered by item",
-    "type": "string"
-  },
-  {
-    "name": "creator",
-    "label": "Creator",
-    "description": "The individual(s) or organization that created the media content.",
-    "type": "string"
-  },
-  {
-    "name": "creator-alt-script",
-    "label": "Creator Alternate Script",
-    "type": "string"
-  },
-  {
-    "name": "date",
-    "label": "Publication Date",
-    "description": "Date of publication",
-    "type": "string"
-  },
-  {
-    "name": "description",
-    "label": "Item Description",
-    "description": "Describes the media stored in the item.",
-    "type": "string"
-  },
-  {
-    "name": "external-identifier",
-    "label": "External Identifier",
-    "description": "URLs or identifiers to outside resources that represent the media",
-    "type": "string"
-  },
-  {
-    "name": "fixed-ppi",
-    "label": "Fixed PPI",
-    "description": "To change the ppi to a specific resolution. Usually lower especially when jp2.zip fails",
-    "type": "number"
-  },
-  {
-    "name": "identifier",
-    "label": "Item Identifier",
-    "description": "Unique identifier for an item on the archive.org web site. Used in the URL for the item, ie archive.org/details/[identifier].",
-    "type": "string"
-  },
-  {
-    "name": "identifier-ark",
-    "label": "ARK",
-    "description": "Archival Resource Key identifier",
-    "type": "string"
-  },
-  {
-    "name": "identifier-bib",
-    "label": "Local Identifier",
-    "description": "Additional local identifiers",
-    "type": "string"
-  },
-  {
-    "name": "isbn",
-    "label": "ISBN",
-    "description": "ISBN-10 or ISBN-13",
-    "type": "string"
-  },
-  {
-    "name": "issn",
-    "label": "ISSN",
-    "description": "ISSN",
-    "type": "string"
-  },
-  {
-    "name": "language",
-    "label": "Language",
-    "description": "The language the media is written or recorded in.",
-    "type": "string"
-  },
-  {
-    "name": "lccn",
-    "label": "LCCN",
-    "description": "Library of Congress Call Number",
-    "type": "integer"
-  },
-  {
-    "name": "licenseurl",
-    "label": "License URL",
-    "description": "URL of the selected license",
-    "type": "string"
-  },
-  {
-    "name": "mediatype",
-    "label": "Type of Media",
-    "description": "Mediatype tells us about the main content of the item. It is used to determine how the item is displayed on the web site and may trigger special processing depending on the types of files contained in the item.",
-    "type": "string",
-    "enum": [
-      "texts",
-      "etree",
-      "audio",
-      "movies",
-      "software",
-      "image",
-      "data",
-      "web",
-      "collection",
-      "account"
-    ]
-  },
-  {
-    "name": "notes",
-    "label": "Notes",
-    "description": "additional notes about the item",
-    "type": "string"
-  },
-  {
-    "name": "oclc-id",
-    "label": "OCLC ID",
-    "description": "Identifier of same edition in OCLC records",
-    "type": "string"
-  },
-  {
-    "name": "openlibrary",
-    "label": "Open Library Identifier",
-    "description": "Deprecated. Open Library edition identifier",
-    "type": "string"
-  },
-  {
-    "name": "openlibrary_author",
-    "label": "Open Library author",
-    "description": "Open Library author",
-    "type": "string"
-  },
-  {
-    "name": "openlibrary_edition",
-    "label": "Open Library edition identifier",
-    "description": "Open Library edition identifier",
-    "type": "string"
-  },
-  {
-    "name": "openlibrary_subject",
-    "label": "Open Library subject",
-    "description": "Open Library subject",
-    "type": "string"
-  },
-  {
-    "name": "openlibrary_work",
-    "label": "Open Library work identifier",
-    "description": "Open Library work identifier",
-    "type": "string"
-  },
-  {
-    "name": "page-progression",
-    "label": "Page Progression",
-    "description": "Determines direction pages will be &#34;turned&#34; in a book",
-    "type": "string",
-    "enum": [
-      "lr",
-      "rl"
-    ]
-  },
-  {
-    "name": "possible-copyright-status",
-    "label": "Possible Copyright Status",
-    "description": "Information relevant to copyright status",
-    "type": "string"
-  },
-  {
-    "name": "ppi",
-    "label": "PPI",
-    "description": "Pixels per inch",
-    "type": "integer"
-  },
-  {
-    "name": "publisher",
-    "label": "Publisher",
-    "description": "Publisher of the media",
-    "type": "string"
-  },
-  {
-    "name": "related_collection",
-    "label": "Related Collection",
-    "description": "Adds links to related collection on a collection&#39;s &#34;About&#34; page",
-    "type": "string"
-  },
-  {
-    "name": "related-external-id",
-    "label": "Related External Identifier",
-    "description": "URLs or identifiers to resources related to the media, but not representing this exact form of the work",
-    "type": "string"
-  },
-  {
-    "name": "rights",
-    "label": "Rights",
-    "description": "Rights statement",
-    "type": "string"
-  },
-  {
-    "name": "scandate",
-    "label": "Scan Date",
-    "description": "The date and time in UTC that the media was captured.",
-    "type": "string"
-  },
-  {
-    "name": "scanner",
-    "label": "Scanner",
-    "description": "Machinery used to digitize or collect the media",
-    "type": "string"
-  },
-  {
-    "name": "size",
-    "label": "Size",
-    "description": "Size of physical item digitized",
-    "type": "number"
-  },
-  {
-    "name": "sort-by",
-    "label": "Default Collection Sort",
-    "description": "Allows default collection sort to be changed from the standard Views order",
-    "type": "string"
-  },
-  {
-    "name": "sound",
-    "label": "Sound",
-    "description": "Indicates whether media has sound or is silent",
-    "type": "string"
-  },
-  {
-    "name": "source",
-    "label": "Source",
-    "description": "Source of media",
-    "type": "string"
-  },
-  {
-    "name": "sponsor",
-    "label": "Sponsor",
-    "description": "The person or organization that funded the digitization or collection of this media.",
-    "type": "string"
-  },
-  {
-    "name": "subject",
-    "label": "Subject/Keyword",
-    "description": "Subjects and/or topics covered by the media content",
-    "type": "string"
-  },
-  {
-    "name": "summary",
-    "label": "Collection summary",
-    "description": "A summary section that appears on collection pages above the description, entire value appears at the top of the collection tab",
-    "type": "string"
-  },
-  {
-    "name": "title",
-    "label": "Title",
-    "description": "Title of media",
-    "type": "string"
-  },
-  {
-    "name": "title-alt-script",
-    "label": "Title Alternate Script",
-    "type": "string"
-  },
-  {
-    "name": "volume",
-    "label": "Volume",
-    "description": "Volume number or name",
-    "type": "string"
-  },
-  {
-    "name": "year",
-    "label": "Year of Publication",
-    "description": "Deprecated, use date field",
-    "type": "string"
-  }
-]
+{
+    "adaptive_ocr": {
+        "name": "adaptive_ocr",
+        "label": "Adaptive OCR",
+        "description": "Allows deriver to skip a page that would otherwise disrupt OCR",
+        "type": "boolean",
+        "enum": [
+            true
+        ]
+    },
+    "aspect_ratio": {
+        "name": "aspect_ratio",
+        "label": "Aspect Ratio",
+        "description": "Ratio of the pixel width and height of a video stream",
+        "type": "string"
+    },
+    "betterpdf": {
+        "name": "betterpdf",
+        "label": "Better PDF",
+        "description": "Indicates that the derive module should create a higher quality PDF derivative (distinguishes text from background better).",
+        "type": "boolean",
+        "enum": [
+            true
+        ]
+    },
+    "bookreader-defaults": {
+        "name": "bookreader-defaults",
+        "label": "Bookreader defaults",
+        "description": "Indicates whether the bookreader should display one or two pages by default",
+        "type": "string",
+        "enum": [
+            "mode/1up",
+            "mode/2up",
+            "mode/thumb"
+        ]
+    },
+    "bwocr": {
+        "name": "bwocr",
+        "label": "Black and White OCR",
+        "description": "Allows deriver to OCR specific pages as B&amp;W if color is causing failure.",
+        "type": "string"
+    },
+    "call_number": {
+        "name": "call_number",
+        "label": "Call Number",
+        "description": "Contributing library&#39;s local call number",
+        "type": "string"
+    },
+    "camera": {
+        "name": "camera",
+        "label": "Camera",
+        "description": "Camera model used during digitization process",
+        "type": "string"
+    },
+    "ccnum": {
+        "name": "ccnum",
+        "label": "Closed Captioning Number",
+        "description": "Indicates which closed captioning file should be used for display and search",
+        "type": "string",
+        "enum": [
+            "cc#",
+            "asr",
+            "ocr",
+            "#",
+            ""
+        ]
+    },
+    "closed_captioning": {
+        "name": "closed_captioning",
+        "label": "Closed Captioning",
+        "description": "Indicates whether item contains closed captioning files",
+        "type": "string",
+        "enum": [
+            "yes",
+            "no"
+        ]
+    },
+    "collection": {
+        "name": "collection",
+        "label": "Collections",
+        "description": "Indicates to the website what collection(s) this item belongs to.",
+        "type": "string"
+    },
+    "color": {
+        "name": "color",
+        "label": "Color",
+        "description": "Indicates whether media is in color or black and white",
+        "type": "string"
+    },
+    "condition": {
+        "name": "condition",
+        "label": "Condition",
+        "description": "condition of media",
+        "type": "string",
+        "enum": [
+            "Mint",
+            "Near Mint",
+            "Very Good",
+            "Good",
+            "Fair",
+            "Worn",
+            "Poor",
+            "Fragile",
+            "Incomplete"
+        ]
+    },
+    "condition-visual": {
+        "name": "condition-visual",
+        "label": "Visual Condition",
+        "description": "condition of the artwork or printed materials that accompany a media item",
+        "type": "string",
+        "enum": [
+            "Mint",
+            "Near Mint",
+            "Very Good",
+            "Good",
+            "Fair",
+            "Worn",
+            "Poor",
+            "Fragile",
+            "Incomplete",
+            "None",
+            "Unknown"
+        ]
+    },
+    "contributor": {
+        "name": "contributor",
+        "label": "Contributor",
+        "description": "The person or organization that provided the physical or digital media.",
+        "type": "string"
+    },
+    "coverage": {
+        "name": "coverage",
+        "label": "Coverage",
+        "description": "Geographic or subject area covered by item",
+        "type": "string"
+    },
+    "creator": {
+        "name": "creator",
+        "label": "Creator",
+        "description": "The individual(s) or organization that created the media content.",
+        "type": "string"
+    },
+    "creator-alt-script": {
+        "name": "creator-alt-script",
+        "label": "Creator Alternate Script",
+        "type": "string"
+    },
+    "date": {
+        "name": "date",
+        "label": "Publication Date",
+        "description": "Date of publication",
+        "type": "string"
+    },
+    "description": {
+        "name": "description",
+        "label": "Item Description",
+        "description": "Describes the media stored in the item.",
+        "type": "string"
+    },
+    "external-identifier": {
+        "name": "external-identifier",
+        "label": "External Identifier",
+        "description": "URLs or identifiers to outside resources that represent the media",
+        "type": "string"
+    },
+    "fixed-ppi": {
+        "name": "fixed-ppi",
+        "label": "Fixed PPI",
+        "description": "To change the ppi to a specific resolution. Usually lower especially when jp2.zip fails",
+        "type": "number"
+    },
+    "identifier": {
+        "name": "identifier",
+        "label": "Item Identifier",
+        "description": "Unique identifier for an item on the archive.org web site. Used in the URL for the item, ie archive.org/details/[identifier].",
+        "type": "string"
+    },
+    "identifier-ark": {
+        "name": "identifier-ark",
+        "label": "ARK",
+        "description": "Archival Resource Key identifier",
+        "type": "string"
+    },
+    "identifier-bib": {
+        "name": "identifier-bib",
+        "label": "Local Identifier",
+        "description": "Additional local identifiers",
+        "type": "string"
+    },
+    "isbn": {
+        "name": "isbn",
+        "label": "ISBN",
+        "description": "ISBN-10 or ISBN-13",
+        "type": "string"
+    },
+    "issn": {
+        "name": "issn",
+        "label": "ISSN",
+        "description": "ISSN",
+        "type": "string"
+    },
+    "language": {
+        "name": "language",
+        "label": "Language",
+        "description": "The language the media is written or recorded in.",
+        "type": "string"
+    },
+    "lccn": {
+        "name": "lccn",
+        "label": "LCCN",
+        "description": "Library of Congress Call Number",
+        "type": "integer"
+    },
+    "licenseurl": {
+        "name": "licenseurl",
+        "label": "License URL",
+        "description": "URL of the selected license",
+        "type": "string"
+    },
+    "mediatype": {
+        "name": "mediatype",
+        "label": "Type of Media",
+        "description": "Mediatype tells us about the main content of the item. It is used to determine how the item is displayed on the web site and may trigger special processing depending on the types of files contained in the item.",
+        "type": "string",
+        "enum": [
+            "texts",
+            "etree",
+            "audio",
+            "movies",
+            "software",
+            "image",
+            "data",
+            "web",
+            "collection",
+            "account"
+        ]
+    },
+    "notes": {
+        "name": "notes",
+        "label": "Notes",
+        "description": "additional notes about the item",
+        "type": "string"
+    },
+    "oclc-id": {
+        "name": "oclc-id",
+        "label": "OCLC ID",
+        "description": "Identifier of same edition in OCLC records",
+        "type": "string"
+    },
+    "openlibrary": {
+        "name": "openlibrary",
+        "label": "Open Library Identifier",
+        "description": "Deprecated. Open Library edition identifier",
+        "type": "string"
+    },
+    "openlibrary_author": {
+        "name": "openlibrary_author",
+        "label": "Open Library author",
+        "description": "Open Library author",
+        "type": "string"
+    },
+    "openlibrary_edition": {
+        "name": "openlibrary_edition",
+        "label": "Open Library edition identifier",
+        "description": "Open Library edition identifier",
+        "type": "string"
+    },
+    "openlibrary_subject": {
+        "name": "openlibrary_subject",
+        "label": "Open Library subject",
+        "description": "Open Library subject",
+        "type": "string"
+    },
+    "openlibrary_work": {
+        "name": "openlibrary_work",
+        "label": "Open Library work identifier",
+        "description": "Open Library work identifier",
+        "type": "string"
+    },
+    "page-progression": {
+        "name": "page-progression",
+        "label": "Page Progression",
+        "description": "Determines direction pages will be &#34;turned&#34; in a book",
+        "type": "string",
+        "enum": [
+            "lr",
+            "rl"
+        ]
+    },
+    "possible-copyright-status": {
+        "name": "possible-copyright-status",
+        "label": "Possible Copyright Status",
+        "description": "Information relevant to copyright status",
+        "type": "string"
+    },
+    "ppi": {
+        "name": "ppi",
+        "label": "PPI",
+        "description": "Pixels per inch",
+        "type": "integer"
+    },
+    "publisher": {
+        "name": "publisher",
+        "label": "Publisher",
+        "description": "Publisher of the media",
+        "type": "string"
+    },
+    "related_collection": {
+        "name": "related_collection",
+        "label": "Related Collection",
+        "description": "Adds links to related collection on a collection&#39;s &#34;About&#34; page",
+        "type": "string"
+    },
+    "related-external-id": {
+        "name": "related-external-id",
+        "label": "Related External Identifier",
+        "description": "URLs or identifiers to resources related to the media, but not representing this exact form of the work",
+        "type": "string"
+    },
+    "rights": {
+        "name": "rights",
+        "label": "Rights",
+        "description": "Rights statement",
+        "type": "string"
+    },
+    "scandate": {
+        "name": "scandate",
+        "label": "Scan Date",
+        "description": "The date and time in UTC that the media was captured.",
+        "type": "string"
+    },
+    "scanner": {
+        "name": "scanner",
+        "label": "Scanner",
+        "description": "Machinery used to digitize or collect the media",
+        "type": "string"
+    },
+    "size": {
+        "name": "size",
+        "label": "Size",
+        "description": "Size of physical item digitized",
+        "type": "number"
+    },
+    "sort-by": {
+        "name": "sort-by",
+        "label": "Default Collection Sort",
+        "description": "Allows default collection sort to be changed from the standard Views order",
+        "type": "string"
+    },
+    "sound": {
+        "name": "sound",
+        "label": "Sound",
+        "description": "Indicates whether media has sound or is silent",
+        "type": "string"
+    },
+    "source": {
+        "name": "source",
+        "label": "Source",
+        "description": "Source of media",
+        "type": "string"
+    },
+    "sponsor": {
+        "name": "sponsor",
+        "label": "Sponsor",
+        "description": "The person or organization that funded the digitization or collection of this media.",
+        "type": "string"
+    },
+    "subject": {
+        "name": "subject",
+        "label": "Subject/Keyword",
+        "description": "Subjects and/or topics covered by the media content",
+        "type": "string"
+    },
+    "summary": {
+        "name": "summary",
+        "label": "Collection summary",
+        "description": "A summary section that appears on collection pages above the description, entire value appears at the top of the collection tab",
+        "type": "string"
+    },
+    "title": {
+        "name": "title",
+        "label": "Title",
+        "description": "Title of media",
+        "type": "string"
+    },
+    "title-alt-script": {
+        "name": "title-alt-script",
+        "label": "Title Alternate Script",
+        "type": "string"
+    },
+    "volume": {
+        "name": "volume",
+        "label": "Volume",
+        "description": "Volume number or name",
+        "type": "string"
+    },
+    "year": {
+        "name": "year",
+        "label": "Year of Publication",
+        "description": "Deprecated, use date field",
+        "type": "string"
+    }
+}

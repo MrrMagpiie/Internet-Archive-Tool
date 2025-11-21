@@ -46,3 +46,5 @@ manifest.db
 
 /retry
 /.vscode
+
+/.dev

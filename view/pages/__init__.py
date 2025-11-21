@@ -10,3 +10,6 @@ from .MetadataPage import MetadataPage
 from .UploadPage import UploadPage
 from .SingleDocumentPage import SingleDocumentPage
 from .StepDashboardPage import StepDashboardPage
+from .DocumentReviewPage import DocumentReviewPage
+from .CreateDocumentPage import CreateDocumentPage
+from .SettingsPage import SettingsPage

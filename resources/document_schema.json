@@ -1,5 +1,6 @@
 {
         "newspaper_comet":{
+            "schema_name":"Newspaper Comet",
             "fields":{
                     "year":"",
                     "month":"",
@@ -16,6 +17,7 @@
             }
         },
         "year_book":{
+            "schema_name":"Year Book",
             "fields":{
                 "year":""
             },

@@ -1,33 +1,63 @@
-
-from PyQt6.QtWidgets import QLabel
+from PyQt6.QtWidgets import QLabel, QSizePolicy
 from PyQt6.QtGui import QPixmap
-from PyQt6.QtCore import  Qt
+from PyQt6.QtCore import Qt
+
+from wand.image import Image as WandImage 
+from PyQt6.QtGui import QImage, QPixmap
+
+from pathlib import Path
 
 class ImageLabel(QLabel):
-    """A custom QLabel to display a pixmap with a preserved aspect ratio."""
+    """
+    A custom QLabel that scales its pixmap to fill the widget 
+    while maintaining aspect ratio.
+    """
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setMinimumSize(1, 1)
-        self.setPixmap(QPixmap()) # Start with an empty pixmap
+        #self.setStyleSheet("border: 2px solid red; background-color: yellow;") #flag foor debugging
+        self.setMinimumSize(1, 1) 
+        self.setAlignment(Qt.AlignmentFlag.AlignCenter) 
+        self._pixmap = None
 
-    def setPixmap(self, pixmap):
-        # Store the original pixmap to use for scaling
-        self._pixmap = pixmap
-        # Trigger a resize event to scale the pixmap
-        self.resizeEvent(None)
+    def setPixmap(self, image_path: Path):
+        """Store the original pixmap and update the display."""
+        try:
+            with WandImage(filename=image_path) as img:
+                
+                img.format = 'rgba'
+                
+                blob_data = img.make_blob()
+                
+                qimage = QImage(
+                    blob_data,
+                    img.width,
+                    img.height,
+                    QImage.Format.Format_RGBA8888
+                )
+        except Exception as e:
+            print(f"Wand Error: {e}")
+            self.image_label.setText("Error Loading Image")
+        
+        self._pixmap = QPixmap.fromImage(qimage)
+        self._update_display()
 
     def resizeEvent(self, event):
-        # This method is called whenever the label is resized.
-        # We scale the original pixmap to fit the label's current size.
+        """Handle window resizing."""
+        self._update_display()
+        super().resizeEvent(event)
+
+    def _update_display(self):
+        """Internal helper to scale and set the pixmap."""
         if not self._pixmap or self._pixmap.isNull():
+            super().setPixmap(QPixmap())
             return
 
-        # Scale the pixmap, keeping the aspect ratio.
-        # The result will be the largest pixmap that fits within the label's bounds.
         scaled_pixmap = self._pixmap.scaled(
             self.size(),
             Qt.AspectRatioMode.KeepAspectRatio,
-            Qt.TransformationMode.SmoothTransformation  # For better image quality
+            Qt.TransformationMode.SmoothTransformation
         )
-        # Call the original QLabel's setPixmap method to display the scaled image.
         super().setPixmap(scaled_pixmap)
+            
+
+    

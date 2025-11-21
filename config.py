@@ -14,5 +14,5 @@ REQUIRED_METADATA = [
 with open(SETTINGS_PATH,'r') as f:
     user_config = json.load(f)
 
-DEFAULT_OUTPUT_DIR = user_config.get('DEFAULT_OUTPUT_DIR')
-DB_PATH = user_config.get('DB_PATH')
+DEFAULT_OUTPUT_DIR = Path(user_config.get('DEFAULT_OUTPUT_DIR'))
+DB_PATH = Path(user_config.get('DB_PATH'))

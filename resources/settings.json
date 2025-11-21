@@ -1,4 +1,4 @@
 {
-    "DEFAULT_OUTPUT_DIR":"/var/home/magpie/Development/Library/output",
+    "DEFAULT_OUTPUT_DIR":"/var/home/magpie/Development/Library2/output",
     "DB_PATH":"./manifest.db"
 }

@@ -30,8 +30,9 @@ class GUIManager(QObject):
 
     @pyqtSlot()
     def SingleDocumentPage(self):
-        single_doc = SingleDocumentPage(self)
-        return single_doc
+        single_doc_page = SingleDocumentPage(self)
+        
+        return single_doc_page
 
     def StepDashboardPage(self):
         step_dash = StepDashboardPage(self)
@@ -54,13 +55,13 @@ class GUIManager(QObject):
     def ApprovalPage(self):
         approval_page = ApprovalPage(self)
     #    approval_page.document_reviewed.connect(self.process_manager.db_doc_status)
-    #    self.process_manager.db_change.connect(approval_page.load_documents)
+    #     self.process_manager.db_update.connect(approval_page.load_documents)
         return approval_page
     
     @pyqtSlot()
     def MetadataPage(self):
         metadata_page = MetadataPage(self)
-    #    self.process_manager.db_change.connect(metadata_page.load_documents)
+    #    self.process_manager.db_update.connect(metadata_page.load_documents)
     #    self.process_manager.schema_saved.connect(metadata_page._load_metadata_formats)
     #    metadata_page.db_metadata.connect(self.process_manager.db_metadata)
         return metadata_page
@@ -68,8 +69,26 @@ class GUIManager(QObject):
     @pyqtSlot()
     def DeskewPage(self):
         deskew_page = DeskewPage(self)
+        #self.process_manager.db_update.connect(deskew_page.db_update)
     #    deskew_page.deskew_signal.connect(self.process_manager.start_deskew_pipeline)
         return deskew_page
+
+    @pyqtSlot()
+    def DocumentReviewPage(self):
+        review_page = DocumentReviewPage(self)
+        review_page.document_reviewed.connect(self.process_manager.update_doc)
+        self.process_manager.db_update.connect(review_page.db_update)
+        return review_page
+
+    def CreateDocumentPage(self):
+        create_doc_page = CreateDocumentPage(self)
+        self.process_manager.db_update.connect(create_doc_page.db_update)
+        create_doc_page.start_document_process.connect(self.process_manager.start_document_process)
+        return create_doc_page
+
+    def SettingsPage(self):
+        settings_page = SettingsPage(self)
+        return settings_page
         
     '''
     @pyqtSlot()

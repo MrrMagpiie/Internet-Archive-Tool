@@ -5,25 +5,33 @@ from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot
 
 from model.data.document import Document
 
+class DatabaseSignal(QObject):
+    data = pyqtSignal(object)# Document return 
+    error = pyqtSignal(str)# error msg
+
+
+
 class DatabaseManager(QObject):
     """
     A QObject worker that manages all database interactions
     in a separate thread.
     """
-    sucess = pyqtSignal(str) # task_id
-    documents = pyqtSignal(str,object)  # task_id, Documents
-    error = pyqtSignal(str, str) # task_id, error_msg
+    success = pyqtSignal()
+    save_document = pyqtSignal(object)
+    error = pyqtSignal(str) #error_msg
 
     def __init__(self, db_path: Path, queue: Queue):
         super().__init__()
         self.db_path = db_path
         self.queue = queue
         self.conn = None 
+        print('initdb')
 
     @pyqtSlot()
     def run(self):
         """The main worker loop. This runs in the QThread."""
         try:
+            print('hello form the db')
             self.db_path.parent.mkdir(parents=True, exist_ok=True)
             self.conn = sqlite3.connect(self.db_path)
             self._create_tables()
@@ -38,23 +46,25 @@ class DatabaseManager(QObject):
                     if command == 'load_documents':
                         signals, filter_data = data
                         docs = self._load_documents(filter_data)
-                        self.signals.data.emit(docs)
+                        signals.data.emit(docs)
                     
                     elif command == 'load_single_document':
                         signals, doc_id = data
                         doc = self._load_single_document(doc_id)
-                        self.signals.data.emit(doc)
+                        signals.data.emit(doc)
 
                     elif command == 'save_document':
                         signals, document = data
                         self._save_document(document)
-                        self.signals.data.emit(True)
+                        signals.data.emit(document)
+                        self.save_document.emit(document)
                 
                 except Exception as e:
-                    self.signals.error.emit(f"Error processing command {command}: {e}")
+                    signals.error.emit(f"Error processing command {command}: {e}")
+                    self.error.emit((f"Error processing command {command}: {e}"))
 
         except Exception as e:
-            self.signals.error.emit(f"Worker-level error: {e}")
+            self.error.emit(f"Worker-level error: {e}")
         finally:
             if self.conn:
                 self.conn.close()

@@ -3,7 +3,7 @@ from typing import Dict, Any, Set
 import string
 import json
 
-from model.metadata import Metadata
+from model.data.metadata import Metadata
 
 
 
@@ -57,7 +57,7 @@ class DocumentSchema:
         Validates the schema by checking all initial default templates against defined fields.
         """
 
-        REQUIRED_TEMPLATES = {
+        REQUIRED_DEFAULTS = {
             'identifier': '',
             'title': '',
             'date': '',
@@ -119,12 +119,12 @@ class DocumentSchema:
         self.defaults[key] = template
         print(f"Default '{key}' added successfully, validated against current fields.")
 
-    def generate_metadata(self) -> DocumentMetadata:
+    def generate_metadata(self) -> Metadata:
         """
         Generates the final document metadata by applying current field values to the defaults templates.
 
         Returns:
-            DocumentMetadata: The fully generated and validated metadata object.
+            Metadata: The fully generated and validated metadata object.
         """
 
         generated_metadata_dict = {}
@@ -138,10 +138,10 @@ class DocumentSchema:
                 print(f"Runtime Format Error: Field {e} required for default '{default_key}' was not supplied.")
                 continue
                 
-        # Define the four required keys for the DocumentMetadata constructor
+        # Define the four required keys for the Metadata constructor
         REQUIRED_META_KEYS = ["identifier", "title", "date", "mediatype"]
         
-        # Extract required fields for the DocumentMetadata constructor using .pop()
+        # Extract required fields for the Metadata constructor using .pop()
         try:
             required_args = {k: generated_metadata_dict.pop(k) for k in REQUIRED_META_KEYS}
         except KeyError as e:
@@ -150,8 +150,8 @@ class DocumentSchema:
         # The remaining items in the dict are the optional fields
         optional_args = generated_metadata_dict
 
-        # Instantiate and return the fully validated DocumentMetadata object
-        return DocumentMetadata(
+        # Instantiate and return the fully validated Metadata object
+        return Metadata(
             identifier=required_args['identifier'],
             title=required_args['title'],
             date=required_args['date'],
