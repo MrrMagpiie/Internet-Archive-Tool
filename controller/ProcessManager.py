@@ -6,6 +6,7 @@ from model.task import *
 from model.service.DatabaseManager import DatabaseManager, DatabaseSignal
 from model.service.DocumentPipeline import DocumentPipelineWorker, DocPipelineRequest
 from model.data.document import Document
+from model.data.schema import DocumentSchema
 
 from config import *
 # ---------------- Process Manager ---------------
@@ -24,13 +25,12 @@ class ProcessManager(QObject):
         self._db_setup()
         self._document_process_service()
 
-
     def start_task(task):
         QThreadPool.globalInstance().start(task)
 
     # tasks
     @pyqtSlot(object,QObject)
-    def discover_task(data,requester):
+    def discover_task(self,data,requester):
         signals = discoverSignals()
         if hasattr(requester,'document'):
             signals.document.connect(requester.document)
@@ -45,6 +45,16 @@ class ProcessManager(QObject):
         task = discoverTask(signals,dir)
         self.start_task(task)
     
+    @pyqtSlot(DocumentSchema)
+    def save_schema(self,schema):
+        schema_dict = schema.to_dict()
+        with open('/var/home/magpie/Development/Library2/resources/document_schema.json', 'r') as f: 
+            data = json.load(f)
+
+        with open('/var/home/magpie/Development/Library2/resources/document_schema.json', 'w') as f: 
+            data[schema_dict.get('schema_name')] = schema_dict
+            json.dump(data,f,indent=4)
+
     @pyqtSlot(tuple,QObject)
     def start_document_process(self,data,requester):
         signals = self._doc_proccess_signals(requester)
@@ -136,8 +146,6 @@ class ProcessManager(QObject):
         # Wait for the thread to finish
         self.db_thread.wait() 
         event.accept()
-
-
 
     # Errors
     @pyqtSlot(str)

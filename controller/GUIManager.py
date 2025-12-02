@@ -84,6 +84,7 @@ class GUIManager(QObject):
         create_doc_page = CreateDocumentPage(self)
         self.process_manager.db_update.connect(create_doc_page.db_update)
         create_doc_page.start_document_process.connect(self.process_manager.start_document_process)
+        create_doc_page.new_schema.connect(self.process_manager.save_schema)
         return create_doc_page
 
     def SettingsPage(self):

@@ -1,4 +1,11 @@
-{
+{   
+    "":{
+        "name": "",
+        "label":"Custom Field",
+        "description":"allows the use of custom fields",
+        "type":"string"
+    },
+
     "adaptive_ocr": {
         "name": "adaptive_ocr",
         "label": "Adaptive OCR",

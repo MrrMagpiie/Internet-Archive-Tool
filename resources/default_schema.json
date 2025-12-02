@@ -1,0 +1,16 @@
+{
+    "default":{
+            "schema_name":"default",
+            "fields":{
+            },
+            "defaults":{
+            "identifier":"",
+            "title":"",
+            "date":"",
+            "language":"",
+            "creator":"",
+            "mediatype":"",
+            "collection":""
+            }
+        }
+    }

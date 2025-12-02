@@ -1,35 +1,68 @@
 {
-        "newspaper_comet":{
-            "schema_name":"Newspaper Comet",
-            "fields":{
-                    "year":"",
-                    "month":"",
-                    "day":""
-            },
-            "defaults":{
-            "identifier":"{year}_{month}_{day}_UCWV_Comet",
-            "title":"",
-            "date":"{year}-{month}-{day}",
-            "language":"en",
-            "creator":"Schoenbaum Library",
-            "mediatype":"text",
-            "collection":""
-            }
+    "newspaper_comet": {
+        "schema_name": "Newspaper Comet",
+        "fields": {
+            "year": "",
+            "month": "",
+            "day": ""
         },
-        "year_book":{
-            "schema_name":"Year Book",
-            "fields":{
-                "year":""
-            },
-            "defaults":{
-            "identifier":"{year}_UCWV_Yearbook",
-            "title":"{year} UCWV Yearbook",
-            "date":"[{year}]",
-            "language":"en",
-            "creator":"Schoenbaum Library",
-            "mediatype":"text",
-            "collection":""
-            }
+        "defaults": {
+            "identifier": "{year}_{month}_{day}_UCWV_Comet",
+            "title": "",
+            "date": "{year}-{month}-{day}",
+            "language": "en",
+            "creator": "Schoenbaum Library",
+            "mediatype": "text",
+            "collection": ""
         }
-
+    },
+    "year_book": {
+        "schema_name": "Year Book",
+        "fields": {
+            "year": ""
+        },
+        "defaults": {
+            "identifier": "{year}_UCWV_Yearbook",
+            "title": "{year} UCWV Yearbook",
+            "date": "[{year}]",
+            "language": "en",
+            "creator": "Schoenbaum Library",
+            "mediatype": "text",
+            "collection": ""
+        }
+    },
+    "New": {
+        "schema_name": "New",
+        "fields": {
+            "Testing": "",
+            "Testing_2": ""
+        },
+        "defaults": {
+            "identifier": "{Testing}",
+            "title": "{Testing_2}",
+            "date": "",
+            "mediatype": "",
+            "language": "",
+            "creator": "",
+            "collection": "",
+            "adaptive_ocr": ""
+        }
+    },
+    "New_testing": {
+        "schema_name": "New_testing",
+        "fields": {
+            "Testing": "",
+            "Testing_3": ""
+        },
+        "defaults": {
+            "identifier": "{Testing}",
+            "title": "{Testing_3}",
+            "date": "",
+            "mediatype": "",
+            "language": "",
+            "creator": "",
+            "collection": "",
+            "adaptive_ocr": ""
+        }
+    }
 }

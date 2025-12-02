@@ -40,17 +40,6 @@ class DocumentList(QWidget):
                 self.scroll_layout.addWidget(card)
         self.scroll_layout.addStretch()
 
-    def clear_content(self):    
-        """
-        Removes all widgets and layouts from a given layout.
-        """
-        while self.scroll_layout.count() > 0:
-            item = self.scroll_layout.takeAt(0)
-            
-            widget = item.widget()
-            if widget is not None:
-                widget.deleteLater()
-
     def add_card(doc:Document):
         ''' adds a new card for given document
         '''

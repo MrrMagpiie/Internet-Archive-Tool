@@ -72,8 +72,10 @@ class DocumentSchema:
         
         # Validate all initial defaults
         for default_key, default_template in self.defaults.items():
-            self._validate_template(default_key, default_template)
-                
+            try:
+                self._validate_template(default_key, default_template)
+            except Exception as e:
+                raise e 
         print(f"Schema '{self.schema_name}' validation successful. All default templates are resolvable.")
 
     def add_field(self, name: str, value: Any = ""):
@@ -111,11 +113,12 @@ class DocumentSchema:
         Raises:
             ValueError: If the Default key already exists in the schema.
         """
-        if key in self.defaults.keys():
-            raise ValueError(
-                f"Default for '{key}' already exists."
-                )
-                
+        if key != '':
+            if key in self.defaults.keys():
+                raise ValueError(
+                    f"Default for '{key}' already exists."
+                    )
+                    
         self.defaults[key] = template
         print(f"Default '{key}' added successfully, validated against current fields.")
 
