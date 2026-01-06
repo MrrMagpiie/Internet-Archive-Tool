@@ -3,7 +3,7 @@ from pathlib import Path
 from PyQt6.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QHBoxLayout,
     QPushButton, QStackedWidget,QMainWindow, QGridLayout, 
-    QSizePolicy, QSpacerItem
+    QSizePolicy, QSpacerItem,
 )
 from PyQt6.QtCore import pyqtSlot,pyqtSignal, QSize, QObject
 from PyQt6.QtGui import QFont
@@ -78,6 +78,7 @@ class GUIManager(QObject):
         review_page = DocumentReviewPage(self)
         review_page.document_reviewed.connect(self.process_manager.update_doc)
         self.process_manager.db_update.connect(review_page.db_update)
+        review_page.upload.connect(self.process_manager.upload_document)
         return review_page
 
     def CreateDocumentPage(self):
@@ -91,6 +92,12 @@ class GUIManager(QObject):
         settings_page = SettingsPage(self)
         return settings_page
         
+    @pyqtSlot()    
+    def run_setup(self):
+        '''
+        nothing for now, will run the setup script
+        '''
+        pass
     '''
     @pyqtSlot()
     def CredentialsPage(self):
@@ -98,8 +105,6 @@ class GUIManager(QObject):
         credentials_page.setup.connect(self.process_manager.setup_ia_pipeline)
         self.process_manager.ia_setup_success.connect(self.credentials_page._setup_return)
         return credentials_page
-    
-    
     
     @pyqtSlot(bool) #edit
     def SchemaBuilderPage(self,edit=False):
@@ -111,8 +116,6 @@ class GUIManager(QObject):
         schema_builder_page._create_layout()
         return schema_builder_page
     
-
-
     @pyqtSlot()
     def BatchPage(self):
         batch_page = BatchPage(self)

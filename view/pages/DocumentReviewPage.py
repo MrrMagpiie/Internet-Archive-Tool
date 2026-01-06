@@ -15,6 +15,7 @@ from model.logic.helpers import clear_layout
 
 class DocumentReviewPage(Page):
     document_reviewed = pyqtSignal(Document,QObject)
+    upload = pyqtSignal(Document)
     def __init__(self,parent = None):
         super().__init__(parent)
         self._create_layout()
@@ -67,6 +68,9 @@ class DocumentReviewPage(Page):
                 self.document.status['needs_approval'] = False
                 self.document.status['rejected'] = False
                 self.document.status['approved'] = True
+                upload_btn = QPushButton("Upload Document")
+                upload_btn.clicked.connect(lambda:self.upload.emit(self.document))
+                self.review_layout.addWidget(upload_btn)
 
             elif new_status == 'rejected':
                 self.document.status['needs_approval'] = False

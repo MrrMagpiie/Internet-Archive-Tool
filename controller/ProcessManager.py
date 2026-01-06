@@ -1,12 +1,16 @@
-from PyQt6.QtCore import QThread, QObject, pyqtSignal, pyqtSlot, QTimer, QThreadPool
+from PyQt6.QtCore import QThread, QObject, pyqtSignal, pyqtSlot, QTimer, QThreadPool, Qt
+from PyQt6.QtWidgets import QApplication
 from queue import Queue
 from pathlib import Path
+import os
 from model.service import *
 from model.task import *
 from model.service.DatabaseManager import DatabaseManager, DatabaseSignal
 from model.service.DocumentPipeline import DocumentPipelineWorker, DocPipelineRequest
+from model.service.UploadManager import UploadManager, UploadRequest
 from model.data.document import Document
 from model.data.schema import DocumentSchema
+from config import user_config
 
 from config import *
 # ---------------- Process Manager ---------------
@@ -16,6 +20,7 @@ class ProcessManager(QObject):
     discovery_complete = pyqtSignal(dict)
     schema_loaded = pyqtSignal(object)
     schema_saved = pyqtSignal(object)
+    need_setup = pyqtSignal()
 
 
     def __init__(self,parent=None):
@@ -24,6 +29,7 @@ class ProcessManager(QObject):
         self.task_requests = {}
         self._db_setup()
         self._document_process_service()
+        self._upload_manager_service()
 
     def start_task(task):
         QThreadPool.globalInstance().start(task)
@@ -54,11 +60,48 @@ class ProcessManager(QObject):
         with open('/var/home/magpie/Development/Library2/resources/document_schema.json', 'w') as f: 
             data[schema_dict.get('schema_name')] = schema_dict
             json.dump(data,f,indent=4)
+    
+    #Upload Manager
+    def _upload_manager_service(self):
+        self.upload_manager_thread = QThread()
+        self.upload_manager_queue = Queue()
+        self.upload_manager = UploadManager(self.upload_manager_queue)
 
+        self.upload_manager.error.connect(self.upload_error)
+        self.upload_manager.document.connect(self.upload_success)
+        self.upload_manager.moveToThread(self.upload_manager_thread)
+
+        self.upload_manager_thread.started.connect(self.upload_manager.run)
+        self.upload_manager_thread.start()
+
+        if user_config.get('IA_CONFIG'):
+            os.environ['IA_CONFIG_FILE'] = user_config.get('IA_CONFIG')
+        else:
+            self.need_setup.emit()
+    
+    @pyqtSlot(Document)
+    def upload_document(self,doc):
+        signals = self._upload_signals(self)
+        data = (signals,doc)
+        print('uploading document')
+        self.start_loading_cursor()
+        self.upload_manager_queue.put(('upload',data))
+
+    def _upload_signals(self,requester):
+        signals = UploadRequest()
+        if hasattr(requester,'upload_success'):
+            signals.data.connect(requester.upload_success)
+        if hasattr(requester,'upload_error'):
+            signals.error.connect(requester.upload_error)
+        return signals
+
+    
+    # Document Process
     @pyqtSlot(tuple,QObject)
     def start_document_process(self,data,requester):
         signals = self._doc_proccess_signals(requester)
         data = (signals,data)
+        self.start_loading_cursor()
         self.doc_process_queue.put(('discover',data))
 
     def _document_process_service(self):
@@ -132,6 +175,7 @@ class ProcessManager(QObject):
         '''
         emits document to gui when database saves a document
         '''
+        print('emit db_update')
         self.db_update.emit(doc)
 
     def closeEvent(self, event):
@@ -150,6 +194,7 @@ class ProcessManager(QObject):
     # Errors
     @pyqtSlot(str)
     def discover_error(self,error):
+        self.stop_loading_cursor()
         print(f'discovery: {error}')
 
     @pyqtSlot(str)
@@ -158,5 +203,28 @@ class ProcessManager(QObject):
     
     @pyqtSlot(Document)
     def doc_success(self,doc):
+        self.stop_loading_cursor()
         self.update_doc(doc)
         print(f'doc success: {doc}')
+    
+    @pyqtSlot(str)
+    def upload_error(self,error):
+        self.stop_loading_cursor()
+        print(f'document upload error: {error}')
+    
+    @pyqtSlot(Document)
+    def upload_success(self,doc):
+        self.stop_loading_cursor()
+        print('document upload success')
+
+    @pyqtSlot()
+    def start_loading_cursor(self):
+        """Helper to set the wait cursor."""
+        QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
+    
+    @pyqtSlot()
+    def stop_loading_cursor(self):
+        """Helper to restore the default cursor."""
+        # It's good practice to ensure we don't restore if not set, 
+        # but restoreOverrideCursor is safe to call even if no override exists.
+        QApplication.restoreOverrideCursor()

@@ -9,6 +9,7 @@ if __name__ == "__main__":
     app.setQuitOnLastWindowClosed(False)
     manager = ProcessManager()
     guimanager = GUIManager(manager)
+    manager.need_setup.connect(guimanager.run_setup)
     window = guimanager.MainWindow()
     window.show()
     sys.exit(app.exec())
