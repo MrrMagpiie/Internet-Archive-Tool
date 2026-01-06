@@ -1,21 +1,4 @@
 {
-    "newspaper_comet": {
-        "schema_name": "Newspaper Comet",
-        "fields": {
-            "year": "",
-            "month": "",
-            "day": ""
-        },
-        "defaults": {
-            "identifier": "{year}_{month}_{day}_UCWV_Comet",
-            "title": "",
-            "date": "{year}-{month}-{day}",
-            "language": "en",
-            "creator": "Schoenbaum Library",
-            "mediatype": "text",
-            "collection": ""
-        }
-    },
     "year_book": {
         "schema_name": "Year Book",
         "fields": {
@@ -31,38 +14,21 @@
             "collection": ""
         }
     },
-    "New": {
-        "schema_name": "New",
+    "Newspaper Comet": {
+        "schema_name": "Newspaper Comet",
         "fields": {
-            "Testing": "",
-            "Testing_2": ""
+            "year": "",
+            "month": "",
+            "day": ""
         },
         "defaults": {
-            "identifier": "{Testing}",
-            "title": "{Testing_2}",
-            "date": "",
-            "mediatype": "",
-            "language": "",
-            "creator": "",
-            "collection": "",
-            "adaptive_ocr": ""
-        }
-    },
-    "New_testing": {
-        "schema_name": "New_testing",
-        "fields": {
-            "Testing": "",
-            "Testing_3": ""
-        },
-        "defaults": {
-            "identifier": "{Testing}",
-            "title": "{Testing_3}",
-            "date": "",
-            "mediatype": "",
-            "language": "",
-            "creator": "",
-            "collection": "",
-            "adaptive_ocr": ""
+            "identifier": "{year}_{month}_{day}_UCWV_Comet",
+            "title": "University of Charleston Comet {year}_{month}_{day}",
+            "date": "{year}-{month}-{day}",
+            "mediatype": "text",
+            "language": "en",
+            "creator": "Schoenbaum Library",
+            "collection": ""
         }
     }
 }

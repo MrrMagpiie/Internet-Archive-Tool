@@ -6,31 +6,13 @@ import json
 from pathlib import Path
 from wand.image import Image
 
-def upload(doc:Document):
+def uploadDocument(doc:Document):
         if not doc.metadata_file or not Path(doc.metadata_file).is_file():
             raise Exception(f"Error: Metadata file not found for {doc.doc_id}")
 
         zip_path = zip_doc(doc)
         pdf_path = create_pdf_from_tiffs(doc)
-
-        with open(doc.metadata_file, 'r') as f:
-            metadata_dict = json.load(f)
-
-        identifier = metadata_dict.get('identifier')
-        if not identifier:
-            raise Exception(f"Error: 'identifier' not found in metadata for {doc.doc_id}")
-
-        print(f"Starting upload for item: {identifier}...")
-        try:
-            r = ia.upload(
-                identifier=identifier,
-                files=[zip_path,pdf_path],
-                metadata=metadata_dict,
-                verbose=true
-            )
-
-        except Exception as e:
-            raise e
+        upload(doc,[zip_path,pdf_path])
 
 def setup(self,email: str, password: str):
         target_dir = os.path.join(RESOURCES_PATH,'/ia.ini')
@@ -61,12 +43,33 @@ def create_pdf_from_tiffs(doc):
     pdf_path = os.path.join(doc.path,f'{doc.doc_id}.pdf')
     try:
         with Image() as pdf:
-            for tiff_path in doc.images.values():
-                with Image(filename=tiff_path) as img:
+            for tiff in doc.images.values():
+                with Image(filename=tiff.get('processed')) as img:
                     pdf.sequence.append(img)
             
             # Save the combined PDF
             pdf.save(filename=pdf_path)
+            print('pdf created Successfully.')
             return pdf_path
     except Exception as e:
         raise e
+
+def upload(doc:Document, files:list):
+        with open(doc.metadata_file, 'r') as f:
+            metadata_dict = json.load(f)
+
+        identifier = metadata_dict.get('identifier')
+        if not identifier:
+            raise Exception(f"Error: 'identifier' not found in metadata for {doc.doc_id}")
+
+        print(f"Starting upload for item: {identifier}...")
+        try:
+            r = ia.upload(
+                identifier=identifier,
+                files=files,
+                metadata=metadata_dict,
+                verbose=True
+            )
+            return r
+        except Exception as e:
+            raise e

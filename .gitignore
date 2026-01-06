@@ -38,8 +38,8 @@ Thumbs.db
 # Ignore input+output files
 *.tif
 *.pnm
-Input
-Output
+input
+output
 
 # database file
 manifest.db

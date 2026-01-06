@@ -3,7 +3,7 @@ from queue import Queue
 from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot
 
 from model.data.document import Document
-from model.logic.upload import upload, setup
+from model.logic.upload import uploadDocument, setup
 
 class UploadRequest(QObject):
     data = pyqtSignal(Document)
@@ -35,7 +35,7 @@ class UploadManager(QObject):
                 try:
                     if command == 'upload':
                         signals, doc = data
-                        upload(doc)
+                        uploadDocument(doc)
 
                     if command == 'setup':
                         signals, setup_data = data
