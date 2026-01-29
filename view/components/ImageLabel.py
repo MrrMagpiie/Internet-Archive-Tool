@@ -51,13 +51,15 @@ class ImageLabel(QLabel):
         if not self._pixmap or self._pixmap.isNull():
             super().setPixmap(QPixmap())
             return
-
-        scaled_pixmap = self._pixmap.scaled(
-            self.size(),
-            Qt.AspectRatioMode.KeepAspectRatio,
-            Qt.TransformationMode.SmoothTransformation
-        )
-        super().setPixmap(scaled_pixmap)
+        if not self._pixmap.isNull():
+            scaled_pixmap = self._pixmap.scaled(
+                self.size(),
+                Qt.AspectRatioMode.KeepAspectRatio,
+                Qt.TransformationMode.SmoothTransformation
+            )
+            super().setPixmap(scaled_pixmap)
+        else:
+            self.image_label.setText("Err")
             
 
     
