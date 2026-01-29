@@ -40,16 +40,29 @@ class DocumentPipelineWorker(QObject):
                 try:
                     if command == 'discover':
                         signals, doc_data = data
-                        in_dir, out_dir, metadata,metadata_type = doc_data
+                        in_dir, out_dir = doc_data
                         doc = self.discover(in_dir,out_dir)
                         if isinstance(doc,Document):
-                            self.deskew(doc)
-                            doc.status['deskewed'] = True
+                            signals.data.emit(doc)
+                            self.document.emit(doc)
+                            
+                    if command == 'metadata':
+                        signals, doc_data = data
+                        doc, metadata, metadata_type = doc_data
+                        if isinstance(doc,Document):
                             doc = add_metadata_to_document(doc, metadata,metadata_type)
                             doc.status['metadata'] = True
                             signals.data.emit(doc)
                             self.document.emit(doc)
-                            
+
+                    if command == 'deskew':
+                        signals, doc = data
+                        if isinstance(doc,Document):
+                            self.deskew(doc)
+                            doc.status['deskewed'] = True
+                            signals.data.emit(doc)
+                            self.document.emit(doc)
+
                 except Exception as e:
                     signals.error.emit((f"Error processing command {command}: {e}"))
 
