@@ -1,5 +1,5 @@
 from .ApprovalPage import ApprovalPage
-from .DashboardPage import DashboardPage
+from .DashboardPage import DashboardController
 #from .CredentialsPage import CredentialsPage
 from .DeskewPage import DeskewPage
 from .DiscoveryPage import DiscoveryPage

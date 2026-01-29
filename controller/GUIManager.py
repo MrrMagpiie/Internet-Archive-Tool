@@ -25,7 +25,7 @@ class GUIManager(QObject):
 
     @pyqtSlot()
     def DashboardPage(self,navigation_stack):
-        dashboard_page = DashboardPage(navigation_stack=navigation_stack,parent=self)
+        dashboard_page = DashboardController(navigation_stack=navigation_stack,parent=self)
         return dashboard_page
 
     @pyqtSlot()
@@ -84,8 +84,7 @@ class GUIManager(QObject):
     def CreateDocumentPage(self):
         create_doc_page = CreateDocumentPage(self)
         self.process_manager.db_update.connect(create_doc_page.db_update)
-        create_doc_page.start_document_process.connect(self.process_manager.start_document_process)
-        create_doc_page.new_schema.connect(self.process_manager.save_schema)
+        create_doc_page.discover_document.connect(self.process_manager.send_document_process_request)
         return create_doc_page
 
     def SettingsPage(self):

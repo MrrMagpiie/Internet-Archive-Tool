@@ -98,7 +98,7 @@ class ProcessManager(QObject):
     
     # Document Process
     @pyqtSlot(tuple,QObject)
-    def start_document_process(self,data,requester):
+    def send_document_process_request(self,data,requester):
         signals = self._doc_proccess_signals(requester)
         data = (signals,data)
         self.start_loading_cursor()
