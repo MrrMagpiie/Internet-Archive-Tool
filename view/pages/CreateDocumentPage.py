@@ -4,11 +4,14 @@ from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout,
     QPushButton, QTextEdit, QLineEdit,
     QFileDialog, QProgressBar,QTableWidget,
-    QComboBox,QLabel,QFormLayout
+    QComboBox,QLabel,QFormLayout,QFrame,QSplitter,
+    QScrollArea
 )
-from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot
+from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot, Qt
 from view.components.Page import Page
 from view.components.SchemaForm import SchemaForm, EditableSchemaForm
+from view.components.CenteredFlowLayout import CenteredFlowLayout
+from view.components.ThumbnailCard import ThumbnailCard
 from model.data.metadata import Metadata
 from model.data.document import Document
 from model.data.schema import DocumentSchema
@@ -18,55 +21,79 @@ from config import RESOURCES_PATH
 
 class CreateDocumentPage(Page):
     doc_ready = pyqtSignal(Document)
-    start_document_process = pyqtSignal(tuple,QObject)
-    new_schema = pyqtSignal(DocumentSchema)
+    discover_document = pyqtSignal(tuple,QObject)
+    next_page = pyqtSignal()
 
     def __init__(self,parent):
         super().__init__(parent)
         self.form = None
         self.main_layout = QVBoxLayout(self)
+        self.all_cards = []
         self.create_layout()
-        self._load_metadata_formats()
 
     def create_layout(self):
-        input_layout = QHBoxLayout()
+        splitter = QSplitter(Qt.Orientation.Horizontal)
+        
+        # Left Side
+        controls_widget = QWidget()
+        controls_layout = QVBoxLayout()
+
+        # Input
+        input_widget = QWidget()
+        input_layout = QVBoxLayout()
         self.input_dir_field = QLineEdit()
         input_layout.addWidget(self.input_dir_field)
         input_browse_btn = QPushButton("Select Document Folder")
         input_browse_btn.clicked.connect(lambda: self.select_directory(self.input_dir_field))
         input_layout.addWidget(input_browse_btn)
-        self.main_layout.addLayout(input_layout)
-
-        # add document type select
-        metadata_layout = QVBoxLayout()
-        doc_type_layout = QHBoxLayout()
+        find_pages_btn = QPushButton("Find Pages")
+        find_pages_btn.clicked.connect(self.run_discover)
+        input_layout.addWidget(find_pages_btn)
+        input_widget.setLayout(input_layout)
+    
+        # Page Count    
+        pages_widget = QWidget()
+        pages_layout = QHBoxLayout()
+        pages_lbl = QLabel('Pages Found:')
+        self.pages_count = QLabel('0')
+        pages_layout.addWidget(pages_lbl)
+        pages_layout.addWidget(self.pages_count)
+        pages_widget.setLayout(pages_layout)
         
-        self.doc_type_combo = QComboBox()
-        doc_type_layout.addWidget(self.doc_type_combo)
+        nxt_step_btn = QPushButton('Add Metadata')
 
-        edit_btn = QPushButton('Edit')
-        edit_btn.clicked.connect(lambda:self.edit_page(self.metadata_formats[self.doc_type_combo.currentData()]))
-        doc_type_layout.addWidget(edit_btn)
+        controls_layout.addWidget(input_widget)
+        controls_layout.addStretch()
+        controls_layout.addWidget(pages_widget)
+        controls_layout.addWidget(nxt_step_btn)
 
-        new_btn = QPushButton('New')
-        new_btn.clicked.connect(lambda:self.edit_page())
-        doc_type_layout.addWidget(new_btn)
+        controls_widget.setLayout(controls_layout)
 
-        self._load_metadata_formats()
-        self.doc_type_combo.currentTextChanged.connect(self._on_select_format)
-        metadata_layout.addLayout(doc_type_layout)
+
+        # Right Side
+        # 1. The Scroll Area
+        self.scroll_area = QScrollArea()
+        self.scroll_area.setWidgetResizable(True)
+        self.scroll_area.setFrameShape(QFrame.Shape.NoFrame)
+        self.scroll_area.setStyleSheet("background-color: white;")
         
-        # add metadata input table
-        self.form = SchemaForm()
-        metadata_layout.addWidget(self.form)
-        self.main_layout.addLayout(metadata_layout)
+        # 2. The Container for Layout
+        self.grid_container = QWidget()
         
-        run_btn = QPushButton("Start Process")
-        run_btn.clicked.connect(self.processButtonCallback)
+        # 3. The Layout (Using the CenteredFlowLayout you added earlier)
+        # Make sure CenteredFlowLayout is defined in your file!
+        self.flow_layout = CenteredFlowLayout()
+        self.flow_layout.setContentsMargins(20, 20, 20, 20)
+        self.flow_layout.setSpacing(20)
+        
+        self.grid_container.setLayout(self.flow_layout)
+        self.scroll_area.setWidget(self.grid_container)
 
 
-        self.main_layout.addWidget(run_btn)
-
+        splitter.addWidget(controls_widget)
+        splitter.addWidget(self.scroll_area)
+        
+        self.main_layout.addWidget(splitter)
 
     # Discovery stuff
     def select_directory(self, field):
@@ -83,27 +110,13 @@ class CreateDocumentPage(Page):
         print(input_dir,output_dir)
         return input_dir, output_dir
 
-    def processButtonCallback(self):
+    def run_discover(self):
         input_dir, out_dir = self.get_paths()
-        metadata = self.form.get_metadata()
-        metadata_type = self.doc_type_combo.currentData()
-
-        data = (input_dir,out_dir,metadata,metadata_type)
-        self.start_document_process.emit(data,self)
-
-    # form stuff
-    def _load_metadata_formats(self):
-        with open(RESOURCES_PATH /'document_schema.json','r') as f:
-            self.metadata_formats = json.load(f)
-        self.doc_type_combo.clear()
-        for key,value in self.metadata_formats.items():
-            self.doc_type_combo.addItem(value['schema_name'], key)
-
-    def _on_select_format(self,format_name=None):
-        format_key = self.doc_type_combo.currentData()
-        if format_key and format_key != '':
-            schema_format = self.metadata_formats[format_key]
-            self.form.new_form(schema_format)
+        if input_dir and out_dir:
+            data = (input_dir,out_dir)
+            self.discover_document.emit(data,self)
+        else:
+            print('choose dir')
 
     def clear_layout(self, layout):
         """Removes all widgets from a layout and schedules them for deletion."""
@@ -114,6 +127,36 @@ class CreateDocumentPage(Page):
             widget = item.widget()
             if widget is not None:
                 widget.deleteLater()
+
+
+        # --- Logic: Simulate Scanning ---
+
+    def show_images(self, document: Document):
+        images = document.images
+        for image_path in images:
+            full_path = os.path.join(document.path,image_path)
+            print(full_path)
+
+            next_num = len(self.all_cards) + 1
+        
+            new_card = ThumbnailCard(next_num, full_path)
+            new_card.clicked.connect(self.handle_card_selection)
+            self.flow_layout.addWidget(new_card)
+            self.all_cards.append(new_card)
+            self.pages_count.setText(str(next_num))
+            self.handle_card_selection(str(next_num))
+
+
+    # --- Logic: Handle Selection ---
+    def handle_card_selection(self, page_id):
+        print(f"User selected Page {page_id}")
+        
+        for card in self.all_cards:
+            if str(card.page_number) == page_id:
+                card.is_selected = True
+            else:
+                card.is_selected = False
+
 
     @pyqtSlot(Document)
     def db_update(self,doc):
@@ -127,37 +170,19 @@ class CreateDocumentPage(Page):
     def doc_error(self,error_msg):
         pass
 
-    def edit_page(self,schema=None):
-        if schema:
-            schema_name = schema['schema_name']
-        else:
-            schema_name = "New"
-        clear_layout(self.main_layout)
-        # add document type select
-        metadata_layout = QVBoxLayout()
-
-        self.doc_type_line = QLineEdit(schema_name)
-        metadata_layout.addWidget(self.doc_type_line)
-        
-
-        # add metadata input table
-        self.form = EditableSchemaForm()
-        self.form.new_form(schema)
-        self.form.new_format.connect(self._new_schema)
-        self.form.cancel.connect(self._reset)
-        metadata_layout.addWidget(self.form)
-        self.main_layout.addLayout(metadata_layout)
-
-    @pyqtSlot(DocumentSchema)
-    def _new_schema(self,schema):
-        schema_dict = schema.to_dict()
-        schema_dict['schema_name'] = self.doc_type_line.text()
-        schema = DocumentSchema.from_dict(schema_dict)
-        self.new_schema.emit(schema)
-        self._reset()
-
     @pyqtSlot()
     def _reset(self):
         clear_layout(self.main_layout)
         self.create_layout()
         self._on_select_format()
+
+    @pyqtSlot(Document)
+    def doc_return(self,document):
+        print(' Create Document Page recived document')
+        self.show_images(document)
+
+    @pyqtSlot(str)
+    def doc_error(self,error_msg):
+        print(error_msg)
+
+
