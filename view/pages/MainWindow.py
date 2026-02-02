@@ -155,7 +155,7 @@ class MainWindow(QMainWindow):
         self._review_page()
         self._settings_page()
         self._help_page()
-
+    # ---------------- Pages ----------------
     def _main_dashboard(self):
         self.dashboard = self.gui_manager.DashboardPage(self.stack)
         self.stack.addWidget(self.dashboard)
@@ -163,19 +163,19 @@ class MainWindow(QMainWindow):
 
     def _settings_page(self):
         # main batch Dashboard
-        self.step_dashboard = self.gui_manager.SettingsPage()
-        self.stack.addWidget(self.step_dashboard)
-        self.views['batch_dashboard'] = self.step_dashboard
-        
-    def _review_page(self):
-        self.single_doc = self.gui_manager.SingleDocumentPage()
-        self.stack.addWidget(self.single_doc)
-        self.views['single_doc'] = self.single_doc
-
-    def _help_page(self):
         self.settings = self.gui_manager.SettingsPage()
         self.stack.addWidget(self.settings)
         self.views['settings'] = self.settings
+        
+    def _review_page(self):
+        self.review = self.gui_manager.ReviewPage()
+        self.stack.addWidget(self.review)
+        self.views['review'] = self.review
+
+    def _help_page(self):
+        self.help = self.gui_manager.HelpPage()
+        self.stack.addWidget(self.help)
+        self.views['help'] = self.help
 
     @pyqtSlot(dict) # Connect this to your pipeline_finished signal
     def on_discovery_complete(self, documents):
