@@ -63,15 +63,12 @@ class DashboardController(Page):
     def __init__(self,navigation_stack,parent):
         super().__init__(parent=parent)
         
-        # This layout holds the "Swap" logic
         self.layout = QVBoxLayout()
         self.layout.setContentsMargins(0, 0, 0, 0)
         
         self.stack = QStackedWidget()
         
         # --- View 1: The Grid (Existing ProjectListView) ---
-        # Note: I renamed your previous ProjectListView class to 'ProjectListView' 
-        # for clarity.
         self.project_list_view = ProjectListView(self) 
         self.project_list_view.project_selected.connect(self.open_project)
         
@@ -89,15 +86,12 @@ class DashboardController(Page):
         print(f"Opening {project_name}...")
         self.workflow_view.load_project(project_name)
         
-        # Animate/Swap to the workflow view
         self.stack.setCurrentIndex(1) 
 
     def close_project(self):
-        # Swap back to the grid
         self.stack.setCurrentIndex(0)
 
 class ProjectWorkflowView(Page):
-    # Signal to go back to the Project Grid
     back_to_dashboard = pyqtSignal()
 
     def __init__(self,parent):
@@ -169,11 +163,12 @@ class ProjectWorkflowView(Page):
     
     def _create_pages(self):
         create_doc_page = self.parent.CreateDocumentPage()
+        create_doc_page.next_page.connect(self.next_stage)
+
         metadata_page = self.parent.MetadataPage()
 
         self.stage_stack.addWidget(create_doc_page) # Index 0
-        self.stage_stack.addWidget(metadata_page)    # Index 1 
-        pass    
+        self.stage_stack.addWidget(metadata_page)    # Index 1    
 
     def load_project(self, project_name):
         """Called when entering this view"""
@@ -183,6 +178,9 @@ class ProjectWorkflowView(Page):
         else:
             self.lbl_project_title.setText(project_name)
             self.switch_stage(1) # Always start at Scan
+    
+    def next_stage(self):
+        self.switch_stage(self.stage_stack.currentIndex()+1)
 
     def switch_stage(self, index):
         print(f'Switching to Stage{index}')

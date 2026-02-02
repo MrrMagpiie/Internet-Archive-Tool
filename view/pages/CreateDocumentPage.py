@@ -30,6 +30,7 @@ class CreateDocumentPage(Page):
         self.main_layout = QVBoxLayout(self)
         self.all_cards = []
         self.create_layout()
+        self.doc_discovered = False
 
     def create_layout(self):
         splitter = QSplitter(Qt.Orientation.Horizontal)
@@ -61,6 +62,7 @@ class CreateDocumentPage(Page):
         pages_widget.setLayout(pages_layout)
         
         nxt_step_btn = QPushButton('Add Metadata')
+        nxt_step_btn.clicked.connect(self._to_next_page)
 
         controls_layout.addWidget(input_widget)
         controls_layout.addStretch()
@@ -95,9 +97,9 @@ class CreateDocumentPage(Page):
         
         self.main_layout.addWidget(splitter)
 
-    # Discovery stuff
+    # --- Discovery stuff --- 
     def select_directory(self, field):
-        dir_path = QFileDialog.getExistingDirectory(self, "Select Directory")
+        dir_path = QFileDialog.getExistingDirectory(self, "Select Directory",options=QFileDialog.Option.DontUseNativeDialog)
         if dir_path:
             field.setText(dir_path)
 
@@ -118,6 +120,7 @@ class CreateDocumentPage(Page):
         else:
             print('choose dir')
 
+    # --- Display stuff ---
     def clear_layout(self, layout):
         """Removes all widgets from a layout and schedules them for deletion."""
         if layout is None:
@@ -146,6 +149,19 @@ class CreateDocumentPage(Page):
             self.pages_count.setText(str(next_num))
             self.handle_card_selection(str(next_num))
 
+    def clear_image_cards(self):
+        self.all_cards.clear()
+        self.clear_layout(self.flow_layout)
+
+    # --- Next Page ---
+    def _to_next_page(self):
+        print('next page clicked')
+        # check if document has been discovered
+        if self.doc_discovered:
+            self.next_page.emit()
+        else:
+            #popup
+            print('need to discover document first')
 
     # --- Logic: Handle Selection ---
     def handle_card_selection(self, page_id):
@@ -156,8 +172,7 @@ class CreateDocumentPage(Page):
                 card.is_selected = True
             else:
                 card.is_selected = False
-
-
+    # --- Slots ---
     @pyqtSlot(Document)
     def db_update(self,doc):
         pass
@@ -179,6 +194,8 @@ class CreateDocumentPage(Page):
     @pyqtSlot(Document)
     def doc_return(self,document):
         print(' Create Document Page recived document')
+        self.doc_discovered = True
+        self.clear_image_cards()
         self.show_images(document)
 
     @pyqtSlot(str)
