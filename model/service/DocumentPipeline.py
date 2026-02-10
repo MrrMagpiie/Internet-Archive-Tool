@@ -8,7 +8,7 @@ from model.logic.deskew import *
 from model.logic.metadata import *
 
 class DocPipelineRequest(QObject):
-    data = pyqtSignal(Document)
+    data = pyqtSignal(str,Document)
     error = pyqtSignal(str)
 
 class DocumentPipelineWorker(QObject):
@@ -18,7 +18,7 @@ class DocumentPipelineWorker(QObject):
     image_error = pyqtSignal(Exception) # exception
     doc_error = pyqtSignal(str,Exception) # doc_id and exception
     deskew_error = pyqtSignal(str, Exception)
-    document = pyqtSignal(Document)
+    document = pyqtSignal(str,Document)
     error = pyqtSignal(str)
 
     def __init__(self,queue: Queue):
@@ -43,8 +43,8 @@ class DocumentPipelineWorker(QObject):
                         in_dir, out_dir = doc_data
                         doc = self.discover(in_dir,out_dir)
                         if isinstance(doc,Document):
-                            signals.data.emit(doc)
-                            self.document.emit(doc)
+                            signals.data.emit(command,doc)
+                            self.document.emit(command,doc)
                             
                     if command == 'metadata':
                         signals, doc_data = data
@@ -52,16 +52,16 @@ class DocumentPipelineWorker(QObject):
                         if isinstance(doc,Document):
                             doc = add_metadata_to_document(doc, metadata,metadata_type)
                             doc.status['metadata'] = True
-                            signals.data.emit(doc)
-                            self.document.emit(doc)
+                            signals.data.emit(command,doc)
+                            self.document.emit(command,doc)
 
                     if command == 'deskew':
                         signals, doc = data
                         if isinstance(doc,Document):
                             self.deskew(doc)
                             doc.status['deskewed'] = True
-                            signals.data.emit(doc)
-                            self.document.emit(doc)
+                            signals.data.emit(command,doc)
+                            self.document.emit(command,doc)
 
                 except Exception as e:
                     signals.error.emit((f"Error processing command {command}: {e}"))
