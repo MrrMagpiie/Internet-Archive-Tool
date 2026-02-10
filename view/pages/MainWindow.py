@@ -169,8 +169,10 @@ class MainWindow(QMainWindow):
         
     def _review_page(self):
         self.review = self.gui_manager.ReviewPage()
+        self.review.request_documents()
         self.stack.addWidget(self.review)
         self.views['review'] = self.review
+
 
     def _help_page(self):
         self.help = self.gui_manager.HelpPage()
