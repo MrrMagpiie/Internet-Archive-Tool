@@ -8,8 +8,9 @@ from model.logic.deskew import *
 from model.logic.metadata import *
 
 class DocPipelineRequest(QObject):
-    data = pyqtSignal(str,Document)
-    error = pyqtSignal(str)
+    data = pyqtSignal(str,Document)# Document Return
+    error = pyqtSignal(str)# Error Message Return
+    prog = pyqtSignal(int)# progress update
 
 class DocumentPipelineWorker(QObject):
     """
@@ -20,16 +21,19 @@ class DocumentPipelineWorker(QObject):
     deskew_error = pyqtSignal(str, Exception)
     document = pyqtSignal(str,Document)
     error = pyqtSignal(str)
+    prog = pyqtSignal(int)# Progress Update
 
     def __init__(self,queue: Queue):
         super().__init__()
         self.queue = queue
-        print('initpipe')
+        print('initDocProc')
+        
 
     @pyqtSlot()
     def run(self):
         """The main worker loop. This runs in the QThread."""
         try:
+            print('Hello from Document Pipeline')
             signals = None
             while True:
                 command, data = self.queue.get()

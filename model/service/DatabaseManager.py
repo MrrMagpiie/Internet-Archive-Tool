@@ -8,6 +8,8 @@ from model.data.document import Document
 class DatabaseSignal(QObject):
     data = pyqtSignal(str,object)# data return 
     error = pyqtSignal(str)# error msg
+    prog = pyqtSignal(int)# progress update
+    
 
 
 
@@ -19,19 +21,20 @@ class DatabaseManager(QObject):
     success = pyqtSignal()
     save_document = pyqtSignal(object)
     error = pyqtSignal(str) #error_msg
+    prog = pyqtSignal(int)# progress
 
     def __init__(self, db_path: Path, queue: Queue):
         super().__init__()
         self.db_path = db_path
         self.queue = queue
         self.conn = None 
-        print('initdb')
+        print('initDB')
 
     @pyqtSlot()
     def run(self):
         """The main worker loop. This runs in the QThread."""
         try:
-            print('hello from the db')
+            print('Hello from the Database Manager')
             self.db_path.parent.mkdir(parents=True, exist_ok=True)
             self.conn = sqlite3.connect(self.db_path)
             self._create_tables()

@@ -4,7 +4,7 @@ from PyQt6.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QHBoxLayout,
     QPushButton, QStackedWidget,QMainWindow, QGridLayout, 
     QSizePolicy, QSpacerItem, QFrame, QLabel,QListWidget,
-    QListWidgetItem,QStyle
+    QListWidgetItem,QStyle, QProgressBar
 )
 from PyQt6.QtCore import pyqtSlot,pyqtSignal, QSize, QObject, Qt
 from PyQt6.QtGui import QFont,QIcon, QColor, QCursor,QPixmap,QPainter
@@ -12,7 +12,7 @@ from PyQt6.QtGui import QFont,QIcon, QColor, QCursor,QPixmap,QPainter
 
 #import pages
 from view.pages import *
-
+from view.components import ProcessManagerWidget
 # ---------------- Main UI ----------------
 class MainWindow(QMainWindow):
     main_window_ready = pyqtSignal()
@@ -120,8 +120,11 @@ class MainWindow(QMainWindow):
 
         sidebar_layout.addWidget(self.sidebar_list)
         
+        # --- Process Manager Widget ---
+        self.process_manager_widget = self.gui_manager.ProcessManagerWidget()
+
         # --- C. Bottom "Settings" or Version Area ---
-        version_lbl = QLabel("v1.0.4 Beta")
+        version_lbl = QLabel("v0.0.1")
         version_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
         version_lbl.setStyleSheet("color: #555; padding: 10px; font-size: 11px;")
         sidebar_layout.addWidget(version_lbl)
@@ -155,6 +158,7 @@ class MainWindow(QMainWindow):
         self._review_page()
         self._settings_page()
         self._help_page()
+    
     # ---------------- Pages ----------------
     def _main_dashboard(self):
         self.dashboard = self.gui_manager.DashboardPage(self.stack)

@@ -11,6 +11,7 @@ from PyQt6.QtGui import QFont
 #import pages 
 #rom view.components import DocumentCard
 from view.pages import *
+from view.components import ProcessManagerWidget
 
 class GUIManager(QObject):
     def __init__(self,manager):
@@ -19,10 +20,13 @@ class GUIManager(QObject):
         self.process_manager = manager
         self.process_manager.busy_start.connect(self.start_loading_cursor)
         self.process_manager.busy_stop.connect(self.stop_loading_cursor)
-        
+
+
     def MainWindow(self):
         self.MainWindow = MainWindow(self)
         return self.MainWindow
+
+    # --- Pages
 
     def DashboardPage(self,navigation_stack):
         workflow_view = Dashboard.WorkflowView(self)
@@ -45,6 +49,7 @@ class GUIManager(QObject):
         self.process_manager.db_update.connect(create_doc_page.db_update)
         create_doc_page.discover_document.connect(self.process_manager.request_discovery)
         create_doc_page.deskew_document.connect(self.process_manager.request_deskew)
+        create_doc_page.image_request.connect(self.process_manager.request_image)
         return create_doc_page
 
     def SettingsPage(self):
@@ -59,11 +64,19 @@ class GUIManager(QObject):
     def ReviewPage(self):
         review_page = ReviewPage(self)
         review_page.db_request.connect(self.process_manager.request_docs_by_status)
+        self.process_manager.db_update.connect(review_page.db_update)
         return review_page
 
     def HelpPage(self):
         help_page = HelpPage(self)
         return help_page
+
+    # --- Components ---
+
+    def ProcessManagerWidget(self):
+        process_widget = ProcessManagerWidget()
+        return process_widget
+    # --- Slots ----
 
     @pyqtSlot()
     def start_loading_cursor(self):

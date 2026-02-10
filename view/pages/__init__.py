@@ -5,5 +5,5 @@ from .UploadPage import UploadPage
 from .DocumentReviewPage import DocumentReviewPage
 from .CreateDocumentPage import CreateDocumentPage
 from .SettingsPage import SettingsPage
-from .ReviewPage import ReviewPage
+from .ReviewDashboard import ReviewPage
 from .HelpPage import HelpPage
