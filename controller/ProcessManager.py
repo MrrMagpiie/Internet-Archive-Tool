@@ -7,13 +7,14 @@ from uuid import uuid4
 from .mixin.db_mixin import DatabaseMixin
 from .mixin.doc_process_mixin import ProcessingMixin
 from .mixin.upload_mixin import UploadMixin
+from .mixin.image_mixin import ImageMixin
 
 # Import Data Models
 from model.data.document import Document
 from model.data.schema import DocumentSchema
 from config import RESOURCES_PATH
 
-class ProcessManager(QObject, DatabaseMixin, ProcessingMixin, UploadMixin):
+class ProcessManager(QObject, DatabaseMixin, ProcessingMixin, UploadMixin,ImageMixin):
     """
     Central Controller for the application.
     Uses Mixins to separate logic for Database, Processing, and Uploads.
@@ -35,6 +36,7 @@ class ProcessManager(QObject, DatabaseMixin, ProcessingMixin, UploadMixin):
         self.setup_database()
         self.setup_processing()
         self.setup_upload()
+        self.setup_image_loading()
 
     # --- Dynamic Signal Attachment ---
     def _attach_signals(self, signal_obj, requester, mapping,command=None,doc_id=None):

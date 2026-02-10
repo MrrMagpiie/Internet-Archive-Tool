@@ -19,28 +19,9 @@ class ImageLabel(QLabel):
         self.setAlignment(Qt.AlignmentFlag.AlignCenter) 
         self._pixmap = None
 
-    def setPixmap(self, image_path: Path):
-        """Store the original pixmap and update the display."""
-        try:
-            with WandImage(filename=image_path) as img:
-                
-                img.format = 'rgba'
-                
-                blob_data = img.make_blob()
-                
-                qimage = QImage(
-                    blob_data,
-                    img.width,
-                    img.height,
-                    QImage.Format.Format_RGBA8888
-                )
-                self._pixmap = QPixmap.fromImage(qimage)
-                self._update_display()
-
-        except Exception as e:
-            print(f"Wand Error: {e}")
-            self.image_lbl.setText("Error Loading Image")
-        
+    def setPixmap(self, pixmap: QPixmap):
+        self._pixmap = pixmap
+        self._update_display()
         
     def resizeEvent(self, event):
         """Handle window resizing."""
@@ -59,8 +40,6 @@ class ImageLabel(QLabel):
                 Qt.TransformationMode.SmoothTransformation
             )
             super().setPixmap(scaled_pixmap)
-        else:
-            self.image_label.setText("Err")
             
 
     

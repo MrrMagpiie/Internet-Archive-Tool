@@ -11,7 +11,7 @@ from PyQt6.QtGui import QFont
 #import pages 
 #rom view.components import DocumentCard
 from view.pages import *
-from view.components import ProcessManagerWidget
+from view.components import ProcessManagerWidget, DocumentImagePanel
 
 class GUIManager(QObject):
     def __init__(self,manager):
@@ -76,6 +76,12 @@ class GUIManager(QObject):
     def ProcessManagerWidget(self):
         process_widget = ProcessManagerWidget()
         return process_widget
+
+    def DocumentImagePanel(self):
+        image_panel = DocumentImagePanel(self)
+        image_panel.image_request.connect(self.process_manager.request_image)
+        return image_panel
+
     # --- Slots ----
 
     @pyqtSlot()

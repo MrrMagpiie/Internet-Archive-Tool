@@ -1,5 +1,6 @@
 
 import os
+from pathlib import Path
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout,
     QPushButton, QTextEdit, QLineEdit,
@@ -7,6 +8,7 @@ from PyQt6.QtWidgets import (
     QComboBox,QLabel,QFormLayout,QFrame,QSplitter,
     QScrollArea
 )
+from PyQt6.QtGui import QPixmap
 from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot, Qt
 from view.components.Page import Page
 from view.components.SchemaForm import SchemaForm, EditableSchemaForm
@@ -23,6 +25,7 @@ class CreateDocumentPage(Page):
     doc_ready = pyqtSignal(Document)
     discover_document = pyqtSignal(tuple,QObject)
     deskew_document = pyqtSignal(Document,QObject)
+    image_request = pyqtSignal(Path,QObject)
     new_document = pyqtSignal(Document)
     next_stage = pyqtSignal()
 
@@ -104,7 +107,7 @@ class CreateDocumentPage(Page):
         if document != None:
             self.input_dir_field.setText(str(document.path))
             self.clear_image_cards()
-            self.show_images(document)
+            self.load_images(document)
 
     # --- Discovery stuff --- 
     def select_directory(self, field):
@@ -141,21 +144,20 @@ class CreateDocumentPage(Page):
                 widget.deleteLater()
 
 
-        # --- Logic: Simulate Scanning ---
-
-    def show_images(self, document: Document):
+    def load_images(self, document: Document):
         images = document.images
         for image in images.values():
-            path = image['original']
+            image_path = Path(image['original'])
+            self.image_request.emit(image_path,self)
 
-            next_num = len(self.all_cards) + 1
-        
-            new_card = ThumbnailCard(next_num, path)
-            new_card.clicked.connect(self.handle_card_selection)
-            self.flow_layout.addWidget(new_card)
-            self.all_cards.append(new_card)
-            self.pages_count.setText(str(next_num))
-            self.handle_card_selection(str(next_num))
+    def add_card(self,pixmap):
+        next_num = len(self.all_cards) + 1
+        new_card = ThumbnailCard(next_num, pixmap)
+        new_card.clicked.connect(self.handle_card_selection)
+        self.flow_layout.addWidget(new_card)
+        self.all_cards.append(new_card)
+        self.pages_count.setText(str(next_num))
+        self.handle_card_selection(str(next_num))
 
     def clear_image_cards(self):
         self.all_cards.clear()
@@ -198,7 +200,7 @@ class CreateDocumentPage(Page):
             case 'discover':
                 self.new_document.emit(document)
                 self.clear_image_cards()
-                self.show_images(document)
+                self.load_images(document)
             case 'deskew':
                 print('deskew complete')
 
@@ -206,4 +208,12 @@ class CreateDocumentPage(Page):
     def doc_error(self,error_msg):
         print(error_msg)
 
+
+    @pyqtSlot(object)
+    def image_return(self,pixmap):
+        self.add_card(pixmap)
+
+    @pyqtSlot(str)
+    def image_error(self,msg):
+        pass
 

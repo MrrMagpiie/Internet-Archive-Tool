@@ -7,3 +7,4 @@ from .SchemaForm import *
 from .StyleManager import *
 from .ImageLabel import *
 from .DocumentImagePanel import *
+from .ProcessManagerWidget import *

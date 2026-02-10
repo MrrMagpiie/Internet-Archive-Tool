@@ -7,11 +7,11 @@ from PyQt6.QtCore import pyqtSignal, pyqtSlot, Qt,  QObject
 
 from view.components.ActionCard import ActionCard
 from model.data.document import Document
-from view.components.DocumentImagePanel import DocumentImagePanel 
 from view.components.DashboardDocumentCard import DocumentCard
 #from view.components.DocumentCard import DocumentCard
 from view.components.Page import Page
 from model.logic.helpers import clear_layout
+from config import ADMIN_UPLOAD
 
 
 class DocumentReviewPage(Page):
@@ -23,13 +23,17 @@ class DocumentReviewPage(Page):
         super().__init__(parent)
         self._create_layout()
         self.current_document = None
+        self.parent = parent
 
     def _create_layout(self):
         """Creates the widget that contains the image viewer and navigation."""
         layout = QVBoxLayout(self)
         
         self.current_document_card_layout = QHBoxLayout()
-        self.image_panel = DocumentImagePanel()
+        self.image_panel = self.parent.DocumentImagePanel()
+        self.ready_text = QLabel()
+        self.ready_text.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.ready_text.setVisible(False)
 
         self.review_layout = QHBoxLayout()
         approve_btn = QPushButton("Approve Document")
@@ -41,6 +45,7 @@ class DocumentReviewPage(Page):
 
         layout.addLayout(self.current_document_card_layout)
         layout.addWidget(self.image_panel)
+        layout.addWidget(self.ready_text)
         layout.addLayout(self.review_layout)
 
         approve_btn.clicked.connect(self._on_approve)
@@ -49,14 +54,12 @@ class DocumentReviewPage(Page):
     def set_current_document(self,doc:Document):
         self.current_document = doc
         clear_layout(self.current_document_card_layout)
-        if doc != None:
+        if doc != None and doc.status['deskewed']:
+            self.ready_text.setVisible(False)
             self.image_panel.show_new_document(doc)
-
-    def _approve(self):
-        pass
-
-    def _adjust(self):
-        pass
+        else:
+            self.ready_text.setText('Document Not Deskewed')
+            self.ready_text.setVisible(True)
 
     def _on_approve(self):
         self._review_document("approved")
@@ -72,7 +75,8 @@ class DocumentReviewPage(Page):
                 self.current_document.status['approved'] = True
                 upload_btn = QPushButton("Upload Document")
                 upload_btn.clicked.connect(lambda:self.upload.emit(self.current_document))
-                self.review_layout.addWidget(upload_btn)
+                if not ADMIN_UPLOAD or PROFILE == "Admin":
+                    self.review_layout.addWidget(upload_btn)
 
             elif new_status == 'rejected':
                 self.current_document.status['needs_approval'] = False

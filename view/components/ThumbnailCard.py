@@ -57,9 +57,9 @@ class ThumbnailCard(ImageLabel):
         
         self.setLayout(layout)
 
-    def set_image(self, path):
+    def set_image(self, pixmap):
         """Loads and scales the image to fit the card."""
-        self.setPixmap(path)
+        self.setPixmap(pixmap)
         
         if not pixmap.isNull():
             # Scale it to fit the 120x130 area (approx size inside card margins)
