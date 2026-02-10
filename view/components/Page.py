@@ -11,8 +11,8 @@ class Page(QWidget):
         super().__init__()
         self.parent = parent
 
-    @pyqtSlot(Document)
-    def doc_return(self,doc):
+    @pyqtSlot(str,Document)
+    def doc_return(self,command,doc):
         pass
     
     @pyqtSlot(str)

@@ -8,12 +8,23 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import Qt, QSize, pyqtSignal, QRect, QPoint
 from PyQt6.QtGui import QIcon, QFont, QColor, QCursor
+from model.data.document import Document
+
+stages = {
+    0:(10,"#0969da",'Discovered'),
+    1:(50, "#d29922",'Needs Metadata'),
+    2:(100,"#2da44e",'Needs Review'),
+}
 
 class DocumentCard(QFrame):
-    clicked = pyqtSignal(str)
-    def __init__(self, title, subtitle, progress_value, status_color="#2da44e"):
+    clicked = pyqtSignal(Document,int)
+    def __init__(self, document: Document,stage: int):
         super().__init__()
-        self.project_title = title
+        self.doc = document
+        self.title = self.doc.doc_id
+        self.stage = stage 
+        self.prog,self.color,self.status = stages[stage]
+        
         
         # Style the Card to look like a distinct container
         self.setFrameShape(QFrame.Shape.StyledPanel)
@@ -36,17 +47,17 @@ class DocumentCard(QFrame):
         # Icon/Color Indicator (Top Strip)
         status_strip = QFrame()
         status_strip.setFixedHeight(4)
-        status_strip.setStyleSheet(f"background-color: {status_color}; border-radius: 2px;")
+        status_strip.setStyleSheet(f"background-color: {self.color}; border-radius: 2px;")
         layout.addWidget(status_strip)
         
         # Title
-        lbl_title = QLabel(title)
+        lbl_title = QLabel(self.title)
         lbl_title.setFont(QFont("Segoe UI", 12, QFont.Weight.Bold))
         lbl_title.setStyleSheet("border: none; background: transparent;") # Reset style
         layout.addWidget(lbl_title)
         
         # Subtitle (e.g. "Status: Processing")
-        lbl_subtitle = QLabel(subtitle)
+        lbl_subtitle = QLabel(self.status)
         lbl_subtitle.setStyleSheet("color: #586069; border: none; background: transparent;")
         layout.addWidget(lbl_subtitle)
         
@@ -55,7 +66,7 @@ class DocumentCard(QFrame):
         
         # Progress Bar
         pbar = QProgressBar()
-        pbar.setValue(progress_value)
+        pbar.setValue(self.prog)
         pbar.setTextVisible(False)
         pbar.setFixedHeight(6)
         pbar.setStyleSheet(f"""
@@ -65,7 +76,7 @@ class DocumentCard(QFrame):
                 border-radius: 3px;
             }}
             QProgressBar::chunk {{
-                background-color: {status_color};
+                background-color: {self.color};
                 border-radius: 3px;
             }}
         """)
@@ -81,8 +92,8 @@ class DocumentCard(QFrame):
     def mousePressEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:
             # Emit the signal with this card's title
-            print(f'{self.project_title} Emit')
-            self.clicked.emit(self.project_title)
+            print(f'{self.title} Emit')
+            self.clicked.emit(self.doc,self.stage)
             
             
         # Standard event processing
