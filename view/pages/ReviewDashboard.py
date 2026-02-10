@@ -103,3 +103,8 @@ class ReviewPage(Page):
     def doc_error(self,error_msg):
         print(f'db_error: {error_msg}')
 
+    @pyqtSlot(Document)
+    def db_update(self,doc):
+        if doc.status['needs_approval'] == True:
+            self.request_documents()
+
