@@ -34,13 +34,14 @@ class ImageLabel(QLabel):
                     img.height,
                     QImage.Format.Format_RGBA8888
                 )
+                self._pixmap = QPixmap.fromImage(qimage)
+                self._update_display()
+
         except Exception as e:
             print(f"Wand Error: {e}")
-            self.image_label.setText("Error Loading Image")
+            self.image_lbl.setText("Error Loading Image")
         
-        self._pixmap = QPixmap.fromImage(qimage)
-        self._update_display()
-
+        
     def resizeEvent(self, event):
         """Handle window resizing."""
         self._update_display()
