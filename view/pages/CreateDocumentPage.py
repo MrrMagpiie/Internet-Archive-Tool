@@ -22,7 +22,9 @@ from config import RESOURCES_PATH
 class CreateDocumentPage(Page):
     doc_ready = pyqtSignal(Document)
     discover_document = pyqtSignal(tuple,QObject)
-    next_page = pyqtSignal()
+    deskew_document = pyqtSignal(Document,QObject)
+    new_document = pyqtSignal(Document)
+    next_stage = pyqtSignal()
 
     def __init__(self,parent):
         super().__init__(parent)
@@ -30,7 +32,7 @@ class CreateDocumentPage(Page):
         self.main_layout = QVBoxLayout(self)
         self.all_cards = []
         self.create_layout()
-        self.doc_discovered = False
+        self.current_document = None
 
     def create_layout(self):
         splitter = QSplitter(Qt.Orientation.Horizontal)
@@ -61,8 +63,8 @@ class CreateDocumentPage(Page):
         pages_layout.addWidget(self.pages_count)
         pages_widget.setLayout(pages_layout)
         
-        nxt_step_btn = QPushButton('Add Metadata')
-        nxt_step_btn.clicked.connect(self._to_next_page)
+        nxt_step_btn = QPushButton('Next Step')
+        nxt_step_btn.clicked.connect(self._to_next_stage)
 
         controls_layout.addWidget(input_widget)
         controls_layout.addStretch()
@@ -97,6 +99,13 @@ class CreateDocumentPage(Page):
         
         self.main_layout.addWidget(splitter)
 
+    def set_current_document(self, document:Document):
+        self.current_document = document
+        if document != None:
+            self.input_dir_field.setText(str(document.path))
+            self.clear_image_cards()
+            self.show_images(document)
+
     # --- Discovery stuff --- 
     def select_directory(self, field):
         dir_path = QFileDialog.getExistingDirectory(self, "Select Directory",options=QFileDialog.Option.DontUseNativeDialog)
@@ -105,7 +114,7 @@ class CreateDocumentPage(Page):
 
     def get_paths(self):
         input_dir = self.input_dir_field.text().strip()
-        output_dir = input_dir + '/deskewed'
+        output_dir = input_dir
 
         if not input_dir or not os.path.isdir(input_dir):
             return None, None
@@ -136,13 +145,12 @@ class CreateDocumentPage(Page):
 
     def show_images(self, document: Document):
         images = document.images
-        for image_path in images:
-            full_path = os.path.join(document.path,image_path)
-            print(full_path)
+        for image in images.values():
+            path = image['original']
 
             next_num = len(self.all_cards) + 1
         
-            new_card = ThumbnailCard(next_num, full_path)
+            new_card = ThumbnailCard(next_num, path)
             new_card.clicked.connect(self.handle_card_selection)
             self.flow_layout.addWidget(new_card)
             self.all_cards.append(new_card)
@@ -154,11 +162,12 @@ class CreateDocumentPage(Page):
         self.clear_layout(self.flow_layout)
 
     # --- Next Page ---
-    def _to_next_page(self):
+    def _to_next_stage(self):
         print('next page clicked')
         # check if document has been discovered
-        if self.doc_discovered:
-            self.next_page.emit()
+        if self.current_document:
+            self.next_stage.emit()
+            self.deskew_document.emit(self.current_document,self)
         else:
             #popup
             print('need to discover document first')
@@ -177,26 +186,21 @@ class CreateDocumentPage(Page):
     def db_update(self,doc):
         pass
 
-    @pyqtSlot(Document)
-    def doc_return(self,doc):
-        self.doc_ready.emit(doc)
-
-    @pyqtSlot(str)
-    def doc_error(self,error_msg):
-        pass
-
     @pyqtSlot()
     def _reset(self):
         clear_layout(self.main_layout)
         self.create_layout()
         self._on_select_format()
 
-    @pyqtSlot(Document)
-    def doc_return(self,document):
-        print(' Create Document Page recived document')
-        self.doc_discovered = True
-        self.clear_image_cards()
-        self.show_images(document)
+    @pyqtSlot(str, Document)
+    def doc_return(self,command,document):
+        match command:
+            case 'discover':
+                self.new_document.emit(document)
+                self.clear_image_cards()
+                self.show_images(document)
+            case 'deskew':
+                print('deskew complete')
 
     @pyqtSlot(str)
     def doc_error(self,error_msg):
