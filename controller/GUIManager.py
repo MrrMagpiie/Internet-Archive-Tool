@@ -5,11 +5,11 @@ from PyQt6.QtWidgets import (
     QPushButton, QStackedWidget,QMainWindow, QGridLayout, 
     QSizePolicy, QSpacerItem,
 )
-from PyQt6.QtCore import pyqtSlot,pyqtSignal, QSize, QObject
+from PyQt6.QtCore import pyqtSlot,pyqtSignal, QSize, QObject, Qt
 from PyQt6.QtGui import QFont
 
 #import pages 
-from view.components import DocumentCard
+#rom view.components import DocumentCard
 from view.pages import *
 
 class GUIManager(QObject):
@@ -17,45 +17,63 @@ class GUIManager(QObject):
         super().__init__()
         self.components = {}
         self.process_manager = manager
+        self.process_manager.busy_start.connect(self.start_loading_cursor)
+        self.process_manager.busy_stop.connect(self.stop_loading_cursor)
         
     def MainWindow(self):
         self.MainWindow = MainWindow(self)
-        self.process_manager.discovery_complete.connect(self.MainWindow.on_discovery_complete)
         return self.MainWindow
 
     def DashboardPage(self,navigation_stack):
-        dashboard_page = DashboardController(navigation_stack=navigation_stack,parent=self)
+        workflow_view = Dashboard.WorkflowView(self)
+        list_view = Dashboard.ListView(self)
+        list_view.db_request.connect(self.process_manager.request_docs_by_status)
+        dashboard_page = DashboardPage(parent=self,workflow_view=workflow_view,list_view=list_view)
+        self.process_manager.db_update.connect(workflow_view.db_update)
+    
         return dashboard_page
 
     def DocumentReviewPage(self):
         review_page = DocumentReviewPage(self)
-        review_page.document_reviewed.connect(self.process_manager.update_doc)
+        review_page.document_reviewed.connect(self.process_manager.request_update_doc)
         self.process_manager.db_update.connect(review_page.db_update)
-        review_page.upload.connect(self.process_manager.upload_document)
+        review_page.upload.connect(self.process_manager.request_upload)
         return review_page
 
     def CreateDocumentPage(self):
         create_doc_page = CreateDocumentPage(self)
         self.process_manager.db_update.connect(create_doc_page.db_update)
-        create_doc_page.discover_document.connect(self.process_manager.send_document_process_request)
+        create_doc_page.discover_document.connect(self.process_manager.request_discovery)
+        create_doc_page.deskew_document.connect(self.process_manager.request_deskew)
         return create_doc_page
 
     def SettingsPage(self):
         settings_page = SettingsPage(self)
         return settings_page
-    
-    
+     
     def MetadataPage(self):
         metadata_page = MetadataPage(self)
+        metadata_page.save_metadata.connect(self.process_manager.request_save_metadata)
         return metadata_page
 
     def ReviewPage(self):
         review_page = ReviewPage(self)
+        review_page.db_request.connect(self.process_manager.request_docs_by_status)
         return review_page
 
     def HelpPage(self):
         help_page = HelpPage(self)
         return help_page
+
+    @pyqtSlot()
+    def start_loading_cursor(self):
+        """Helper to set the wait cursor."""
+        QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
+    
+    @pyqtSlot()
+    def stop_loading_cursor(self):
+        """Helper to restore the default cursor."""
+        QApplication.restoreOverrideCursor()
 
     @pyqtSlot()    
     def run_setup(self):

@@ -33,7 +33,7 @@ class DocumentPipelineWorker(QObject):
             signals = None
             while True:
                 command, data = self.queue.get()
-                print('running command')
+                print(f'running {command}')
                 if command == 'shutdown':
                     break 
 
