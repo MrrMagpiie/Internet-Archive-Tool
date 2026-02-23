@@ -139,6 +139,8 @@ class CreateDocumentPage(Page):
         else:
             QMessageBox.information(self,'Select Document Folder','Please choose the documents location')
 
+
+    # --- Deskew Stuff ---
     def run_deskew(self):
         ticket = JobTicket()
         ticket.data.connect(self.deskew_return)
@@ -167,6 +169,7 @@ class CreateDocumentPage(Page):
             self.flow_layout.addWidget(new_card)
             self.all_cards[image_path]=new_card
             self.pages_count.setText(str(next_num))
+            self.grid_container.adjustSize()
 
     def clear_image_cards(self):
         self.all_cards.clear()
