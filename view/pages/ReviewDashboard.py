@@ -4,7 +4,7 @@ from PyQt6.QtWidgets import (
     QListWidget, QStackedWidget, QLabel, QPushButton, QSplitter, 
     QListWidgetItem, QFrame, QFormLayout, QLineEdit, QDateEdit,
     QProgressBar, QComboBox, QGraphicsView, QGraphicsScene,QGridLayout,
-    QScrollArea,QSizePolicy, QLayout
+    QScrollArea,QSizePolicy, QLayout,
 )
 from PyQt6.QtCore import Qt, QSize, pyqtSignal, QRect, QPoint, pyqtSlot,QObject
 from PyQt6.QtGui import QIcon, QFont, QColor, QCursor
@@ -12,6 +12,7 @@ from PyQt6.QtGui import QIcon, QFont, QColor, QCursor
 from view.components.Page import Page
 from view.components.CenteredFlowLayout import CenteredFlowLayout
 from view.components.DashboardDocumentCard import DocumentCard
+from view.components.SchemaForm import SchemaForm
 from model.service.signals import JobTicket
 from model.data.document import Document
 from model.logic.helpers import clear_layout
@@ -30,14 +31,44 @@ class ReviewPage(Page):
         main_layout.setContentsMargins(20, 20, 20, 20)
         main_layout.setSpacing(40)
         # Header Section
-        title = QLabel("Dashboard")
+        title = QLabel("Upload Dashboard")
         title.setFont(QFont("Segoe UI", 20, QFont.Weight.Bold))
         
-        main_layout.addWidget(title)
+        nav_bar = QFrame()
+        nav_bar.setFixedHeight(60)
+        nav_bar.setStyleSheet("background-color: #f6f8fa; border-bottom: 1px solid #d1d5da;")
+        nav_layout = QHBoxLayout()
         
-        recent_docects_header = QLabel("Recent Documents")
-        recent_docects_header.setFont(QFont("Segoe UI", 16, QFont.Weight.Bold))
-        main_layout.addWidget(recent_docects_header)
+        # "Back" Button
+        self.btn_back = QPushButton("← All Projects")
+        self.btn_back.setVisible(False)
+        self.btn_back.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.btn_back.setStyleSheet("border: none; color: #586069; font-weight: bold;")
+        self.btn_back.clicked.connect(self.return_to_dashboard)
+
+        nav_layout.addWidget(self.btn_back)
+        nav_layout.addSpacing(20)
+        nav_layout.addWidget(title)
+        nav_layout.addStretch()
+
+        nav_bar.setLayout(nav_layout)
+
+
+        main_layout.addWidget(nav_bar)
+        self.stack = QStackedWidget()
+        self.stack.addWidget(self._main_page())
+        self.stack.addWidget(self._review_page())
+        self.stack.addWidget(self.review_page)
+        main_layout.addWidget(self.stack)
+
+        self.setLayout(main_layout)
+        
+    def _main_page(self):
+        dashboard = QWidget()
+        dashboard_layout = QVBoxLayout()
+        recent_documents_header = QLabel("Ready Documents")
+        recent_documents_header.setFont(QFont("Segoe UI", 16, QFont.Weight.Bold))
+        dashboard_layout.addWidget(recent_documents_header)
 
         # --- The Scroll Area for the Grid ---
         scroll_area = QScrollArea()
@@ -59,17 +90,27 @@ class ReviewPage(Page):
         grid_container.setLayout(self.layout_flow)
         scroll_area.setWidget(grid_container)
         
-        main_layout.addWidget(scroll_area)
-        self.setLayout(main_layout)
-        
+        dashboard_layout.addWidget(scroll_area)
+        dashboard.setLayout(dashboard_layout)
+        return dashboard
+
+    def _review_page(self):
+        self.review_page = self.parent.DocumentReviewPage()
+        self.review_page.approve_btn.setVisible(False)
+        self.review_page.upload_btn.setVisible(True)
+        return self.review_page
 
     @pyqtSlot(Document,int)
     def card_clicked(self,doc,stage=1):
-        if doc == None:
-            print('Create New Document Clicked')
-        else:
-            print(f'{doc.doc_id} Card Clicked')
-        self.project_selected.emit(doc,stage)
+        print(f'{doc.doc_id} Card Clicked')
+        self.review_page.set_current_document(doc)
+        self.btn_back.setVisible(True)
+        self.stack.setCurrentIndex(1)
+
+    def return_to_dashboard(self):
+        self.review_page.set_current_document(None)
+        self.btn_back.setVisible(False)
+        self.stack.setCurrentIndex(0)
 
     @pyqtSlot(list)
     def show_documents(self):

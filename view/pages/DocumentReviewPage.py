@@ -13,8 +13,8 @@ from model.data.document import Document
 from view.components.DashboardDocumentCard import DocumentCard
 from view.components.Page import Page
 from model.logic.helpers import clear_layout
+from model.service.signals import JobTicket
 from config import ADMIN_UPLOAD
-
 
 class DocumentReviewPage(Page):
     document_reviewed = pyqtSignal(Document,QObject)
@@ -34,43 +34,61 @@ class DocumentReviewPage(Page):
         splitter.setChildrenCollapsible(False)
 
         # right side
+        image_widget = QWidget()
+        image_widget_layout = QVBoxLayout()
+
+        self.deskew_ready_text = QLabel('Document Not Deskewed')
+        self.deskew_ready_text.setAlignment(Qt.AlignmentFlag.AlignCenter)
+       
         self.image_panel = self.parent.DocumentImagePanel()
-        splitter.addWidget(self.image_panel)
+        
+        image_widget_layout.addWidget(self.deskew_ready_text)
+        image_widget_layout.addWidget(self.image_panel)
+        
+        image_widget.setLayout(image_widget_layout)
+
+        splitter.addWidget(image_widget)
         
         
         # left side
-        self.metadata_panel = QWidget()
-        self.metadata_layout = QVBoxLayout()
+        metadata_widget = QWidget()
+        metadata_layout = QVBoxLayout()
         
         self.form = SchemaForm()
-        self.metadata_layout.addWidget(self.form)
-
         self.meta_ready_text = QLabel('Needs Metadata')
-        self.metadata_layout.addWidget(self.meta_ready_text)
+        self.meta_ready_text.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        self.metadata_panel.setLayout(self.metadata_layout)
-        splitter.addWidget(self.metadata_panel)
+        
+        metadata_layout.addWidget(self.meta_ready_text)
+        metadata_layout.addStretch()
+        metadata_layout.addWidget(self.form)
+
+
+        metadata_widget.setLayout(metadata_layout)
+        splitter.addWidget(metadata_widget)
 
         # review and ready text
-        self.deskew_ready_text = QLabel()
-        self.deskew_ready_text.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.deskew_ready_text.setVisible(False)
-
-        self.review_layout = QHBoxLayout()
-        approve_btn = QPushButton("Approve Document")
-        reject_btn = QPushButton("Reject Document")
-        self.review_layout.addStretch()
-        self.review_layout.addWidget(reject_btn)
-        self.review_layout.addWidget(approve_btn)
-        self.review_layout.addStretch()
         
 
-        layout.addWidget(splitter)
-        layout.addWidget(self.deskew_ready_text)
-        layout.addLayout(self.review_layout)
+        self.review_layout = QVBoxLayout()
+        self.review_layout.setContentsMargins(20, 20, 10, 10)
+        self.approve_btn = QPushButton("Approve Document")
+        self.reject_btn = QPushButton("Reject Document")
+        self.upload_btn = QPushButton("Upload Document")
+        self.upload_btn.setVisible(False)
 
-        approve_btn.clicked.connect(self._on_approve)
-        reject_btn.clicked.connect(self._on_reject)
+        self.review_layout.addWidget(self.reject_btn)
+        self.review_layout.addWidget(self.approve_btn)
+        self.review_layout.addWidget(self.upload_btn)
+    
+        layout.addWidget(splitter)
+        
+        layout.addLayout(self.review_layout)
+        
+
+        self.approve_btn.clicked.connect(self._on_approve)
+        self.reject_btn.clicked.connect(self._on_reject)
+        self.upload_btn.clicked.connect(self._on_upload)
 
     def set_current_document(self,doc:Document):
         self.current_document = doc
@@ -80,10 +98,10 @@ class DocumentReviewPage(Page):
                 self.deskew_ready_text.setVisible(False)
                 self.image_panel.show_new_document(doc)
             else:
-                self.deskew_ready_text.setText('Document Not Deskewed')
                 self.deskew_ready_text.setVisible(True)
         else:
             self.form.clear_form()
+            self.image_panel.clear_cache()
             
     def load_metadata(self):
         '''load metadata for current document'''
@@ -103,6 +121,9 @@ class DocumentReviewPage(Page):
     def _on_reject(self):
         self._review_document("rejected")
 
+    def _on_upload(self):
+        self.upload.emit(self.current_document)
+
     def _review_document(self, new_status: str):
         if self.current_document:
             if new_status == 'approved':
@@ -119,9 +140,9 @@ class DocumentReviewPage(Page):
                 self.current_document.status['rejected'] = True
                 self.current_document.status['approved'] = False
 
-            
+            ticket = JobTicket()
             # Emit the entire updated document object to the manager
-            self.document_reviewed.emit(self.current_document,self)
+            self.document_reviewed.emit(self.current_document,ticket)
   
     
 

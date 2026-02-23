@@ -71,7 +71,6 @@ class SchemaForm(QWidget):
 
 class EditableSchemaForm(SchemaForm):
     new_format = pyqtSignal(DocumentSchema)
-    cancel = pyqtSignal()
     error_window = pyqtSignal(str)
     def __init__(self):
         super().__init__()
@@ -88,8 +87,6 @@ class EditableSchemaForm(SchemaForm):
         save_btn = QPushButton("Save")
         save_btn.clicked.connect(self._save)
 
-        cancel_btn = QPushButton('Cancel')
-        cancel_btn.clicked.connect(self._cancel)
         
         default_btn = QPushButton('New Default')
         default_btn.clicked.connect(self.new_default)
@@ -102,7 +99,6 @@ class EditableSchemaForm(SchemaForm):
         
         main_layout.addLayout(btn_layout)
         main_layout.addWidget(save_btn)
-        main_layout.addWidget(cancel_btn)
 
     def _load_ia_keys(self):
         with open(RESOURCES_PATH /'IAMetadataKeys.json','r') as f:
@@ -203,9 +199,6 @@ class EditableSchemaForm(SchemaForm):
             self.error_window.emit(str(e))
             return
         self.new_format.emit(schema)
-
-    def _cancel(self):
-        self.cancel.emit()
 
     def _write_form_to_schema(self):
         new_fields = {}
