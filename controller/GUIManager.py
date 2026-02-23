@@ -71,6 +71,12 @@ class GUIManager(QObject):
         help_page = HelpPage(self)
         return help_page
 
+    def SchemaEditPage(self):
+        schema_page = SchemaEditPage(self)
+        schema_page.new_schema.connect(self.process_manager.save_schema)
+        schema_page.delete_schema.connect(self.process_manager.delete_schema)
+        return schema_page
+
     # --- Components ---
 
     def ProcessManagerWidget(self):
