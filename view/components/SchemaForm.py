@@ -33,6 +33,7 @@ class SchemaForm(QWidget):
     
     @pyqtSlot(dict)
     def new_form(self,schema_format:dict):
+        self.clear_form()
         self.current_schema = DocumentSchema.from_dict(schema_format)
         self._build_form()
 

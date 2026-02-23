@@ -4,17 +4,14 @@ from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot
 from uuid import uuid4
 
 # Import Mixins
-from .mixin.db_mixin import DatabaseMixin
-from .mixin.doc_process_mixin import ProcessingMixin
-from .mixin.upload_mixin import UploadMixin
-from .mixin.image_mixin import ImageMixin
+from controller.mixin import *
 
 # Import Data Models
 from model.data.document import Document
 from model.data.schema import DocumentSchema
 from config import RESOURCES_PATH
 
-class ProcessManager(QObject, DatabaseMixin, ProcessingMixin, UploadMixin,ImageMixin):
+class ProcessManager(QObject, DatabaseMixin, ProcessingMixin, UploadMixin, ImageMixin, SchemaMixin):
     """
     Central Controller for the application.
     Uses Mixins to separate logic for Database, Processing, and Uploads.
@@ -47,27 +44,6 @@ class ProcessManager(QObject, DatabaseMixin, ProcessingMixin, UploadMixin,ImageM
         self.busy_stop.emit()
         print(f"{error_msg}")
         self.global_error.emit(error_msg)
-
-    # --- Schema Logic (Lightweight, so kept in Main) ---
-    @pyqtSlot(DocumentSchema)
-    def save_schema(self, schema):
-        schema_dict = schema.to_dict()
-        schema_path = RESOURCES_PATH / 'document_schema.json'
-        
-        try:
-            if schema_path.exists():
-                with open(schema_path, 'r') as f: 
-                    data = json.load(f)
-            else:
-                data = {}
-
-            data[schema_dict.get('schema_name')] = schema_dict
-            
-            with open(schema_path, 'w') as f: 
-                json.dump(data, f, indent=4)
-                
-        except Exception as e:
-            self._handle_worker_error(f"Failed to save schema: {e}")
 
     # --- Cleanup ---
     def closeEvent(self, event=None):

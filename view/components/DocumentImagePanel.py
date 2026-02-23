@@ -127,6 +127,9 @@ class DocumentImagePanel(QWidget):
 
         self.image_request.emit(path,ticket)
 
+    def clear_cache(self):
+        self.pixmap_cache.clear()
+        
     @pyqtSlot(object,str)
     def image_return(self, pixmap,job_id):
         self.cache_image(pixmap,job_id)

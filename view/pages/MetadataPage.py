@@ -29,29 +29,14 @@ class MetadataPage(Page):
         self._load_metadata_formats()
         self.current_document = None
 
-
     def create_layout(self):
         title_layout = QHBoxLayout()
         metadata_layout = QVBoxLayout()
         doc_type_layout = QHBoxLayout()
 
-        '''# add document title line
-        self.doc_title = QLineEdit()
-        title_lbl = QLabel('Document Title')
-        title_layout.addWidget(title_lbl)
-        title_layout.addWidget(self.doc_title)
-        '''
         # add document type select
         self.doc_type_combo = QComboBox()
         doc_type_layout.addWidget(self.doc_type_combo)
-
-        edit_btn = QPushButton('Edit')
-        edit_btn.clicked.connect(lambda:self.edit_page(self.metadata_formats[self.doc_type_combo.currentData()]))
-        doc_type_layout.addWidget(edit_btn)
-
-        new_btn = QPushButton('New')
-        new_btn.clicked.connect(lambda:self.edit_page())
-        doc_type_layout.addWidget(new_btn)
 
         self._load_metadata_formats()
         self.doc_type_combo.currentTextChanged.connect(self._on_select_format)
@@ -118,26 +103,6 @@ class MetadataPage(Page):
     @pyqtSlot(str,str)
     def doc_error(self,error_msg,job_id):
         pass
-
-    def edit_page(self,schema=None):
-        if schema:
-            schema_name = schema['schema_name']
-        else:
-            schema_name = "New"
-        clear_layout(self.main_layout)
-        # add document type select
-        metadata_layout = QVBoxLayout()
-
-        self.doc_type_line = QLineEdit(schema_name)
-        metadata_layout.addWidget(self.doc_type_line)
-        
-        # add metadata input table
-        self.form = EditableSchemaForm()
-        self.form.new_form(schema)
-        self.form.new_format.connect(self._new_schema)
-        self.form.cancel.connect(self._reset)
-        metadata_layout.addWidget(self.form)
-        self.main_layout.addLayout(metadata_layout)
 
     @pyqtSlot(DocumentSchema)
     def _new_schema(self,schema):

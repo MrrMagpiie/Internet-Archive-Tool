@@ -8,10 +8,15 @@ from PyQt6.QtCore import Qt
 from view.components.ActionCard import ActionCard
 from view.components.ActionDashboard import ActionDashboard
 from view.components.Page import Page
+from view.components.SchemaForm import *
+from view.pages.SchemaEditPage import SchemaEditPage
+
+from config import RESOURCES_PATH
 from config import SETTINGS_PATH
 
+
 class SettingsPage(Page):
-    def __init__(self, config_dict,parent=None):
+    def __init__(self,parent=None):
         super().__init__(parent)
         self.current_settings = self.load_settings()
         
@@ -27,6 +32,11 @@ class SettingsPage(Page):
         lbl_title.setStyleSheet("font-size: 20px; font-weight: bold; margin-bottom: 20px;")
         main_layout.addWidget(lbl_title)
         
+        # --- Edit Schema Schema --- 
+        schema_btn = QPushButton('Edit/Add Document Schema')
+        schema_btn.clicked.connect(self.edit_document_schema)
+        main_layout.addWidget(schema_btn)
+
         # --- The Dynamic Form ---
         form_layout = QFormLayout()
         form_layout.setSpacing(15)
@@ -108,4 +118,7 @@ class SettingsPage(Page):
                 return json.load(f)
         return default_settings
     
-    
+    def edit_document_schema(self):
+        print('edit schema pressed')
+        self.new_window = self.parent.SchemaEditPage()
+        self.new_window.show()

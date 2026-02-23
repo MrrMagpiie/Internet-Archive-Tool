@@ -6,3 +6,4 @@ from .CreateDocumentPage import CreateDocumentPage
 from .SettingsPage import SettingsPage
 from .ReviewDashboard import ReviewPage
 from .HelpPage import HelpPage
+from .SchemaEditPage import SchemaEditPage

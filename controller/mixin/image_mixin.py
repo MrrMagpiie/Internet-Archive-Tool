@@ -26,6 +26,11 @@ class ImageMixin:
     def request_image_series(self,data,ticket):
         self.image_queue.put(('series',(ticket,data)))
 
+    @pyqtSlot()
+    def clear_queue(self):
+        with self.image_queue.mutex:
+            self.image_queue.queue.clear()
+
     @pyqtSlot(str)
     def _handle_image_success(self,job_id):
         self.task_finished.emit(job_id)
