@@ -28,7 +28,6 @@ def images_to_documents(image_list) -> dict:
     
 def create_document(doc_id,images):
     Doc = Document(doc_id=doc_id)
-    Doc.status['discovered'] = True
     Doc.path = DEFAULT_OUTPUT_DIR / doc_id
     print(Doc.path)
     for file, image_id, order in images:

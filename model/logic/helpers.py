@@ -15,8 +15,4 @@ def clear_layout(layout):
             
         # 3. Check if the item is a Nested Layout
         elif item.layout() is not None:
-            clear_layout(item.layout()) # <--- RECURSION
-            
-        # 4. (Optional) Handle Spacers (rarely needed, GC handles them)
-        # elif item.spacerItem() is not None:
-        #    pass
+            clear_layout(item.layout())

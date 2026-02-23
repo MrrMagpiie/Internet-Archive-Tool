@@ -5,119 +5,101 @@ from PyQt6.QtWidgets import (
     QPushButton, QStackedWidget,QMainWindow, QGridLayout, 
     QSizePolicy, QSpacerItem,
 )
-from PyQt6.QtCore import pyqtSlot,pyqtSignal, QSize, QObject
+from PyQt6.QtCore import pyqtSlot,pyqtSignal, QSize, QObject, Qt
 from PyQt6.QtGui import QFont
 
 #import pages 
-from view.components import DocumentCard
+#rom view.components import DocumentCard
 from view.pages import *
+from view.components import ProcessManagerWidget, DocumentImagePanel
 
 class GUIManager(QObject):
     def __init__(self,manager):
         super().__init__()
         self.components = {}
         self.process_manager = manager
-        
+        self.process_manager.busy_start.connect(self.start_loading_cursor)
+        self.process_manager.busy_stop.connect(self.stop_loading_cursor)
+
+
     def MainWindow(self):
         self.MainWindow = MainWindow(self)
-        self.process_manager.discovery_complete.connect(self.MainWindow.on_discovery_complete)
         return self.MainWindow
 
-    @pyqtSlot()
+    # --- Pages
+
     def DashboardPage(self,navigation_stack):
-        dashboard_page = DashboardPage(navigation_stack=navigation_stack,parent=self)
+        workflow_view = Dashboard.WorkflowView(self)
+        list_view = Dashboard.ListView(self)
+        list_view.db_request.connect(self.process_manager.request_docs_by_status)
+        dashboard_page = DashboardPage(parent=self,workflow_view=workflow_view,list_view=list_view)
+        self.process_manager.db_update.connect(workflow_view.db_update)
+    
         return dashboard_page
 
-    @pyqtSlot()
-    def SingleDocumentPage(self):
-        single_doc_page = SingleDocumentPage(self)
-        
-        return single_doc_page
-
-    def StepDashboardPage(self):
-        step_dash = StepDashboardPage(self)
-        return step_dash
-
-    @pyqtSlot()
-    def DiscoveryPage(self):
-        discovery_page = DiscoveryPage(self)
-    #    discovery_page.discovery_signal.connect(self.process_manager.start_discovery_pipeline)
-        return discovery_page
-
-    @pyqtSlot()
-    def UploadPage(self):
-        upload_page = UploadPage(self)
-    #    self.process_manager.db_change.connect(upload_page.load_documents)
-    #    upload_page.upload.connect(self.process_manager.start_upload_pipeline)
-        return upload_page
-    
-    @pyqtSlot()
-    def ApprovalPage(self):
-        approval_page = ApprovalPage(self)
-    #    approval_page.document_reviewed.connect(self.process_manager.db_doc_status)
-    #     self.process_manager.db_update.connect(approval_page.load_documents)
-        return approval_page
-    
-    @pyqtSlot()
-    def MetadataPage(self):
-        metadata_page = MetadataPage(self)
-    #    self.process_manager.db_update.connect(metadata_page.load_documents)
-    #    self.process_manager.schema_saved.connect(metadata_page._load_metadata_formats)
-    #    metadata_page.db_metadata.connect(self.process_manager.db_metadata)
-        return metadata_page
-
-    @pyqtSlot()
-    def DeskewPage(self):
-        deskew_page = DeskewPage(self)
-        #self.process_manager.db_update.connect(deskew_page.db_update)
-    #    deskew_page.deskew_signal.connect(self.process_manager.start_deskew_pipeline)
-        return deskew_page
-
-    @pyqtSlot()
     def DocumentReviewPage(self):
         review_page = DocumentReviewPage(self)
-        review_page.document_reviewed.connect(self.process_manager.update_doc)
+        review_page.document_reviewed.connect(self.process_manager.request_update_doc)
         self.process_manager.db_update.connect(review_page.db_update)
-        review_page.upload.connect(self.process_manager.upload_document)
+        review_page.upload.connect(self.process_manager.request_upload)
         return review_page
 
     def CreateDocumentPage(self):
         create_doc_page = CreateDocumentPage(self)
         self.process_manager.db_update.connect(create_doc_page.db_update)
-        create_doc_page.start_document_process.connect(self.process_manager.start_document_process)
-        create_doc_page.new_schema.connect(self.process_manager.save_schema)
+        create_doc_page.discover_document.connect(self.process_manager.request_discovery)
+        create_doc_page.deskew_document.connect(self.process_manager.request_deskew)
+        create_doc_page.image_request.connect(self.process_manager.request_image)
         return create_doc_page
 
     def SettingsPage(self):
         settings_page = SettingsPage(self)
         return settings_page
-        
+     
+    def MetadataPage(self):
+        metadata_page = MetadataPage(self)
+        metadata_page.save_metadata.connect(self.process_manager.request_save_metadata)
+        return metadata_page
+
+    def ReviewPage(self):
+        review_page = ReviewPage(self)
+        review_page.db_request.connect(self.process_manager.request_docs_by_status)
+        self.process_manager.db_update.connect(review_page.db_update)
+        return review_page
+
+    def HelpPage(self):
+        help_page = HelpPage(self)
+        return help_page
+
+    # --- Components ---
+
+    def ProcessManagerWidget(self):
+        process_widget = ProcessManagerWidget()
+        self.process_manager.task_started.connect(process_widget.add_task)
+        self.process_manager.task_finished.connect(process_widget.remove_task)
+        return process_widget
+
+    def DocumentImagePanel(self):
+        image_panel = DocumentImagePanel(self)
+        image_panel.image_request.connect(self.process_manager.request_image)
+        return image_panel
+
+    # --- Slots ----
+
+    @pyqtSlot()
+    def start_loading_cursor(self):
+        """Helper to set the wait cursor."""
+        QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
+    
+    @pyqtSlot()
+    def stop_loading_cursor(self):
+        """Helper to restore the default cursor."""
+        QApplication.restoreOverrideCursor()
+
     @pyqtSlot()    
     def run_setup(self):
         '''
         nothing for now, will run the setup script
         '''
         pass
-    '''
-    @pyqtSlot()
-    def CredentialsPage(self):
-        credentials_page = CredentialsPage(self)
-        credentials_page.setup.connect(self.process_manager.setup_ia_pipeline)
-        self.process_manager.ia_setup_success.connect(self.credentials_page._setup_return)
-        return credentials_page
     
-    @pyqtSlot(bool) #edit
-    def SchemaBuilderPage(self,edit=False):
-        schema_builder_page = SchemaBuilderPage(parent=self,edit=edit)
-        schema_builder_page.load_schema.connect(self.process_manager.load_schema)
-        schema_builder_page.save_schema.connect(self.process_manager.save_schema)
-        self.process_manager.schema_loaded.connect(schema_builder_page.displaySchema)
-        self.process_manager.schema_saved.connect(schema_builder_page.saveResponse)
-        schema_builder_page._create_layout()
-        return schema_builder_page
-    
-    @pyqtSlot()
-    def BatchPage(self):
-        batch_page = BatchPage(self)
-        batch_page.discovery_signal.connect(self.process_manager.start_discovery_pipeline)
-        return batch_page'''

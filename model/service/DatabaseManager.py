@@ -5,40 +5,34 @@ from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot
 
 from model.data.document import Document
 
-class DatabaseSignal(QObject):
-    data = pyqtSignal(object)# Document return 
-    error = pyqtSignal(str)# error msg
-
-
-
 class DatabaseManager(QObject):
     """
     A QObject worker that manages all database interactions
     in a separate thread.
     """
-    success = pyqtSignal()
-    save_document = pyqtSignal(object)
-    error = pyqtSignal(str) #error_msg
+    update = pyqtSignal(object,str)
+    error = pyqtSignal(str,str) #error_msg, job_id
+    prog = pyqtSignal(int)# progress
 
     def __init__(self, db_path: Path, queue: Queue):
         super().__init__()
         self.db_path = db_path
         self.queue = queue
         self.conn = None 
-        print('initdb')
+        print('initDB')
 
     @pyqtSlot()
     def run(self):
         """The main worker loop. This runs in the QThread."""
         try:
-            print('hello form the db')
+            print('Hello from the Database Manager')
             self.db_path.parent.mkdir(parents=True, exist_ok=True)
             self.conn = sqlite3.connect(self.db_path)
             self._create_tables()
 
             while True:
                 command, data = self.queue.get()
-
+                print(f'db running {command}')
                 if command == 'shutdown':
                     break 
 
@@ -46,25 +40,27 @@ class DatabaseManager(QObject):
                     if command == 'load_documents':
                         signals, filter_data = data
                         docs = self._load_documents(filter_data)
-                        signals.data.emit(docs)
+                        signals.data.emit(docs,signals.job_id)
+                        
                     
                     elif command == 'load_single_document':
                         signals, doc_id = data
                         doc = self._load_single_document(doc_id)
-                        signals.data.emit(doc)
+                        signals.data.emit(doc,signals.job_id)
+                        
 
                     elif command == 'save_document':
                         signals, document = data
                         self._save_document(document)
-                        signals.data.emit(document)
-                        self.save_document.emit(document)
+                        signals.data.emit(document,signals.job_id)
+                        self.update.emit(document,signals.job_id)
                 
                 except Exception as e:
-                    signals.error.emit(f"Error processing command {command}: {e}")
-                    self.error.emit((f"Error processing command {command}: {e}"))
+                    signals.error.emit(f"Error processing command {command} for {signals.job_id}: {e}",signals.job_id)
+                    self.error.emit((f"Error processing command {command} for {signals.job_id}: {e}"),signals.job_id)
 
         except Exception as e:
-            self.error.emit(f"Worker-level error: {e}")
+            self.error.emit(f"Database Worker-level error:  {e}","")
         finally:
             if self.conn:
                 self.conn.close()
@@ -75,8 +71,7 @@ class DatabaseManager(QObject):
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS documents (
                 doc_id TEXT PRIMARY KEY,
-                discovered INTEGER NOT NULL DEFAULT 0,
-                metadata_added INTEGER NOT NULL DEFAULT 0,
+                metadata INTEGER NOT NULL DEFAULT 0,
                 deskewed INTEGER NOT NULL DEFAULT 0,
                 needs_approval INTEGER NOT NULL DEFAULT 0,
                 approved INTEGER NOT NULL DEFAULT 0,
@@ -106,7 +101,7 @@ class DatabaseManager(QObject):
         docs = {}
         cursor = self.conn.cursor()
         
-        sql_query = "SELECT doc_id, discovered, metadata_added, deskewed, needs_approval, approved, rejected, uploaded, path, metadata_file, metadata_file_type, last_modified, error_msg FROM documents"
+        sql_query = "SELECT doc_id, metadata, deskewed, needs_approval, approved, rejected, uploaded, path, metadata_file, metadata_file_type, last_modified, error_msg FROM documents"
         params = []
         
         if filter_status:
@@ -122,17 +117,16 @@ class DatabaseManager(QObject):
         cursor.execute(sql_query, tuple(params))
         
         for row in cursor.fetchall():
-            doc_id, discovered, metadata_added, deskewed, needs_approval, approved, rejected, uploaded, path, metadata_file, metadata_file_type, last_modified, error_msg = row
-            status = {
-                'discovered': bool(discovered), 
-                'metadata_added': bool(metadata_added),
+            doc_id, metadata, deskewed, needs_approval, approved, rejected, uploaded, path, metadata_file, metadata_file_type, last_modified, error_msg = row
+            status = { 
+                'metadata': bool(metadata),
                 'deskewed': bool(deskewed),
                 'needs_approval': bool(needs_approval),
                 'approved': bool(approved),
                 'rejected': bool(rejected),
                 'uploaded': bool(uploaded)
             }
-            docs[doc_id] = Document(doc_id, status, path=path, metadata_file=metadata_file, metadata_file_type=metadata_file_type, last_modified=last_modified, error_msg=error_msg)
+            docs[doc_id] = Document(doc_id=doc_id, status=status, path=path, metadata_file=metadata_file, metadata_file_type=metadata_file_type, last_modified=last_modified, error_msg=error_msg)
             
         if docs:
             doc_ids = tuple(docs.keys())
@@ -151,24 +145,23 @@ class DatabaseManager(QObject):
     def _load_single_document(self, doc_id: str) -> Document | None:
         """Internal method. Loads a single document by its ID."""
         cursor = self.conn.cursor()
-        cursor.execute("SELECT doc_id, discovered, metadata_added, deskewed, needs_approval, approved, rejected, uploaded, path, metadata_file, metadata_file_type, last_modified, error_msg FROM documents WHERE doc_id = ?", (doc_id,))
+        cursor.execute("SELECT doc_id, metadata, deskewed, needs_approval, approved, rejected, uploaded, path, metadata_file, metadata_file_type, last_modified, error_msg FROM documents WHERE doc_id = ?", (doc_id,))
         doc_row = cursor.fetchone()
         
         if not doc_row:
             return None
 
         # ... (rest of the row parsing is identical) ...
-        doc_id, discovered, metadata_added, deskewed, needs_approval, approved, rejected, uploaded, path, metadata_file, metadata_file_type, last_modified, error_msg = doc_row
+        doc_id, metadata, deskewed, needs_approval, approved, rejected, uploaded, path, metadata_file, metadata_file_type, last_modified, error_msg = doc_row
         status = {
-            'discovered': bool(discovered),
-            'metadata_added': bool(metadata_added),
+            'metadata': bool(metadata),
             'deskewed': bool(deskewed),
             'needs_approval': bool(needs_approval),
             'approved': bool(approved),
             'rejected': bool(rejected),
             'uploaded': bool(uploaded)
         }
-        doc = Document(doc_id, status, path=path, metadata_file=metadata_file, metadata_file_type=metadata_file_type, last_modified=last_modified, error_msg=error_msg)
+        doc = Document(doc_id=doc_id, status=status, path=path, metadata_file=metadata_file, metadata_file_type=metadata_file_type, last_modified=last_modified, error_msg=error_msg)
         
         cursor.execute("SELECT image_id, sort_order, original_path, processed_path FROM images WHERE doc_id = ?", (doc_id,))
         for row in cursor.fetchall():
@@ -181,9 +174,8 @@ class DatabaseManager(QObject):
         cursor = self.conn.cursor()
         status = doc.status
         params_tuple = (
-                doc.doc_id, 
-                int(status.get('discovered', 0)), 
-                int(status.get('metadata_added', 0)),
+                doc.doc_id,  
+                int(status.get('metadata', 0)),
                 int(status.get('deskewed', 0)), 
                 int(status.get('needs_approval', 0)),
                 int(status.get('approved', 0)), 
@@ -196,9 +188,9 @@ class DatabaseManager(QObject):
                 )
 
         cursor.execute('''
-            INSERT OR REPLACE INTO documents (doc_id, discovered, metadata_added, deskewed, needs_approval,
+            INSERT OR REPLACE INTO documents (doc_id, metadata, deskewed, needs_approval,
             approved, rejected, uploaded, path, metadata_file, metadata_file_type, last_modified, error_msg)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''',params_tuple )
         
         for image_id, image_data in doc.images.items():

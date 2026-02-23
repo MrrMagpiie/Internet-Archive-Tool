@@ -9,6 +9,7 @@ from config import RESOURCES_PATH
 from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot
 from model.data.schema import DocumentSchema
 from model.data.metadata import Metadata
+from model.logic.helpers import clear_layout
 import json
 
 
@@ -24,7 +25,7 @@ class SchemaForm(QWidget):
 
     def _build_form(self):
         fields = self.current_schema.to_dict().get('fields')
-        self.clear_layout(self.form_layout)
+        self.clear_form
         if isinstance(fields,dict):
             for key,value in fields.items():
                     label = QLabel(key)
@@ -32,19 +33,18 @@ class SchemaForm(QWidget):
     
     @pyqtSlot(dict)
     def new_form(self,schema_format:dict):
+        self.clear_form()
         self.current_schema = DocumentSchema.from_dict(schema_format)
         self._build_form()
 
-    @pyqtSlot()
-    def clear_layout(self, layout):
-        """Removes all widgets from a layout and schedules them for deletion."""
-        if layout is None:
-            return
-        while layout.count():
-            item = layout.takeAt(0)
-            widget = item.widget()
-            if widget is not None:
-                widget.deleteLater()
+    def form_from_metadata(self,metadata):
+        self.clear_form()
+        for key,value in metadata.items():
+                self.form_layout.addRow(QLabel(key), QLabel(value))
+
+    def clear_form(self):
+        clear_layout(self.form_layout)
+
 
     def _write_form_to_schema(self) -> Dict[str, Any]:
         """Helper: Scrapes the UI to get the current field values."""
@@ -69,10 +69,8 @@ class SchemaForm(QWidget):
         return dict
 
 
-
 class EditableSchemaForm(SchemaForm):
     new_format = pyqtSignal(DocumentSchema)
-    cancel = pyqtSignal()
     error_window = pyqtSignal(str)
     def __init__(self):
         super().__init__()
@@ -89,8 +87,6 @@ class EditableSchemaForm(SchemaForm):
         save_btn = QPushButton("Save")
         save_btn.clicked.connect(self._save)
 
-        cancel_btn = QPushButton('Cancel')
-        cancel_btn.clicked.connect(self._cancel)
         
         default_btn = QPushButton('New Default')
         default_btn.clicked.connect(self.new_default)
@@ -103,7 +99,6 @@ class EditableSchemaForm(SchemaForm):
         
         main_layout.addLayout(btn_layout)
         main_layout.addWidget(save_btn)
-        main_layout.addWidget(cancel_btn)
 
     def _load_ia_keys(self):
         with open(RESOURCES_PATH /'IAMetadataKeys.json','r') as f:
@@ -173,7 +168,7 @@ class EditableSchemaForm(SchemaForm):
         fields = self.schema_dict.get('fields')
         defaults = self.schema_dict.get('defaults')
 
-        self.clear_layout(self.form_layout)
+        self.clear_form()
         self.add_section_header('fields')
         if isinstance(fields,dict):
             for key,value in fields.items():
@@ -204,9 +199,6 @@ class EditableSchemaForm(SchemaForm):
             self.error_window.emit(str(e))
             return
         self.new_format.emit(schema)
-
-    def _cancel(self):
-        self.cancel.emit()
 
     def _write_form_to_schema(self):
         new_fields = {}

@@ -2,10 +2,6 @@ from PyQt6.QtCore import QRunnable,QObject,pyqtSignal,pyqtSlot
 from model.logic.discover import *
 from model.data.document import Document
 
-class discoverSignals(QObject):
-    image_error = pyqtSignal(Exception) # exception
-    doc_error = pyqtSignal(object) # doc_id and exception
-    document = pyqtSignal(Document)
 
 
 class discoverTask(QRunnable):
@@ -25,6 +21,6 @@ class discoverTask(QRunnable):
         for doc_id in documents_dict.keys():
             try:
                 doc = create_document(doc_id,documents_dict[doc_id])
-                self.signals.document.emit(doc)
+                self.signals.data.emit(doc,signals.job_id)
             except Exception as e:
-                self.signals.error.emit(doc_id,e)
+                self.signals.error.emit(f"Error processing command {command} for {signals.job_id}: {e}")

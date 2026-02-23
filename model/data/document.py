@@ -8,10 +8,9 @@ from typing import Dict, Any, Optional, Union
 def _default_status_factory() -> Dict[str, bool]:
     """Returns a unique dictionary for the default status."""
     return {
-        'discovered':False,
         'metadata':False,
         'deskewed':False,
-        'needs_approval':True,
+        'needs_approval':False,
         'approved':False,
         'rejected':False,
         'uploaded':False
@@ -37,7 +36,7 @@ class Document:
     status: Dict[str, bool] = field(default_factory=_default_status_factory)
     images: Dict[str, Dict[str, Any]] = field(default_factory=dict)
     
-    __repr__ = lambda self: f"Document(id={self.doc_id}, images={len(self.images)}, path={self.path})"
+    __repr__ = lambda self: f"Document(id={self.doc_id},status={self.status}, images={len(self.images)}, path={self.path})"
 
     def __post_init__(self):
         """

@@ -5,16 +5,13 @@ from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot
 from model.data.document import Document
 from model.logic.upload import uploadDocument, setup
 
-class UploadRequest(QObject):
-    data = pyqtSignal(Document)
-    error = pyqtSignal(str)
 
 class UploadManager(QObject):
     """
     A QObject worker that runs the full document pipeline
     """
-    document = pyqtSignal(Document)
-    error = pyqtSignal(str)
+    success = pyqtSignal(Document,str)
+    error = pyqtSignal(str,str)
 
     def __init__(self,queue: Queue):
         super().__init__()
@@ -28,7 +25,7 @@ class UploadManager(QObject):
             signals = None
             while True:
                 command, data = self.queue.get()
-                print('running command')
+                print(f'running {command}')
                 if command == 'shutdown':
                     break 
 
@@ -36,16 +33,19 @@ class UploadManager(QObject):
                     if command == 'upload':
                         signals, doc = data
                         uploadDocument(doc)
+                        self.success.emit(doc,signals.job_id)
 
                     if command == 'setup':
                         signals, setup_data = data
                         email , password = setup_data
                         setup(email,password)
+                        self.success.emit(doc,signals.job_id)
                             
                 except Exception as e:
-                    signals.error.emit((f"Error processing command {command}: {e}"))
+                    err_msg = (f"Error processing command {command} for {signals.job_id}: {e}")
+                    signals.error.emit(err_msg,signals.job_id)
+                    self.error.emit(err_msg, signals.job_id)
 
         except Exception as e:
-            signals.error.emit(f"Worker-level error: {e}")
-            self.error.emit(f"Worker-level error: {e}")
+            self.error.emit(f"Upload Worker-level error: {e}",'')
 

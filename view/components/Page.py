@@ -11,12 +11,12 @@ class Page(QWidget):
         super().__init__()
         self.parent = parent
 
-    @pyqtSlot(Document)
-    def doc_return(self,doc):
+    @pyqtSlot(Document,str)
+    def doc_return(self,doc,job_id):
         pass
     
-    @pyqtSlot(str)
-    def doc_error(self,error_msg):
+    @pyqtSlot(str,str)
+    def doc_error(self,error_msg,job_id):
         pass
 
     @pyqtSlot(Document)

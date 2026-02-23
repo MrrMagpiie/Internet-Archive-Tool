@@ -1,37 +1,124 @@
-import sys
+import sys, os,json
 from PyQt6.QtWidgets import (
-    QWidget, QVBoxLayout,QGridLayout,
-    QPushButton, QLabel
+    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, 
+    QPushButton, QFormLayout, QCheckBox, QSpinBox, QDoubleSpinBox, QMessageBox
 )
+from PyQt6.QtCore import Qt
 
 from view.components.ActionCard import ActionCard
 from view.components.ActionDashboard import ActionDashboard
 from view.components.Page import Page
+from view.components.SchemaForm import *
+from view.pages.SchemaEditPage import SchemaEditPage
+
+from config import RESOURCES_PATH
+from config import SETTINGS_PATH
+
 
 class SettingsPage(Page):
-    '''
-    frontpage of application for choose actions
-    '''
-
-    def __init__(self,navigation_stack,parent=None):
+    def __init__(self,parent=None):
         super().__init__(parent)
-        self.stack = navigation_stack
-        self._create_layout()
-
-    def _create_layout(self):
-        self.main_layout = QVBoxLayout(self)
-        self.main_layout.setContentsMargins(30, 30, 30, 30) 
-        title = "Settings Page"
-        description = "will have tabs for various settings."
-       
-        # Title Section
-        header = QLabel(f"<span id='stepTitle' style='font-size: 24pt; font-weight: 600;'>{title}</span>")
-        header.setObjectName("dashHeader")
-        subtitle = QLabel(f"<span id='stepDesc' style='font-size: 11pt;'>{description}</span>")
-        subtitle.setObjectName("dashSubtitle")
+        self.current_settings = self.load_settings()
         
-        self.main_layout.addWidget(header)
-        self.main_layout.addWidget(subtitle)
-        self.main_layout.addSpacing(20)
+        # This will map the JSON key to the PyQt Widget
+        # e.g., {"ia_api_key": <QLineEdit object>}
+        self.dynamic_widgets = {} 
+        
+        main_layout = QVBoxLayout()
+        main_layout.setContentsMargins(30, 30, 30, 30)
+        
+        # Title
+        lbl_title = QLabel("Application Settings")
+        lbl_title.setStyleSheet("font-size: 20px; font-weight: bold; margin-bottom: 20px;")
+        main_layout.addWidget(lbl_title)
+        
+        # --- Edit Schema Schema --- 
+        schema_btn = QPushButton('Edit/Add Document Schema')
+        schema_btn.clicked.connect(self.edit_document_schema)
+        main_layout.addWidget(schema_btn)
 
+        # --- The Dynamic Form ---
+        form_layout = QFormLayout()
+        form_layout.setSpacing(15)
+        
+        for key, value in self.current_settings.items():
+            # 1. Format the label (e.g., "ia_api_key" -> "Ia Api Key")
+            label_text = key.replace('_', ' ').title() + ":"
+            
+            # 2. Determine Widget by Type
+            # Note: In Python, bool is a subclass of int, so check bool FIRST!
+            if isinstance(value, bool):
+                widget = QCheckBox()
+                widget.setChecked(value)
+                
+            elif isinstance(value, int):
+                widget = QSpinBox()
+                widget.setRange(0, 99999) # Set a wide generic range
+                widget.setValue(value)
+                
+            elif isinstance(value, float):
+                widget = QDoubleSpinBox()
+                widget.setRange(0.0, 99999.0)
+                widget.setValue(value)
+                
+            elif isinstance(value, str):
+                widget = QLineEdit(value)
+                
+                # UX Heuristic: Hide text if it looks like a password or token
+                if "key" in key.lower() or "token" in key.lower() or "password" in key.lower():
+                    widget.setEchoMode(QLineEdit.EchoMode.PasswordEchoOnEdit)
+                    
+            else:
+                # Fallback for complex types (lists, dicts) - just show as string
+                widget = QLineEdit(str(value))
+                widget.setReadOnly(True)
+                widget.setToolTip("Complex data type. Edit JSON directly.")
 
+            # 3. Store the widget reference and add it to the UI
+            self.dynamic_widgets[key] = widget
+            form_layout.addRow(label_text, widget)
+            
+        main_layout.addLayout(form_layout)
+        main_layout.addStretch()
+        
+        # --- Save Button ---
+        btn_save = QPushButton("Save Settings")
+        btn_save.setStyleSheet("background-color: #2da44e; color: white; padding: 10px;")
+        btn_save.clicked.connect(self.save_settings)
+        main_layout.addWidget(btn_save)
+        
+        self.setLayout(main_layout)
+
+    # --- The Dynamic Save Function ---
+    def save_settings(self):
+        new_settings = {}
+        
+        # Loop through our stored widgets and extract the data based on type
+        for key, widget in self.dynamic_widgets.items():
+            if isinstance(widget, QCheckBox):
+                new_settings[key] = widget.isChecked()
+            elif isinstance(widget, QSpinBox) or isinstance(widget, QDoubleSpinBox):
+                new_settings[key] = widget.value()
+            elif isinstance(widget, QLineEdit):
+                new_settings[key] = widget.text()
+
+        print("New Settings to save:", new_settings)
+        
+        with open(SETTINGS_PATH, "w") as f:
+            json.dump(new_settings, f, indent=4)
+        
+        # Call your config.py save function here
+        # save_config(new_settings)
+        
+        QMessageBox.information(self, "Success", "Settings saved successfully.\nYou will need to restart the program for changes to take effect")
+
+    def load_settings(self):
+        if os.path.exists(SETTINGS_PATH):
+            with open(SETTINGS_PATH, "r") as f:
+                return json.load(f)
+        return default_settings
+    
+    def edit_document_schema(self):
+        print('edit schema pressed')
+        self.new_window = self.parent.SchemaEditPage()
+        self.new_window.show()
