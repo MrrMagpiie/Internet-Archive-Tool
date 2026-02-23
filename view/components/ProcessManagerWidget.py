@@ -138,7 +138,7 @@ class ProcessManagerWidget(QWidget):
         self.setLayout(self.layout)
         
         # Hide entirely if no tasks
-        self.setVisible(False)
+        #self.setVisible(False)
 
     def toggle_expand(self, event):
         self.is_expanded = not self.is_expanded
@@ -159,12 +159,13 @@ class ProcessManagerWidget(QWidget):
         # Ensure layout updates
         self.anim.finished.connect(lambda: self.scroll_area.setFixedHeight(target_height))
 
-    @pyqtSlot(str,str)
-    def add_task(self, task_id, task_name):
+    @pyqtSlot(str,str,str)
+    def add_task(self,task_command ,task_item,task_id,):
         """Adds a new row to the list"""
         if task_id in self.active_tasks:
             return
             
+        task_name = f'{task_command} {task_item}'
         # Create item
         item = ProcessItem(task_name, task_id)
         
@@ -191,8 +192,8 @@ class ProcessManagerWidget(QWidget):
             self.update_summary()
             
             # Hide entire bar if empty
-            if not self.active_tasks:
-                self.setVisible(False)
+            '''if not self.active_tasks:
+                self.setVisible(False)'''
 
     @pyqtSlot()
     def update_summary(self):
