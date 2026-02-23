@@ -22,12 +22,14 @@ class ProcessManager(QObject, DatabaseMixin, ProcessingMixin, UploadMixin,ImageM
     # Global Signals
     busy_start = pyqtSignal()   # UI should show loading cursor
     busy_stop = pyqtSignal()    # UI should restore cursor
+
     task_started = pyqtSignal(str,str,str) # command, doc_id, task_id
     task_finished = pyqtSignal(str) # task_id
-    task_progress = pyqtSignal(str,int) #task_id, progress
+
+
     db_update = pyqtSignal(Document) # Broadcasts DB changes to all views
     need_setup = pyqtSignal()        # Trigger Setup Wizard if config missing
-    global_error = pyqtSignal(str,str) # Global error log, msg, task_id
+    global_error = pyqtSignal(str) # Global error log, msg
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -38,42 +40,12 @@ class ProcessManager(QObject, DatabaseMixin, ProcessingMixin, UploadMixin,ImageM
         self.setup_upload()
         self.setup_image_loading()
 
-    # --- Dynamic Signal Attachment ---
-    def _attach_signals(self, signal_obj, requester, mapping,command=None,doc_id=None):
-        """
-        Connects a worker's reply signals to the requester's slots safely.
-        
-        :param signal_obj: The object containing signals (e.g., DatabaseSignal)
-        :param requester: The UI object requesting the work
-        :param mapping: Dict mapping { 'signal_name': 'slot_name' }
-        """
-        if not requester:
-            return signal_obj
-            
-        for signal_name, slot_name in mapping.items():
-            if hasattr(signal_obj, signal_name) and hasattr(requester, slot_name):
-                getattr(signal_obj, signal_name).connect(getattr(requester, slot_name))
-        
-        if command and doc_id:
-            task_id = uuid4()
-            self.task_started.emit(command,doc_id,task_id)
-            if hasattr(signal_obj, 'data'):
-                signal_obj.data.connect(lambda: self.task_finished.emit(task_id))
-            if hasattr(signal_obj,"error"):
-                signal_obj.error.connect(lambda msg: self.gloabl_error.emit(msg,task_id))
-            if hasattr(signal_obj,"prog"):
-                signal_obj.prog.connect(lambda prog: self.task_progress.emit(task_id,prog))
-        
-        
-        
-        return signal_obj
-
     # --- Error Handling ---
     @pyqtSlot(str)
     def _handle_worker_error(self, error_msg):
         """Centralized error handler for all workers."""
         self.busy_stop.emit()
-        print(f"Worker Error: {error_msg}")
+        print(f"{error_msg}")
         self.global_error.emit(error_msg)
 
     # --- Schema Logic (Lightweight, so kept in Main) ---

@@ -17,7 +17,8 @@ from view.components.ThumbnailCard import ThumbnailCard
 from model.data.metadata import Metadata
 from model.data.document import Document
 from model.data.schema import DocumentSchema
-from model.logic.helpers import *
+from model.logic.helpers import clear_layout
+from model.service.signals import JobTicket
 import json
 from config import RESOURCES_PATH
 
@@ -33,9 +34,11 @@ class CreateDocumentPage(Page):
         super().__init__(parent)
         self.form = None
         self.main_layout = QVBoxLayout(self)
-        self.all_cards = []
+        self.all_cards = {}
+        self.pending_requests = {}
         self.create_layout()
         self.current_document = None
+
 
     def create_layout(self):
         splitter = QSplitter(Qt.Orientation.Horizontal)
@@ -66,7 +69,7 @@ class CreateDocumentPage(Page):
         pages_layout.addWidget(self.pages_count)
         pages_widget.setLayout(pages_layout)
         
-        nxt_step_btn = QPushButton('Next Step')
+        nxt_step_btn = QPushButton('Deskew Images')
         nxt_step_btn.clicked.connect(self._to_next_stage)
 
         controls_layout.addWidget(input_widget)
@@ -104,10 +107,10 @@ class CreateDocumentPage(Page):
 
     def set_current_document(self, document:Document):
         self.current_document = document
+        self._reset()
         if document != None:
             self.input_dir_field.setText(str(document.path))
-            self.clear_image_cards()
-            self.load_images(document)
+            self.fetch_images(document)
 
     # --- Discovery stuff --- 
     def select_directory(self, field):
@@ -128,40 +131,51 @@ class CreateDocumentPage(Page):
         input_dir, out_dir = self.get_paths()
         if input_dir and out_dir:
             data = (input_dir,out_dir)
-            self.discover_document.emit(data,self)
+            ticket = JobTicket()
+            ticket.data.connect(self.discover_return)
+            ticket.error.connect(self.doc_error)
+            self.pending_requests[ticket.job_id] = "discover"
+            self.discover_document.emit(data,ticket)
         else:
             print('choose dir')
 
+    def run_deskew(self):
+        ticket = JobTicket()
+        ticket.data.connect(self.deskew_return)
+        ticket.error.connect(self.doc_error)
+        self.pending_requests[ticket.job_id] = 'deskew'
+        self.deskew_document.emit(self.current_document,ticket)
+
     # --- Display stuff ---
-    def clear_layout(self, layout):
-        """Removes all widgets from a layout and schedules them for deletion."""
-        if layout is None:
-            return
-        while layout.count():
-            item = layout.takeAt(0)
-            widget = item.widget()
-            if widget is not None:
-                widget.deleteLater()
-
-
-    def load_images(self, document: Document):
+    def fetch_images(self, document: Document):
         images = document.images
         for image in images.values():
             image_path = Path(image['original'])
-            self.image_request.emit(image_path,self)
+            ticket = JobTicket()
+            ticket.data.connect(self.image_return)
+            ticket.error.connect(self.image_error)
+            self.pending_requests[ticket.job_id] = image_path
+            self.image_request.emit(image_path,ticket)
 
-    def add_card(self,pixmap):
-        next_num = len(self.all_cards) + 1
-        new_card = ThumbnailCard(next_num, pixmap)
-        new_card.clicked.connect(self.handle_card_selection)
-        self.flow_layout.addWidget(new_card)
-        self.all_cards.append(new_card)
-        self.pages_count.setText(str(next_num))
-        self.handle_card_selection(str(next_num))
+    def add_card(self,pixmap,job_id):
+        image_path = self.pending_requests.pop(job_id)
+        if image_path not in self.all_cards.keys():
+            next_num = len(self.all_cards) + 1
+            new_card = ThumbnailCard(next_num, pixmap)
+            new_card.clicked.connect(self.handle_card_selection)
+
+            self.flow_layout.addWidget(new_card)
+            self.all_cards[image_path]=new_card
+            self.pages_count.setText(str(next_num))
 
     def clear_image_cards(self):
         self.all_cards.clear()
-        self.clear_layout(self.flow_layout)
+        clear_layout(self.flow_layout)
+
+    def _reset(self):
+        self.clear_image_cards()
+        self.input_dir_field.setText('')
+        self.pages_count.setText(str(len(self.all_cards)))
 
     # --- Next Page ---
     def _to_next_stage(self):
@@ -169,7 +183,7 @@ class CreateDocumentPage(Page):
         # check if document has been discovered
         if self.current_document:
             self.next_stage.emit()
-            self.deskew_document.emit(self.current_document,self)
+            self.run_deskew()   
         else:
             #popup
             print('need to discover document first')
@@ -183,37 +197,30 @@ class CreateDocumentPage(Page):
                 card.is_selected = True
             else:
                 card.is_selected = False
+    
     # --- Slots ---
     @pyqtSlot(Document)
     def db_update(self,doc):
         pass
 
-    @pyqtSlot()
-    def _reset(self):
-        clear_layout(self.main_layout)
-        self.create_layout()
-        self._on_select_format()
 
-    @pyqtSlot(str, Document)
-    def doc_return(self,command,document):
-        match command:
-            case 'discover':
-                self.new_document.emit(document)
-                self.clear_image_cards()
-                self.load_images(document)
-            case 'deskew':
-                print('deskew complete')
+    @pyqtSlot(Document,str)
+    def discover_return(self,document,job_id):
+            self.new_document.emit(document)
+    
+    @pyqtSlot(Document,str)
+    def deskew_return(self,document,job_id):
+        print('deskew success')
 
-    @pyqtSlot(str)
-    def doc_error(self,error_msg):
+    @pyqtSlot(str,str)
+    def doc_error(self,error_msg,job_id):
         print(error_msg)
 
+    @pyqtSlot(object,str)
+    def image_return(self,pixmap,job_id):
+        self.add_card(pixmap,job_id)
 
-    @pyqtSlot(object)
-    def image_return(self,pixmap):
-        self.add_card(pixmap)
-
-    @pyqtSlot(str)
-    def image_error(self,msg):
+    @pyqtSlot(str,str)
+    def image_error(self,msg,job_id):
         pass
 

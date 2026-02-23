@@ -2,13 +2,13 @@ from PyQt6.QtWidgets import (
      QWidget, QVBoxLayout, QHBoxLayout, QSizePolicy,
     QPushButton, QLabel,QSplitter,QListWidget, QStackedWidget,
 )
-from PyQt6.QtGui import QPixmap
+from PyQt6.QtGui import QPixmap, QColor
 from PyQt6.QtCore import pyqtSignal, pyqtSlot, Qt,QObject
 
 from model.data.document import Document
 from view.components import Page
 from view.components import ImageLabel
-
+from model.service.signals import JobTicket
 from pathlib import Path
 
 class DocumentImagePanel(QWidget):
@@ -21,11 +21,18 @@ class DocumentImagePanel(QWidget):
         self.current_doc: Document = None
         self.images = []
         self.pixmap_cache = {}
-        self.to_load = []
+        self.pending_requests = {}
         self.current_image_index = 0
+        self._create_loading_placeholder()
         self._create_layout()
-        self.first_load = True
+
         
+    def _create_loading_placeholder(self) -> QPixmap:
+        """Creates a simple gray placeholder image. You can replace this with a real image file."""
+        pixmap = QPixmap(800, 1000)
+        pixmap.fill(QColor(220, 220, 220)) # Light gray
+        self.loading_pixmap = pixmap
+
 
     def _create_layout(self):
         """Creates the widget that contains the image viewer and navigation."""
@@ -34,9 +41,7 @@ class DocumentImagePanel(QWidget):
         image_layout = QHBoxLayout()
         self.image_label = ImageLabel()
 
-        image_layout.addStretch() 
         image_layout.addWidget(self.image_label)
-        image_layout.addStretch() 
 
         self.image_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         
@@ -81,7 +86,10 @@ class DocumentImagePanel(QWidget):
     def display_image(self):
         indx = self.current_image_index
         pixmap = self.pixmap_cache[indx]
-        self.image_label.setPixmap(pixmap)
+        if isinstance(pixmap, QPixmap):
+            self.image_label.setPixmap(pixmap)
+        else:
+            self.image_label.setPixmap(self.loading_pixmap)
         # Update position label
         self.image_pos_label.setText(f"Page {self.current_image_index + 1} of {len(self.images)}")
 
@@ -91,14 +99,12 @@ class DocumentImagePanel(QWidget):
             path = Path(self.get_image_path(indx))
             if indx not in self.pixmap_cache:
                 self.pixmap_cache[indx] = ''
-                self.to_load.append(indx)
-                self.image_request.emit(path,self)
-
+                self.fetch_image(path,indx)
+                
     def _prefetch_neighbors(self):
         self.fetch_image_rel_current(-1)
         self.fetch_image_rel_current(1)
     
-
     def get_image_path(self,index):
         if self.current_doc and self.images:
             image_key = self.images[index]
@@ -107,17 +113,24 @@ class DocumentImagePanel(QWidget):
                 image_path = doc.images[image_key]['original']
             return image_path
 
-    def cache_image(self,pixmap):
-        indx = self.to_load.pop(0)
+    def cache_image(self,pixmap,job_id):
+        indx = self.pending_requests.pop(job_id)
         self.pixmap_cache[indx] = pixmap
-        if self.first_load:
-            self.first_load = False
+        if indx == self.current_image_index:
             self.display_image()
 
-    @pyqtSlot(object)
-    def image_return(self, pixmap):
-        self.cache_image(pixmap)
+    def fetch_image(self,path,indx):
+        ticket = JobTicket()
+        ticket.data.connect(self.image_return)
+        ticket.error.connect(self.image_error)
+        self.pending_requests[ticket.job_id] = indx
+
+        self.image_request.emit(path,ticket)
+
+    @pyqtSlot(object,str)
+    def image_return(self, pixmap,job_id):
+        self.cache_image(pixmap,job_id)
     
-    @pyqtSlot(str)
-    def image_error(self,msg):
+    @pyqtSlot(str,str)
+    def image_error(self,msg,job_id):
         pass

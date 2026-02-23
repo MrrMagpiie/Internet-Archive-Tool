@@ -9,6 +9,7 @@ from config import RESOURCES_PATH
 from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot
 from model.data.schema import DocumentSchema
 from model.data.metadata import Metadata
+from model.logic.helpers import clear_layout
 import json
 
 
@@ -24,7 +25,7 @@ class SchemaForm(QWidget):
 
     def _build_form(self):
         fields = self.current_schema.to_dict().get('fields')
-        self.clear_layout(self.form_layout)
+        self.clear_form
         if isinstance(fields,dict):
             for key,value in fields.items():
                     label = QLabel(key)
@@ -35,16 +36,14 @@ class SchemaForm(QWidget):
         self.current_schema = DocumentSchema.from_dict(schema_format)
         self._build_form()
 
-    @pyqtSlot()
-    def clear_layout(self, layout):
-        """Removes all widgets from a layout and schedules them for deletion."""
-        if layout is None:
-            return
-        while layout.count():
-            item = layout.takeAt(0)
-            widget = item.widget()
-            if widget is not None:
-                widget.deleteLater()
+    def form_from_metadata(self,metadata):
+        self.clear_form()
+        for key,value in metadata.items():
+                self.form_layout.addRow(QLabel(key), QLabel(value))
+
+    def clear_form(self):
+        clear_layout(self.form_layout)
+
 
     def _write_form_to_schema(self) -> Dict[str, Any]:
         """Helper: Scrapes the UI to get the current field values."""
@@ -67,7 +66,6 @@ class SchemaForm(QWidget):
         self._write_form_to_schema()
         schema_dict = self.current_schema.to_dict()
         return dict
-
 
 
 class EditableSchemaForm(SchemaForm):
@@ -173,7 +171,7 @@ class EditableSchemaForm(SchemaForm):
         fields = self.schema_dict.get('fields')
         defaults = self.schema_dict.get('defaults')
 
-        self.clear_layout(self.form_layout)
+        self.clear_form()
         self.add_section_header('fields')
         if isinstance(fields,dict):
             for key,value in fields.items():

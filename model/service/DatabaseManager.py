@@ -5,22 +5,13 @@ from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot
 
 from model.data.document import Document
 
-class DatabaseSignal(QObject):
-    data = pyqtSignal(str,object)# data return 
-    error = pyqtSignal(str)# error msg
-    prog = pyqtSignal(int)# progress update
-    
-
-
-
 class DatabaseManager(QObject):
     """
     A QObject worker that manages all database interactions
     in a separate thread.
     """
-    success = pyqtSignal()
-    save_document = pyqtSignal(object)
-    error = pyqtSignal(str) #error_msg
+    update = pyqtSignal(object,str)
+    error = pyqtSignal(str,str) #error_msg, job_id
     prog = pyqtSignal(int)# progress
 
     def __init__(self, db_path: Path, queue: Queue):
@@ -49,25 +40,27 @@ class DatabaseManager(QObject):
                     if command == 'load_documents':
                         signals, filter_data = data
                         docs = self._load_documents(filter_data)
-                        signals.data.emit(command,docs)
+                        signals.data.emit(docs,signals.job_id)
+                        
                     
                     elif command == 'load_single_document':
                         signals, doc_id = data
                         doc = self._load_single_document(doc_id)
-                        signals.data.emit(command,doc)
+                        signals.data.emit(doc,signals.job_id)
+                        
 
                     elif command == 'save_document':
                         signals, document = data
                         self._save_document(document)
-                        signals.data.emit(command,document)
-                        self.save_document.emit(document)
+                        signals.data.emit(document,signals.job_id)
+                        self.update.emit(document,signals.job_id)
                 
                 except Exception as e:
-                    signals.error.emit(f"Error processing command {command}: {e}")
-                    self.error.emit((f"Error processing command {command}: {e}"))
+                    signals.error.emit(f"Error processing command {command} for {signals.job_id}: {e}",signals.job_id)
+                    self.error.emit((f"Error processing command {command} for {signals.job_id}: {e}"),signals.job_id)
 
         except Exception as e:
-            self.error.emit(f"Worker-level error: {e}")
+            self.error.emit(f"Database Worker-level error:  {e}","")
         finally:
             if self.conn:
                 self.conn.close()

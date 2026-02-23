@@ -11,7 +11,7 @@ class ImageMixin:
         self.image_queue = Queue()
         self.image_worker = ImageLoader(self.image_queue)
 
-        self.image_worker.image.connect(self._handle_image_success)
+        self.image_worker.success.connect(self._handle_image_success)
         self.image_worker.error.connect(self._handle_worker_error)
         
         self.image_worker.moveToThread(self.image_thread)
@@ -19,15 +19,14 @@ class ImageMixin:
         self.image_thread.start()
 
     @pyqtSlot(Path,QObject)
-    def request_image(self,data,requester):
-        signals = self._attach_signals(FetchImageRequest(), requester, {'data': 'image_return', 'error': 'image_error'})
-        
-        self.image_queue.put(('single',(signals,data)))
+    def request_image(self,data,ticket):
+        self.task_started.emit('fetch image',str(data),ticket.job_id)
+        self.image_queue.put(('single',(ticket,data)))
     
-    def request_image_series(self,data,requester):
-        signals = self._attach_signals(FetchImageRequest(), requester, {'data': 'image_return', 'error': 'image_error'})
-        self.image_queue.put(('series',(signals,data)))
+    def request_image_series(self,data,ticket):
+        self.image_queue.put(('series',(ticket,data)))
 
-    @pyqtSlot(object)
-    def _handle_image_success(self,image):
+    @pyqtSlot(str)
+    def _handle_image_success(self,job_id):
+        self.task_finished.emit(job_id)
         print('image loaded')

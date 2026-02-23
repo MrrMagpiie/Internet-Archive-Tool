@@ -1,7 +1,7 @@
 from PyQt6.QtCore import QThread, pyqtSlot
 from queue import Queue
 import os
-from model.service.UploadManager import UploadManager, UploadRequest
+from model.service.UploadManager import UploadManager
 from config import user_config
 
 class UploadMixin:
@@ -12,7 +12,7 @@ class UploadMixin:
         self.upload_queue = Queue()
         self.upload_worker = UploadManager(self.upload_queue)
 
-        self.upload_worker.document.connect(self._handle_upload_success)
+        self.upload_worker.success.connect(self._handle_upload_success)
         self.upload_worker.error.connect(self._handle_worker_error)
 
         self.upload_worker.moveToThread(self.upload_thread)
@@ -26,14 +26,13 @@ class UploadMixin:
             self.need_setup.emit()
 
     @pyqtSlot(object)
-    def request_upload(self, doc, requester=None):
-        signals = self._attach_signals(UploadRequest(), requester, {'data': 'upload_success', 'error': 'upload_error'})
-        self.busy_start.emit()
-        self.upload_queue.put(('upload', (signals, doc)))
+    def request_upload(self, doc, ticket):
+        self.task_started.emit('upload',doc.doc_id,ticket.job_id)
+        self.upload_queue.put(('upload', (ticket, doc)))
 
-    @pyqtSlot(object)
-    def _handle_upload_success(self, doc):
-        self.busy_stop.emit()
+    @pyqtSlot(object,str)
+    def _handle_upload_success(self, doc,job_id):
+        self.task_finished.emit(job_id)
         self.request_update_doc(doc)
         print(f'Upload Success: {doc.doc_id}')
 

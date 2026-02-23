@@ -122,6 +122,8 @@ class MainWindow(QMainWindow):
         
         # --- Process Manager Widget ---
         self.process_manager_widget = self.gui_manager.ProcessManagerWidget()
+        sidebar_layout.addStretch()
+        sidebar_layout.addWidget(self.process_manager_widget)
 
         # --- C. Bottom "Settings" or Version Area ---
         version_lbl = QLabel("v0.0.1")

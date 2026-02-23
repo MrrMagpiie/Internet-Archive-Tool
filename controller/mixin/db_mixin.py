@@ -1,6 +1,7 @@
 from PyQt6.QtCore import QThread, pyqtSlot, pyqtSignal,QObject
 from queue import Queue
-from model.service.DatabaseManager import DatabaseManager, DatabaseSignal
+from model.service.DatabaseManager import DatabaseManager
+from model.service.signals import JobTicket
 from config import DB_PATH
 
 class DatabaseMixin:
@@ -11,8 +12,8 @@ class DatabaseMixin:
         self.db_queue = Queue()
         self.db_manager = DatabaseManager(DB_PATH, self.db_queue)
         
-        # Connect Internal Signals
-        self.db_manager.save_document.connect(self._handle_db_update)
+        # Connect Internal ticket
+        self.db_manager.update.connect(self._handle_db_update)
         self.db_manager.error.connect(self._handle_worker_error)
         
         self.db_manager.moveToThread(self.db_thread)
@@ -20,22 +21,21 @@ class DatabaseMixin:
         self.db_thread.start()
 
     @pyqtSlot(object, QObject)
-    def request_docs_by_status(self, filter_data, requester):
-        signals = self._attach_signals(DatabaseSignal(), requester, {'data': 'doc_return', 'error': 'doc_error'})
-        self.db_queue.put(('load_documents', (signals, filter_data)))
+    def request_docs_by_status(self, filter_data, ticket):
+        self.db_queue.put(('load_documents', (ticket, filter_data)))
    
     @pyqtSlot(str, QObject)
-    def request_doc_by_id(self, doc_id, requester):
-        signals = self._attach_signals(DatabaseSignal(), requester, {'data': 'doc_return', 'error': 'doc_error'})
-        self.db_queue.put(('load_single_document', (signals, doc_id)))
+    def request_doc_by_id(self, doc_id, ticket):
+        self.db_queue.put(('load_single_document', (ticket, doc_id)))
     
     @pyqtSlot(object,QObject)
-    def request_update_doc(self, doc, requester=None):
-        signals = self._attach_signals(DatabaseSignal(), requester, {'data': 'doc_return', 'error': 'doc_error'})
-        self.db_queue.put(('save_document', (signals, doc)))
+    def request_update_doc(self, doc, ticket=None):
+        if not ticket:
+            ticket = JobTicket()
+        self.db_queue.put(('save_document', (ticket, doc)))
 
-    @pyqtSlot(object)
-    def _handle_db_update(self, doc):
+    @pyqtSlot(object,str)
+    def _handle_db_update(self, doc,job_id):
         """Re-emits the update so the whole UI knows a doc changed."""
         self.db_update.emit(doc)
 

@@ -11,7 +11,7 @@ class ProcessingMixin:
         self.proc_queue = Queue()
         self.proc_worker = DocumentPipelineWorker(self.proc_queue)
 
-        self.proc_worker.document.connect(self._handle_proc_success)
+        self.proc_worker.success.connect(self._handle_proc_success)
         self.proc_worker.error.connect(self._handle_worker_error)
         
         self.proc_worker.moveToThread(self.proc_thread)
@@ -19,28 +19,25 @@ class ProcessingMixin:
         self.proc_thread.start()
 
     @pyqtSlot(tuple, QObject)
-    def request_discovery(self, data, requester):
-        signals = self._attach_signals(DocPipelineRequest(), requester, {'data': 'doc_return', 'error': 'doc_error'})
-        self.busy_start.emit()
-        self.proc_queue.put(('discover', (signals, data)))
+    def request_discovery(self, data, ticket):
+        self.task_started.emit('discover',data[0],ticket.job_id)
+        self.proc_queue.put(('discover', (ticket, data)))
 
     @pyqtSlot(tuple, QObject)
-    def request_deskew(self, data, requester):
-        signals = self._attach_signals(DocPipelineRequest(), requester, {'data': 'doc_return', 'error': 'doc_error'})
-        self.busy_start.emit()
-        self.proc_queue.put(('deskew', (signals, data)))
+    def request_deskew(self, data, ticket):
+        self.task_started.emit('deskew',data.doc_id,ticket.job_id)
+        self.proc_queue.put(('deskew', (ticket, data)))
     
     @pyqtSlot(tuple,QObject)
-    def request_save_metadata(self,data,requester):
-        signals = self._attach_signals(DocPipelineRequest(), requester, {'data': 'doc_return', 'error': 'doc_error'})
+    def request_save_metadata(self,data,ticket):
         self.busy_start.emit()
-        self.proc_queue.put(('metadata', (signals, data)))
+        self.proc_queue.put(('metadata', (ticket, data)))
 
-    @pyqtSlot(str,Document)
-    def _handle_proc_success(self,command, doc):
-        self.busy_stop.emit()
+    @pyqtSlot(Document,str)
+    def _handle_proc_success(self,doc,job_id):
+        self.task_finished.emit(job_id)
         self.request_update_doc(doc)
-        print(f'Pipeline Success: {command} {doc.doc_id}')
+        print(f'Pipeline Success: {job_id} {doc.doc_id}')
 
     def shutdown_processing(self):
         self.proc_queue.put(('shutdown', None))

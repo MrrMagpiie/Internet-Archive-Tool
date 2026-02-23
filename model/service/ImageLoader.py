@@ -11,8 +11,8 @@ class FetchImageRequest(QObject):
 
 
 class ImageLoader(QObject):
-    image = pyqtSignal(object)
-    error = pyqtSignal(str)
+    success = pyqtSignal(str)#Job_id
+    error = pyqtSignal(str,str)# error_msg, Job_id
 
     def __init__(self, queue: Queue):
         super().__init__()
@@ -36,16 +36,20 @@ class ImageLoader(QObject):
                         signals, image_path = data
                         if isinstance(image_path,Path):
                             pixmap = load_image(image_path)
-                            signals.data.emit(pixmap)
+                            signals.data.emit(pixmap,signals.job_id)
+                            self.success.emit(signals.job_id)
                     if command == 'series':
                         signals, image_path_list = data
                         if isinstance(image_path_list,list):
                             pixmap_list = load_image_series(image_path_list)
-                            signals.data.emit(pixmap_list)
+                            signals.data.emit(pixmap_list,signals.job_id)
+                            self.success.emit(signals.job_id)
                 except Exception as e:
-                    signals.error.emit((f"Error processing command {command}: {e}"))
+                    err_msg = f"Error processing command {command} for {signals.job_id}: {e}"
+                    signals.error.emit(err_msg,signals.job_id)
+                    self.error.emit(err_msg,signals.job_id)
 
 
 
         except Exception as e:
-            self.error.emit(f"Worker-level error: {e}")
+            self.error.emit(f"Image Worker-level error:  {e}",'')

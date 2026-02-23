@@ -8,6 +8,7 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot
 from view.components.Page import Page
 from view.components.SchemaForm import SchemaForm, EditableSchemaForm
+from model.service.signals import JobTicket
 from model.data.metadata import Metadata
 from model.data.document import Document
 from model.data.schema import DocumentSchema
@@ -96,6 +97,7 @@ class MetadataPage(Page):
         metadata = self.form.get_metadata()
         metadata_type = self.doc_type_combo.currentData()
         data = (self.current_document,metadata,metadata_type)
+        ticket = JobTicket()
         self.save_metadata.emit(data,self)
         self.next_stage.emit()
 
@@ -109,12 +111,12 @@ class MetadataPage(Page):
     def db_update(self,doc):
         pass
 
-    @pyqtSlot(str,Document)
-    def doc_return(self,command,doc):
+    @pyqtSlot(Document,str)
+    def doc_return(self,doc,job_id):
         print('doc ready')
 
-    @pyqtSlot(str)
-    def doc_error(self,error_msg):
+    @pyqtSlot(str,str)
+    def doc_error(self,error_msg,job_id):
         pass
 
     def edit_page(self,schema=None):

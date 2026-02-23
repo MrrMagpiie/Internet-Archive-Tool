@@ -12,6 +12,7 @@ from PyQt6.QtGui import QIcon, QFont, QColor, QCursor
 from view.components.Page import Page
 from view.components.CenteredFlowLayout import CenteredFlowLayout
 from view.components.DashboardDocumentCard import DocumentCard
+from model.service.signals import JobTicket
 from model.data.document import Document
 from model.logic.helpers import clear_layout
 
@@ -92,15 +93,18 @@ class ReviewPage(Page):
     @pyqtSlot(dict)
     def request_documents(self):
         filter_data = {'needs_approval':True}
-        self.db_request.emit(filter_data,self)
+        ticket = JobTicket()
+        ticket.data.connect(self.doc_return)
+        ticket.error.connect(self.doc_error)
+        self.db_request.emit(filter_data,ticket)
 
-    @pyqtSlot(str,object)
-    def doc_return(self,command,docs):
+    @pyqtSlot(object,str)
+    def doc_return(self,docs,job_id):
         self.load_documents(docs)
         self.show_documents()
 
-    @pyqtSlot(str)
-    def doc_error(self,error_msg):
+    @pyqtSlot(str,str)
+    def doc_error(self,error_msg,job_id):
         print(f'db_error: {error_msg}')
 
     @pyqtSlot(Document)

@@ -14,7 +14,7 @@ from view.components.CenteredFlowLayout import CenteredFlowLayout
 from view.components.DashboardDocumentCard import DocumentCard
 from model.data.document import Document
 from model.logic.helpers import clear_layout
-
+from model.service.signals import JobTicket
 
 
 class NewCard(QFrame):
@@ -224,7 +224,7 @@ class WorkflowView(Page):
 
     @pyqtSlot(object)
     def db_update(self,doc):
-        if doc.doc_id == self.current_document.doc_id:
+        if self.current_document and doc.doc_id == self.current_document.doc_id:
             self.set_current_document(doc)
 
 class ListView(Page):
@@ -295,23 +295,26 @@ class ListView(Page):
     def load_documents(self,documents):
         self.docs = []
         for doc in documents.values():
-            if doc.status['metadata'] == False:
-                self.docs.append((doc,1))
-            elif doc.status['deskewed'] == True:
-                self.docs.append((doc,2))
-            else:
+            if doc.status['deskewed'] == False:
                 self.docs.append((doc,0))
+            elif doc.status['metadata'] == False:
+                self.docs.append((doc,1))
+            else:
+                self.docs.append((doc,2))
 
     @pyqtSlot(dict)
     def request_documents(self):
         filter_data = {'needs_approval':False}
-        self.db_request.emit(filter_data,self)
+        ticket = JobTicket()
+        ticket.data.connect(self.doc_return)
+        ticket.error.connect(self.doc_error)
+        self.db_request.emit(filter_data,ticket)
 
-    @pyqtSlot(str,object)
-    def doc_return(self,command,docs):
+    @pyqtSlot(object,str)
+    def doc_return(self,docs,job_id):
         self.load_documents(docs)
         self.show_documents()
 
-    @pyqtSlot(str)
-    def doc_error(self,error_msg):
+    @pyqtSlot(str,str)
+    def doc_error(self,error_msg,job_id):
         print(f'db_error: {error_msg}')

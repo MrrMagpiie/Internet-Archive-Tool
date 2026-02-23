@@ -75,6 +75,8 @@ class GUIManager(QObject):
 
     def ProcessManagerWidget(self):
         process_widget = ProcessManagerWidget()
+        self.process_manager.task_started.connect(process_widget.add_task)
+        self.process_manager.task_finished.connect(process_widget.remove_task)
         return process_widget
 
     def DocumentImagePanel(self):
