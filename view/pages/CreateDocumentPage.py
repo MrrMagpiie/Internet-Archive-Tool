@@ -6,7 +6,7 @@ from PyQt6.QtWidgets import (
     QPushButton, QTextEdit, QLineEdit,
     QFileDialog, QProgressBar,QTableWidget,
     QComboBox,QLabel,QFormLayout,QFrame,QSplitter,
-    QScrollArea
+    QScrollArea,QMessageBox
 )
 from PyQt6.QtGui import QPixmap
 from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot, Qt
@@ -137,7 +137,7 @@ class CreateDocumentPage(Page):
             self.pending_requests[ticket.job_id] = "discover"
             self.discover_document.emit(data,ticket)
         else:
-            print('choose dir')
+            QMessageBox.information(self,'Select Document Folder','Please choose the documents location')
 
     def run_deskew(self):
         ticket = JobTicket()
@@ -185,8 +185,7 @@ class CreateDocumentPage(Page):
             self.next_stage.emit()
             self.run_deskew()   
         else:
-            #popup
-            print('need to discover document first')
+            QMessageBox.information(self,'Find Pages','Please discover the document before deskewing')
 
     # --- Logic: Handle Selection ---
     def handle_card_selection(self, page_id):

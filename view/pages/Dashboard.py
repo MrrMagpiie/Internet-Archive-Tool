@@ -247,9 +247,9 @@ class ListView(Page):
         new_card.clicked.connect(self.card_clicked)
         main_layout.addWidget(new_card)
         
-        recent_docects_header = QLabel("Recent Documents")
-        recent_docects_header.setFont(QFont("Segoe UI", 16, QFont.Weight.Bold))
-        main_layout.addWidget(recent_docects_header)
+        recent_documents_header = QLabel("Recent Documents")
+        recent_documents_header.setFont(QFont("Segoe UI", 16, QFont.Weight.Bold))
+        main_layout.addWidget(recent_documents_header)
 
         # --- The Scroll Area for the Grid ---
         scroll_area = QScrollArea()
