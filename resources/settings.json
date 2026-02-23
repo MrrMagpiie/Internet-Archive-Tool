@@ -1,5 +1,7 @@
 {
-    "DEFAULT_OUTPUT_DIR":"/var/home/magpie/Development/Library2/output",
-    "DB_PATH":"./manifest.db",
-    "IA_CONFIG":"/var/home/magpie/Development/Library2/resources/ia.ini"
+    "DEFAULT_OUTPUT_DIR": "./output",
+    "DATABASE_PATH": "./manifest.db",
+    "IA_CONFIG": "./resources/ia.ini",
+    "ADMIN_UPLOAD": true,
+    "AUTO_DESKEW": true
 }
