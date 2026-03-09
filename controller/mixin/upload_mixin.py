@@ -25,10 +25,10 @@ class UploadMixin:
         else:
             self.need_setup.emit()
 
-    @pyqtSlot(object)
+    @pyqtSlot(object,object)
     def request_upload(self, doc, ticket):
         self.task_started.emit('upload',doc.doc_id,ticket.job_id)
-        self.upload_queue.put(('upload', (ticket, doc)))
+        self.upload_queue.put(('upload', ticket, doc))
 
     @pyqtSlot(object,str)
     def _handle_upload_success(self, doc,job_id):

@@ -26,20 +26,23 @@ class ImageLoader(QObject):
         try:
             print('Hello from Image Loader')
             while True:
-                command, data = self.queue.get()
+                command,signals, data = self.queue.get()
+                if signals.is_cancelled():
+                            continue
                 print(f'running {command}')
                 if command == 'shutdown':
                     break 
 
                 try:
                     if command == 'single':
-                        signals, image_path = data
+                        image_path = data
                         if isinstance(image_path,Path):
                             pixmap = load_image(image_path)
                             signals.data.emit(pixmap,signals.job_id)
                             self.success.emit(signals.job_id)
                     if command == 'series':
-                        signals, image_path_list = data
+                        
+                        image_path_list = data
                         if isinstance(image_path_list,list):
                             pixmap_list = load_image_series(image_path_list)
                             signals.data.emit(pixmap_list,signals.job_id)

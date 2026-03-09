@@ -21,17 +21,17 @@ class ProcessingMixin:
     @pyqtSlot(tuple, QObject)
     def request_discovery(self, data, ticket):
         self.task_started.emit('discover',data[0],ticket.job_id)
-        self.proc_queue.put(('discover', (ticket, data)))
+        self.proc_queue.put(('discover', ticket, data))
 
     @pyqtSlot(tuple, QObject)
     def request_deskew(self, data, ticket):
         self.task_started.emit('deskew',data.doc_id,ticket.job_id)
-        self.proc_queue.put(('deskew', (ticket, data)))
+        self.proc_queue.put(('deskew', ticket, data))
     
     @pyqtSlot(tuple,QObject)
     def request_save_metadata(self,data,ticket):
-        self.busy_start.emit()
-        self.proc_queue.put(('metadata', (ticket, data)))
+        self.task_started.emit('metadata',data[0].doc_id,ticket.job_id)
+        self.proc_queue.put(('metadata', ticket, data))
 
     @pyqtSlot(Document,str)
     def _handle_proc_success(self,doc,job_id):

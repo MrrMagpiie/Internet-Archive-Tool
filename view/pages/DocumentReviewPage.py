@@ -18,7 +18,7 @@ from config import ADMIN_UPLOAD
 
 class DocumentReviewPage(Page):
     document_reviewed = pyqtSignal(Document,QObject)
-    upload = pyqtSignal(Document)
+    upload = pyqtSignal(Document,object)
     next_stage = pyqtSignal()
     
     def __init__(self,parent = None):
@@ -122,7 +122,8 @@ class DocumentReviewPage(Page):
         self._review_document("rejected")
 
     def _on_upload(self):
-        self.upload.emit(self.current_document)
+        ticket = JobTicket()
+        self.upload.emit(self.current_document,ticket)
 
     def _review_document(self, new_status: str):
         if self.current_document:

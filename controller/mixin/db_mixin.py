@@ -22,17 +22,17 @@ class DatabaseMixin:
 
     @pyqtSlot(object, QObject)
     def request_docs_by_status(self, filter_data, ticket):
-        self.db_queue.put(('load_documents', (ticket, filter_data)))
+        self.db_queue.put(('load_documents', ticket, filter_data))
    
     @pyqtSlot(str, QObject)
     def request_doc_by_id(self, doc_id, ticket):
-        self.db_queue.put(('load_single_document', (ticket, doc_id)))
+        self.db_queue.put(('load_single_document', ticket, doc_id))
     
     @pyqtSlot(object,QObject)
     def request_update_doc(self, doc, ticket=None):
         if not ticket:
             ticket = JobTicket()
-        self.db_queue.put(('save_document', (ticket, doc)))
+        self.db_queue.put(('save_document', ticket, doc))
 
     @pyqtSlot(object,str)
     def _handle_db_update(self, doc,job_id):

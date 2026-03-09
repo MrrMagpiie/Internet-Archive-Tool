@@ -1,4 +1,5 @@
 import uuid
+import threading
 from PyQt6.QtCore import QObject, pyqtSignal
 
 class JobTicket(QObject):
@@ -13,6 +14,15 @@ class JobTicket(QObject):
     def __init__(self, job_id=None, parent=None):
         super().__init__(parent)
         self.job_id = job_id or str(uuid.uuid4())
+        self._cancel_flag = threading.Event()
+
+    def cancel(self):
+        """Called by the UI to request cancellation."""
+        self._cancel_flag.set()
+
+    def is_cancelled(self) -> bool:
+        """Called by the Worker to check if it should stop."""
+        return self._cancel_flag.is_set()
 
 
 class DocPipelineRequest(JobTicket):

@@ -21,10 +21,10 @@ class ImageMixin:
     @pyqtSlot(Path,QObject)
     def request_image(self,data,ticket):
         self.task_started.emit('fetch image',str(data),ticket.job_id)
-        self.image_queue.put(('single',(ticket,data)))
+        self.image_queue.put(('single',ticket,data))
     
     def request_image_series(self,data,ticket):
-        self.image_queue.put(('series',(ticket,data)))
+        self.image_queue.put(('series',ticket,data))
 
     @pyqtSlot()
     def clear_queue(self):

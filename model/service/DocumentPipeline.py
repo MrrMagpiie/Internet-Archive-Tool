@@ -33,14 +33,16 @@ class DocumentPipelineWorker(QObject):
             print('Hello from Document Pipeline')
             signals = None
             while True:
-                command, data = self.queue.get()
+                command,signals, data = self.queue.get()
+                if signals.is_cancelled():
+                            continue
                 print(f'running {command}')
                 if command == 'shutdown':
                     break 
 
                 try:
                     if command == 'discover':
-                        signals, doc_data = data
+                        doc_data = data
                         in_dir, out_dir = doc_data
                         doc = self.discover(in_dir,out_dir)
                         if isinstance(doc,Document):
@@ -48,8 +50,7 @@ class DocumentPipelineWorker(QObject):
                             self.success.emit(doc,signals.job_id)
                             
                     if command == 'metadata':
-                        signals, doc_data = data
-                        doc, metadata, metadata_type = doc_data
+                        doc, metadata, metadata_type = data
                         if isinstance(doc,Document):
                             doc = add_metadata_to_document(doc, metadata,metadata_type)
                             doc.status['metadata'] = True
@@ -57,7 +58,7 @@ class DocumentPipelineWorker(QObject):
                             self.success.emit(doc,signals.job_id)
 
                     if command == 'deskew':
-                        signals, doc = data
+                        doc = data
                         if isinstance(doc,Document):
                             self.deskew(doc)
                             doc.status['deskewed'] = True

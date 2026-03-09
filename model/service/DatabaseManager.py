@@ -31,26 +31,28 @@ class DatabaseManager(QObject):
             self._create_tables()
 
             while True:
-                command, data = self.queue.get()
+                command, signals, data = self.queue.get()
+                if signals.is_cancelled():
+                            continue
                 print(f'db running {command}')
                 if command == 'shutdown':
                     break 
 
                 try:
                     if command == 'load_documents':
-                        signals, filter_data = data
+                        filter_data = data
                         docs = self._load_documents(filter_data)
                         signals.data.emit(docs,signals.job_id)
                         
                     
                     elif command == 'load_single_document':
-                        signals, doc_id = data
+                        doc_id = data
                         doc = self._load_single_document(doc_id)
                         signals.data.emit(doc,signals.job_id)
                         
 
                     elif command == 'save_document':
-                        signals, document = data
+                        document = data
                         self._save_document(document)
                         signals.data.emit(document,signals.job_id)
                         self.update.emit(document,signals.job_id)

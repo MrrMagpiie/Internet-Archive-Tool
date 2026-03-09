@@ -24,19 +24,21 @@ class UploadManager(QObject):
         try:
             signals = None
             while True:
-                command, data = self.queue.get()
+                command,signals, data = self.queue.get()
+                if signals.is_cancelled():
+                            continue
                 print(f'running {command}')
                 if command == 'shutdown':
                     break 
 
                 try:
                     if command == 'upload':
-                        signals, doc = data
+                        doc = data
                         uploadDocument(doc)
                         self.success.emit(doc,signals.job_id)
 
                     if command == 'setup':
-                        signals, setup_data = data
+                        setup_data = data
                         email , password = setup_data
                         setup(email,password)
                         self.success.emit(doc,signals.job_id)
