@@ -9,6 +9,7 @@ def add_metadata_to_document(doc:Document,metadata:Metadata,metadata_file_type):
     
     data = metadata.to_dict()
     try:
+        doc.metadata_file.parent.mkdir(parents=True, exist_ok=True)
         with open(doc.metadata_file,'w') as f:
             json.dump(data,f,indent=4)
 

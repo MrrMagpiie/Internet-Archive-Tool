@@ -139,7 +139,10 @@ class SchemaEditPage(Page):
     @pyqtSlot(DocumentSchema)
     def _save_schema(self,schema):
         schema_dict = schema.to_dict()
-        schema_dict['schema_name'] = self.doc_type_line.text()
+        if hasattr(self, 'doc_type_line'):
+            schema_dict['schema_name'] = self.doc_type_line.text()
+        if hasattr(self, 'doc_type_combo'):
+            schema_dict['schema_name'] = self.doc_type_combo.currentText()
         schema = DocumentSchema.from_dict(schema_dict)
         self.new_schema.emit(schema)
         self._reset()

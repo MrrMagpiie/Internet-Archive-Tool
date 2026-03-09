@@ -5,7 +5,7 @@ from PyQt6.QtWidgets import (
     QFileDialog, QProgressBar,QTableWidget,
     QComboBox,QLabel,QFormLayout
 )
-from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot
+from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot, Qt
 from view.components.Page import Page
 from view.components.SchemaForm import SchemaForm, EditableSchemaForm
 from model.service.signals import JobTicket
@@ -38,6 +38,10 @@ class MetadataPage(Page):
         self.doc_type_combo = QComboBox()
         doc_type_layout.addWidget(self.doc_type_combo)
 
+        self.doc_type_info = QLabel('Choose a Document Type')
+        self.doc_type_info.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+        metadata_layout.addWidget(self.doc_type_info)
+
         self._load_metadata_formats()
         self.doc_type_combo.currentTextChanged.connect(self._on_select_format)
         metadata_layout.addLayout(doc_type_layout)
@@ -47,11 +51,12 @@ class MetadataPage(Page):
         metadata_layout.addWidget(self.form)
 
         # add next stage button
-        next_stage_btn = QPushButton('Review Document')
+        next_stage_btn = QPushButton('Add Metadata')
         next_stage_btn.clicked.connect(self.to_next_stage)
 
         self.main_layout.addLayout(title_layout)
         self.main_layout.addLayout(metadata_layout)
+        self.main_layout.addStretch()
         self.main_layout.addWidget(next_stage_btn)
         
     # form stuff
@@ -65,31 +70,28 @@ class MetadataPage(Page):
     def _on_select_format(self,format_name=None):
         format_key = self.doc_type_combo.currentData()
         if format_key and format_key != '':
+            self.doc_type_info.setVisible(False)
             schema_format = self.metadata_formats[format_key]
             self.form.new_form(schema_format)
-
-    def clear_layout(self, layout):
-        """Removes all widgets from a layout and schedules them for deletion."""
-        if layout is None:
-            return
-        while layout.count():
-            item = layout.takeAt(0)
-            widget = item.widget()
-            if widget is not None:
-                widget.deleteLater()
+        else:
+            self.doc_type_info.setVisible(True)
+            self.form.clear_form()
 
     def to_next_stage(self):
         metadata = self.form.get_metadata()
         metadata_type = self.doc_type_combo.currentData()
         data = (self.current_document,metadata,metadata_type)
+        
         ticket = JobTicket()
-        self.save_metadata.emit(data,self)
+        self.save_metadata.emit(data,ticket)
         self.next_stage.emit()
 
     def set_current_document(self,document:Document):
+        self._reset()
         self.current_document = document
         if document != None:
-            # add data into form
+            cmb_indx = self.doc_type_combo.findText(self.current_document.metadata_file_type)
+            self.doc_type_combo.setCurrentIndex(cmb_indx)
             pass
 
     @pyqtSlot(Document)
