@@ -8,8 +8,6 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import pyqtSlot,pyqtSignal, QSize, QObject, Qt
 from PyQt6.QtGui import QFont
 
-#import pages 
-#rom view.components import DocumentCard
 from view.pages import *
 from view.components import ProcessManagerWidget, DocumentImagePanel
 
@@ -26,7 +24,7 @@ class GUIManager(QObject):
         self.MainWindow = MainWindow(self)
         return self.MainWindow
 
-    # --- Pages
+    # --- Pages --- 
 
     def DashboardPage(self,navigation_stack):
         workflow_view = Dashboard.WorkflowView(self)

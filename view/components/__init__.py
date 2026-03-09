@@ -8,3 +8,4 @@ from .StyleManager import *
 from .ImageLabel import *
 from .DocumentImagePanel import *
 from .ProcessManagerWidget import *
+from .InteractiveImageView import *

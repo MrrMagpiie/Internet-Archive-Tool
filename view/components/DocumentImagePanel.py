@@ -40,6 +40,7 @@ class DocumentImagePanel(QWidget):
         
         image_layout = QHBoxLayout()
         self.image_label = ImageLabel()
+        self.image_label.setStyleSheet("background-color: gray;")
 
         image_layout.addWidget(self.image_label)
 
@@ -85,11 +86,11 @@ class DocumentImagePanel(QWidget):
 
     def display_image(self):
         indx = self.current_image_index
-        pixmap = self.pixmap_cache[indx]
-        if isinstance(pixmap, QPixmap):
-            self.image_label.setPixmap(pixmap)
+        if indx in self.pixmap_cache and isinstance(self.pixmap_cache[indx], QPixmap):
+            pixmap = self.pixmap_cache[indx]
+            self.image_label.set_pixmap(pixmap)
         else:
-            self.image_label.setPixmap(self.loading_pixmap)
+            self.image_label.set_pixmap(self.loading_pixmap)
         # Update position label
         self.image_pos_label.setText(f"Page {self.current_image_index + 1} of {len(self.images)}")
 
@@ -114,7 +115,7 @@ class DocumentImagePanel(QWidget):
             return image_path
 
     def cache_image(self,pixmap,job_id):
-        indx = self.pending_requests.pop(job_id)
+        ticket, indx = self.pending_requests.pop(job_id)
         self.pixmap_cache[indx] = pixmap
         if indx == self.current_image_index:
             self.display_image()
@@ -123,12 +124,15 @@ class DocumentImagePanel(QWidget):
         ticket = JobTicket()
         ticket.data.connect(self.image_return)
         ticket.error.connect(self.image_error)
-        self.pending_requests[ticket.job_id] = indx
+        self.pending_requests[ticket.job_id] = (ticket, indx)
 
         self.image_request.emit(path,ticket)
 
     def clear_cache(self):
+        for ticket, value in self.pending_requests.values():
+            ticket.cancel()
         self.pixmap_cache.clear()
+        self.display_image()
         
     @pyqtSlot(object,str)
     def image_return(self, pixmap,job_id):

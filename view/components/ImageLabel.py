@@ -14,13 +14,12 @@ class ImageLabel(QLabel):
     """
     def __init__(self, parent=None):
         super().__init__(parent)
-        #self.setStyleSheet("border: 2px solid red; background-color: yellow;") #flag foor debugging
         self.setMinimumSize(1, 1) 
         self.setAlignment(Qt.AlignmentFlag.AlignCenter) 
-        self._pixmap = None
+        self.pixmap = None
 
-    def setPixmap(self, pixmap: QPixmap):
-        self._pixmap = pixmap
+    def set_pixmap(self, pixmap: QPixmap):
+        self.pixmap = pixmap
         self._update_display()
         
     def resizeEvent(self, event):
@@ -30,11 +29,11 @@ class ImageLabel(QLabel):
 
     def _update_display(self):
         """Internal helper to scale and set the pixmap."""
-        if not self._pixmap or self._pixmap.isNull():
+        if not self.pixmap:
             super().setPixmap(QPixmap())
             return
-        if not self._pixmap.isNull():
-            scaled_pixmap = self._pixmap.scaled(
+        else:
+            scaled_pixmap = self.pixmap.scaled(
                 self.size(),
                 Qt.AspectRatioMode.KeepAspectRatio,
                 Qt.TransformationMode.SmoothTransformation

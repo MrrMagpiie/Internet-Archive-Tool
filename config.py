@@ -1,4 +1,3 @@
-# In config.py
 from pathlib import Path
 import json
 
@@ -18,3 +17,4 @@ DEFAULT_OUTPUT_DIR = Path(user_config.get('DEFAULT_OUTPUT_DIR'))
 DB_PATH = Path(user_config.get('DATABASE_PATH'))
 ADMIN_UPLOAD = user_config.get('ADMIN_UPLOAD')
 AUTO_DESKEW = user_config.get('AUTO_DESKEW')
+

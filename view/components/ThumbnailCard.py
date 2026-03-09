@@ -13,7 +13,7 @@ from view.components.ImageLabel import ImageLabel
 class ThumbnailCard(ImageLabel):
     clicked = pyqtSignal(str)
 
-    def __init__(self, page_number, image_path=None):
+    def __init__(self, page_number, pixmap=None):
         super().__init__()
         self.page_number = page_number
         self.is_selected = False
@@ -41,8 +41,8 @@ class ThumbnailCard(ImageLabel):
         self.image_lbl.setStyleSheet("border: none; background: transparent;")
         
         # Load the image if path exists
-        if image_path:
-            self.setPixmap(image_path)
+        if pixmap:
+            self.set_pixmap(pixmap)
         else:
             self.image_lbl.setText("No Image") # Fallback
             
@@ -57,19 +57,10 @@ class ThumbnailCard(ImageLabel):
         
         self.setLayout(layout)
 
-    def set_image(self, pixmap):
-        """Loads and scales the image to fit the card."""
-        self.setPixmap(pixmap)
-        
-        if not pixmap.isNull():
-            # Scale it to fit the 120x130 area (approx size inside card margins)
-            # KeepAspectRatio: Ensures document doesn't look stretched
-            # SmoothTransformation: Prevents jagged edges
-            scaled_pix = pixmap.scaled(
-                120, 130,
-                Qt.AspectRatioMode.KeepAspectRatio,
-                Qt.TransformationMode.SmoothTransformation
-            )
-            self.image_lbl.setPixmap(scaled_pix)
-        else:
-            self.image_lbl.setText("Err")
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.clicked.emit(str(self.page_number))
+        super().mousePressEvent(event)
+
+ 
