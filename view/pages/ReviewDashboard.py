@@ -77,7 +77,6 @@ class ReviewPage(Page):
         scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         scroll_area.setFrameShape(QFrame.Shape.NoFrame)
         scroll_area.setStyleSheet("background-color: transparent;") # Let window bg show
-        # --- The Scroll Area for the Grid ---
 
        
         # The container widget that holds the grid
@@ -85,7 +84,7 @@ class ReviewPage(Page):
         
         self.layout_flow = CenteredFlowLayout()  
         self.layout_flow.setSpacing(20)
-        self.layout_flow.setContentsMargins(20, 20, 20, 20)   # <-- ADD THIS (pass margins if needed)
+        self.layout_flow.setContentsMargins(20, 20, 20, 20)
         
         grid_container.setLayout(self.layout_flow)
         scroll_area.setWidget(grid_container)

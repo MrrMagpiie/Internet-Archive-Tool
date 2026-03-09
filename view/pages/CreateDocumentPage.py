@@ -91,7 +91,6 @@ class CreateDocumentPage(Page):
         self.grid_container = QWidget()
         
         # 3. The Layout (Using the CenteredFlowLayout you added earlier)
-        # Make sure CenteredFlowLayout is defined in your file!
         self.flow_layout = CenteredFlowLayout()
         self.flow_layout.setContentsMargins(20, 20, 20, 20)
         self.flow_layout.setSpacing(20)
@@ -134,7 +133,7 @@ class CreateDocumentPage(Page):
             ticket = JobTicket()
             ticket.data.connect(self.discover_return)
             ticket.error.connect(self.doc_error)
-            self.pending_requests[ticket.job_id] = "discover"
+            self.pending_requests[ticket.job_id] = (ticket,"discover")
             self.discover_document.emit(data,ticket)
         else:
             QMessageBox.information(self,'Select Document Folder','Please choose the documents location')
@@ -145,7 +144,7 @@ class CreateDocumentPage(Page):
         ticket = JobTicket()
         ticket.data.connect(self.deskew_return)
         ticket.error.connect(self.doc_error)
-        self.pending_requests[ticket.job_id] = 'deskew'
+        self.pending_requests[ticket.job_id] = (ticket,'deskew')
         self.deskew_document.emit(self.current_document,ticket)
 
     # --- Display stuff ---
@@ -156,19 +155,17 @@ class CreateDocumentPage(Page):
             ticket = JobTicket()
             ticket.data.connect(self.image_return)
             ticket.error.connect(self.image_error)
-            self.pending_requests[ticket.job_id] = image_path
+            self.pending_requests[ticket.job_id] = (ticket, image['order'])
             self.image_request.emit(image_path,ticket)
 
     def add_card(self,pixmap,job_id):
-        image_path = self.pending_requests.pop(job_id)
-        if image_path not in self.all_cards.keys():
-            next_num = len(self.all_cards) + 1
-            new_card = ThumbnailCard(next_num, pixmap)
+        ticket, image_indx = self.pending_requests.pop(job_id)
+        if image_indx not in self.all_cards.keys():
+            new_card = ThumbnailCard(image_indx, pixmap)
             new_card.clicked.connect(self.handle_card_selection)
-
             self.flow_layout.addWidget(new_card)
-            self.all_cards[image_path]=new_card
-            self.pages_count.setText(str(next_num))
+            self.all_cards[image_indx]=new_card
+            self.pages_count.setText(str(len(self.all_cards)))
             self.grid_container.adjustSize()
 
     def clear_image_cards(self):
@@ -176,6 +173,9 @@ class CreateDocumentPage(Page):
         clear_layout(self.flow_layout)
 
     def _reset(self):
+        for ticket, value in self.pending_requests.values():
+            if value != 'deskew' and value != 'discover':
+                ticket.cancel() 
         self.clear_image_cards()
         self.input_dir_field.setText('')
         self.pages_count.setText(str(len(self.all_cards)))
@@ -193,18 +193,18 @@ class CreateDocumentPage(Page):
     # --- Logic: Handle Selection ---
     def handle_card_selection(self, page_id):
         print(f"User selected Page {page_id}")
-        
-        for card in self.all_cards:
-            if str(card.page_number) == page_id:
-                card.is_selected = True
-            else:
-                card.is_selected = False
-    
+        card = self.all_cards[page_id]
+        self.create_image_popout(card.pixmap)
+
+    def create_image_popout(self,pixmap):
+        self.interactive_popout = InteractiveImageViewer()
+        self.interactive_popout.set_pixmap(pixmap)
+        self.interactive_popout.show()
+
     # --- Slots ---
     @pyqtSlot(Document)
     def db_update(self,doc):
         pass
-
 
     @pyqtSlot(Document,str)
     def discover_return(self,document,job_id):

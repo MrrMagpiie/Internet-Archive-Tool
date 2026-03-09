@@ -46,14 +46,13 @@ class SettingsPage(Page):
             label_text = key.replace('_', ' ').title() + ":"
             
             # 2. Determine Widget by Type
-            # Note: In Python, bool is a subclass of int, so check bool FIRST!
             if isinstance(value, bool):
                 widget = QCheckBox()
                 widget.setChecked(value)
                 
             elif isinstance(value, int):
                 widget = QSpinBox()
-                widget.setRange(0, 99999) # Set a wide generic range
+                widget.setRange(0, 99999) 
                 widget.setValue(value)
                 
             elif isinstance(value, float):
@@ -64,7 +63,7 @@ class SettingsPage(Page):
             elif isinstance(value, str):
                 widget = QLineEdit(value)
                 
-                # UX Heuristic: Hide text if it looks like a password or token
+                # Hide text if it looks like a password or token
                 if "key" in key.lower() or "token" in key.lower() or "password" in key.lower():
                     widget.setEchoMode(QLineEdit.EchoMode.PasswordEchoOnEdit)
                     
