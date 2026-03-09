@@ -14,6 +14,7 @@ from view.components.Page import Page
 from view.components.SchemaForm import SchemaForm, EditableSchemaForm
 from view.components.CenteredFlowLayout import CenteredFlowLayout
 from view.components.ThumbnailCard import ThumbnailCard
+from view.components.InteractiveImageView import InteractiveImageViewer
 from model.data.metadata import Metadata
 from model.data.document import Document
 from model.data.schema import DocumentSchema

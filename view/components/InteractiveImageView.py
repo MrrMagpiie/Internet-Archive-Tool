@@ -66,9 +66,9 @@ class InteractiveImageViewer(QGraphicsView):
 
     def apply_high_quality_render(self):
         """Applies the heavy smoothing math only when the user pauses."""
-        # 1. Turn the expensive, high-quality rendering engine back on
+        # 1. Turn high-quality rendering engine back on
         self.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform, True)
         self.setRenderHint(QPainter.RenderHint.Antialiasing, True)
         
-        # 2. Force the viewport to redraw itself right now with the new settings
+        # 2. Force the viewport to redraw itself with the new settings
         self.viewport().update()
