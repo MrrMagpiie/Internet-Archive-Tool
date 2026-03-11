@@ -1,24 +1,42 @@
-from config import RESOURCES_PATH
+from config import IA_CONFIG, DEV_MODE
 import internetarchive as ia
 import zipfile
 import os
 import json
 from pathlib import Path
 from wand.image import Image
+import datetime
+from exceptions import*
 
-def uploadDocument(doc:Document):
+def update_metadata(doc,metadata):
+    metadata_file = doc.metadata_file
+    if metadata_file != None:
+        with open(metadata_file,'w') as f:
+            try:
+                json.dump(metadata,f,indent=4)
+                print('metadata updated')
+            except Exception as e:
+                print(f'metadata save error: {e}')
+
+def load_metadata(doc):
+    '''load metadata for current document'''
+    metadata_file = doc.metadata_file
+    if metadata_file != None:
+        with open(metadata_file,'r') as f:
+            metadata = json.load(f)
+            return metadata
+
+def uploadDocument(doc:Document,ticket:JobTicket):
         if not doc.metadata_file or not Path(doc.metadata_file).is_file():
-            raise Exception(f"Error: Metadata file not found for {doc.doc_id}")
+            raise MetadataError(f"Error: Metadata file not found for {doc.doc_id}")
 
         zip_path = zip_doc(doc)
         pdf_path = create_pdf_from_tiffs(doc)
         upload(doc,[zip_path,pdf_path])
 
-def setup(self,email: str, password: str):
-        target_dir = os.path.join(RESOURCES_PATH,'/ia.ini')
-
+def setup(email: str, password: str):
         try:
-            ia.configure(email,password=password,config_file=target_dir) 
+            ia.configure(email,password=password,config_file=IA_CONFIG) 
         except Exception as e:
             raise e 
 
@@ -54,22 +72,69 @@ def create_pdf_from_tiffs(doc):
     except Exception as e:
         raise e
 
-def upload(doc:Document, files:list):
-        with open(doc.metadata_file, 'r') as f:
-            metadata_dict = json.load(f)
+from enum import Enum
+class IdentifierStatus(Enum):
+    FREE = 1
+    ACTIVE = 2
+    OFFLINE = 3
 
-        identifier = metadata_dict.get('identifier')
-        if not identifier:
-            raise Exception(f"Error: 'identifier' not found in metadata for {doc.doc_id}")
+def check_identifier_status(identifier: str) -> IdentifierStatus:
+    """Pings the IA database and returns the current state of the identifier."""
+    item = ia.get_item(identifier)
+    
+    if not item.exists:
+        return IdentifierStatus.FREE
+        
+    if item.is_dark:
+        return IdentifierStatus.OFFLINE
+        
+    return IdentifierStatus.ACTIVE
+        
+        
+def get_unique_identifier(base_identifier:str) -> str:
+    """
+    Pings the Internet Archive for collisions.
+    If taken, appends the current digitization date (e.g., _20260309).
+    """
+    current_id = base_identifier
+    
+    if not ia.get_item(current_id).exists:
+        return current_id
+        
+    # 2. If base_id is taken, append today's date
+    date_str = datetime.date.today().strftime("%Y%m%d")
+    current_id = f"{base_identifier}_{date_str}"
+    
+    # 3. Fallback: add a simple counter to the date to guarantee safety.
+    counter = 1
+    while ia.get_item(current_id).exists:
+        current_id = f"{base_identifier}_{date_str}_{counter}"
+        counter += 1
+        
+    return current_id
 
-        print(f"Starting upload for item: {identifier}...")
-        try:
-            r = ia.upload(
-                identifier=identifier,
-                files=files,
-                metadata=metadata_dict,
-                verbose=True
-            )
-            return r
-        except Exception as e:
-            raise e
+def upload(doc:Document, files:list,edit = False):
+    metadata_dict = load_metadata(doc)
+    identifier = metadata_dict.get('identifier')
+    if not identifier:
+        raise MetadataError(f"Error: 'identifier' not found in metadata for {doc.doc_id}")
+
+    if DEV_MODE:
+        print("DEV MODE ACTIVE: Redirecting upload to test_collection...")
+        # Override the collection to the sandbox
+        metadata_dict['collection'] = 'test_collection'
+        identifier = f"{identifier}_TEST"
+        metadata_dict['identifier'] = identifier
+        update_metadata(doc,metadata_dict)
+
+    print(f"Starting upload for item: {identifier}...")
+    try:
+        r = ia.upload(
+            identifier=identifier,
+            files=files,
+            metadata=metadata_dict,
+            verbose=True
+        )
+        return r
+    except Exception as e:
+        raise e

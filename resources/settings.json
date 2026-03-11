@@ -3,5 +3,6 @@
     "DATABASE_PATH": "./manifest.db",
     "IA_CONFIG": "./resources/ia.ini",
     "ADMIN_UPLOAD": true,
+    "AUTO_GENERATE_IDENTIFIER": false,
     "AUTO_DESKEW": true
 }

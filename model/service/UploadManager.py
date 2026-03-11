@@ -3,14 +3,13 @@ from queue import Queue
 from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot
 
 from model.data.document import Document
-from model.logic.upload import uploadDocument, setup
-
+from model.logic.upload import uploadDocument, setup, get_unique_identifier,check_identifier_status
 
 class UploadManager(QObject):
     """
     A QObject worker that runs the full document pipeline
     """
-    success = pyqtSignal(Document,str)
+    success = pyqtSignal(object,str)
     error = pyqtSignal(str,str)
 
     def __init__(self,queue: Queue):
@@ -32,16 +31,23 @@ class UploadManager(QObject):
                     break 
 
                 try:
-                    if command == 'upload':
-                        doc = data
-                        uploadDocument(doc)
-                        self.success.emit(doc,signals.job_id)
-
-                    if command == 'setup':
-                        setup_data = data
-                        email , password = setup_data
-                        setup(email,password)
-                        self.success.emit(doc,signals.job_id)
+                    match command:
+                        case 'upload':
+                            doc = data
+                            uploadDocument(doc,signals)
+                            self.success.emit(doc,signals.job_id)
+                        case 'setup':
+                            email , password  = data
+                            setup(email,password)
+                            signals.data.emit(True,signals.job_id)
+                        case 'unique_identifier':
+                            identifier = data
+                            signals.data.emit(get_unique_identifier(identifier),signals.job_id)
+                        case 'identifier_status':
+                            identifier = data
+                            signals.data.emit(check_identifier_status(identifier),signals.job_id)
+                        case _:
+                            raise ValueError(f"Worker {self} received an unknown command: {command}")
                             
                 except Exception as e:
                     err_msg = (f"Error processing command {command} for {signals.job_id}: {e}")

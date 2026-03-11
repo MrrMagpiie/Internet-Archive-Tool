@@ -9,7 +9,7 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import pyqtSlot,pyqtSignal, QSize, QObject, Qt
 from PyQt6.QtGui import QFont,QIcon, QColor, QCursor,QPixmap,QPainter
 
-
+from config import DEV_MODE
 #import pages
 from view.pages import *
 from view.components import ProcessManagerWidget
@@ -18,18 +18,18 @@ class MainWindow(QMainWindow):
     main_window_ready = pyqtSignal()
     def __init__(self,parent):
         super().__init__()
-        
-        self.setWindowTitle("Archival Wizard")
         self.setMinimumSize(QSize(100, 600)) 
         self.gui_manager = parent
-        self.config_path = Path("./Resources/ia.ini")    
         self.views = {}
         # Start
         self._create_layout()
 
 
     def _create_layout(self):
-        self.setWindowTitle("School Archive Digitization Pipeline")
+        if DEV_MODE:
+            self.setWindowTitle("Development: Archive Digitization Pipeline")
+        else:
+            self.setWindowTitle("School Archive Digitization Pipeline")
         self.resize(1200, 800)
         
         # Main Layout container
