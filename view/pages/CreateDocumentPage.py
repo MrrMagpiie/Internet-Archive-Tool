@@ -40,7 +40,6 @@ class CreateDocumentPage(Page):
         self.create_layout()
         self.current_document = None
 
-
     def create_layout(self):
         splitter = QSplitter(Qt.Orientation.Horizontal)
         
@@ -139,7 +138,6 @@ class CreateDocumentPage(Page):
         else:
             QMessageBox.information(self,'Select Document Folder','Please choose the documents location')
 
-
     # --- Deskew Stuff ---
     def run_deskew(self):
         ticket = JobTicket()
@@ -209,7 +207,7 @@ class CreateDocumentPage(Page):
 
     @pyqtSlot(Document,str)
     def discover_return(self,document,job_id):
-            self.new_document.emit(document)
+        self.new_document.emit(document)
     
     @pyqtSlot(Document,str)
     def deskew_return(self,document,job_id):

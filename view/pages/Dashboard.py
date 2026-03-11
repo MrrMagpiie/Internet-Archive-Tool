@@ -14,7 +14,7 @@ from view.components.CenteredFlowLayout import CenteredFlowLayout
 from view.components.DashboardDocumentCard import DocumentCard
 from model.data.document import Document
 from model.logic.helpers import clear_layout
-from model.service.signals import JobTicket
+from model.service.signals import JobTicket, DatabaseTicket
 
 
 class NewCard(QFrame):
@@ -305,7 +305,7 @@ class ListView(Page):
     @pyqtSlot(dict)
     def request_documents(self):
         filter_data = {'needs_approval':False}
-        ticket = JobTicket()
+        ticket = DatabaseTicket()
         ticket.data.connect(self.doc_return)
         ticket.error.connect(self.doc_error)
         self.db_request.emit(filter_data,ticket)

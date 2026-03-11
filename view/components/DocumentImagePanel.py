@@ -5,9 +5,10 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtGui import QPixmap, QColor
 from PyQt6.QtCore import pyqtSignal, pyqtSlot, Qt,QObject
 
-from model.data.document import Document
+from model.data import Document
 from view.components import Page
 from view.components import ImageLabel
+from view.components.InteractiveImageView import InteractiveImageViewer
 from model.service.signals import JobTicket
 from pathlib import Path
 
@@ -25,14 +26,12 @@ class DocumentImagePanel(QWidget):
         self.current_image_index = 0
         self._create_loading_placeholder()
         self._create_layout()
-
-        
+      
     def _create_loading_placeholder(self) -> QPixmap:
         """Creates a simple gray placeholder image. You can replace this with a real image file."""
         pixmap = QPixmap(800, 1000)
         pixmap.fill(QColor(220, 220, 220)) # Light gray
         self.loading_pixmap = pixmap
-
 
     def _create_layout(self):
         """Creates the widget that contains the image viewer and navigation."""
@@ -64,7 +63,6 @@ class DocumentImagePanel(QWidget):
         prev_image_btn.clicked.connect(self._go_to_previous_image)
         next_image_btn.clicked.connect(self._go_to_next_image)
         
-
     def show_new_document(self, doc: Document):
         self.current_doc = doc
         self.images = list(doc.images.keys())
@@ -141,3 +139,11 @@ class DocumentImagePanel(QWidget):
     @pyqtSlot(str,str)
     def image_error(self,msg,job_id):
         pass
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton:
+            # Emit the signal with this card's title
+            if self.current_image_index in self.pixmap_cache:
+                self.interactive_popout = InteractiveImageViewer()
+                self.interactive_popout.set_pixmap(self.pixmap_cache[self.current_image_index])
+                self.interactive_popout.show()

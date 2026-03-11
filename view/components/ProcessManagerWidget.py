@@ -3,14 +3,14 @@ from PyQt6.QtWidgets import (
     QPushButton, QScrollArea, QFrame, QSizePolicy
 )
 from PyQt6.QtCore import Qt, QSize, pyqtSignal, QPropertyAnimation, QEasingCurve, pyqtSlot
-
+from model.service.signals import JobTicket
 # --- A Single Row in the Process List ---
 class ProcessItem(QFrame):
-    cancel_requested = pyqtSignal() # Signal to stop the thread
+    cancel_requested = pyqtSignal(str) # Signal to stop the thread
 
-    def __init__(self, title, process_id):
+    def __init__(self, title, ticket: JobTicket):
         super().__init__()
-        self.process_id = process_id
+        self.ticket = ticket
         self.setFixedHeight(50)
         self.setStyleSheet("""
             ProcessItem {
@@ -25,6 +25,9 @@ class ProcessItem(QFrame):
         # 1. Label
         self.lbl_name = QLabel(title)
         self.lbl_name.setStyleSheet("font-weight: bold; color: #444;")
+
+        self.step_lbl = QLabel()
+        self.step_lbl.setStyleSheet("font-weight: bold; color: #444;")
         
         # 2. Progress Bar
         self.pbar = QProgressBar()
@@ -46,7 +49,7 @@ class ProcessItem(QFrame):
             }
             QPushButton:hover { color: #d73a49; background: #ffeef0; border-radius: 12px; }
         """)
-        btn_cancel.clicked.connect(self.cancel_requested.emit)
+        btn_cancel.clicked.connect(self.cancel)
         
         # Layout Assembly
         # Stack Label and Bar vertically for compactness
@@ -54,20 +57,28 @@ class ProcessItem(QFrame):
         v_col.setSpacing(2)
         v_col.setContentsMargins(0,0,0,0)
         v_col.addWidget(self.lbl_name)
+        v_col.addWidget(self.step_lbl)
         v_col.addWidget(self.pbar)
         
-        layout.addLayout(v_col)
         layout.addWidget(btn_cancel)
+        layout.addLayout(v_col)
         self.setLayout(layout)
 
-    def update_progress(self, value):
+    def update_progress(self,value,step_text):
         self.pbar.setValue(value)
+        if step_text:
+            self.step_lbl.setText(step_text)
+    
+    def cancel(self):
+        self.ticket.cancel()
+        self.cancel_requested.emit(self.ticket.job_id)
 
-class Task():
-    def __init__(command, doc_id, task_id):
-        self.task_id = task_id
+            
+'''class Task():
+    def __init__(command, doc_id, ticket):
+        self.ticket = ticket
         self.command = command
-        self.doc_id = doc_id
+        self.doc_id = doc_id'''
 
 
 # --- The Main Expandable Widget ---
@@ -98,9 +109,9 @@ class ProcessManagerWidget(QWidget):
         self.scroll_area.setWidgetResizable(True)
         self.scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.scroll_area.setStyleSheet("border: none; background: #f6f8fa;")
-        self.scroll_area.setFixedHeight(0) # Start hidden
+        self.scroll_area.setFixedHeight(0)
         
-        # --- 2. The Header (Always Visible) ---
+        # --- 2. The Header  ---
         self.header = QFrame()
         self.header.setFixedHeight(40)
         self.header.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -121,7 +132,7 @@ class ProcessManagerWidget(QWidget):
         self.lbl_summary = QLabel("No active processes")
         self.lbl_summary.setStyleSheet("font-weight: 600; font-size: 12px;")
         
-        self.lbl_icon = QLabel("▲") # Up arrow implies "Click to expand up"
+        self.lbl_icon = QLabel("▲")
         
         header_layout.addWidget(self.lbl_summary)
         header_layout.addStretch()
@@ -131,7 +142,6 @@ class ProcessManagerWidget(QWidget):
         # Click event to toggle
         self.header.mousePressEvent = self.toggle_expand
         
-        # Add to main layout (Scroll Area ABOVE Header implies "Expand Up")
         self.layout.addWidget(self.scroll_area)
         self.layout.addWidget(self.header)
         
@@ -159,35 +169,35 @@ class ProcessManagerWidget(QWidget):
         # Ensure layout updates
         self.anim.finished.connect(lambda: self.scroll_area.setFixedHeight(target_height))
 
-    @pyqtSlot(str,str,str)
-    def add_task(self,task_command ,task_item,task_id,):
+    @pyqtSlot(str,str,object)
+    def add_task(self,task_command ,task_item,ticket,):
         """Adds a new row to the list"""
-        if task_id in self.active_tasks:
+        if ticket.job_id in self.active_tasks:
             return
             
         task_name = f'{task_command} {task_item}'
         # Create item
-        item = ProcessItem(task_name, task_id)
+        item = ProcessItem(task_name, ticket)
         
         # Connect cancel signal
-        item.cancel_requested.connect(lambda: self.remove_task(task_id))
+        item.cancel_requested.connect(self.remove_task)
         
         # Add to layout (Insert at 0 to put new tasks at the bottom closest to header)
         self.list_layout.insertWidget(self.list_layout.count() - 1, item)
-        self.active_tasks[task_id] = item
+        self.active_tasks[ticket.job_id] = item
         
         self.update_summary()
         self.setVisible(True) # Show the bar
 
-    @pyqtSlot(str, int)
-    def update_task_progress(self, task_id, progress):
-        if task_id in self.active_tasks:
-            self.active_tasks[task_id].update_progress(progress)
+    @pyqtSlot(str, int, object)
+    def update_task_progress(self, job_id, progress,step_text):
+        if job_id in self.active_tasks:
+            self.active_tasks[job_id].update_progress(progress,step_text)
 
     @pyqtSlot(str)
-    def remove_task(self, task_id):
-        if task_id in self.active_tasks:
-            widget = self.active_tasks.pop(task_id)
+    def remove_task(self, job_id):
+        if job_id in self.active_tasks:
+            widget = self.active_tasks.pop(job_id)
             widget.deleteLater()
             self.update_summary()
             
