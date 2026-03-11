@@ -39,6 +39,9 @@ class GUIManager(QObject):
         review_page.document_reviewed.connect(self.process_manager.request_update_doc)
         self.process_manager.db_update.connect(review_page.db_update)
         review_page.upload.connect(self.process_manager.request_upload)
+        review_page.identifier_status.connect(self.process_manager.request_identifier_status)
+        review_page.unique_identifier.connect(self.process_manager.request_unique_identifier)
+        review_page.save_metadata.connect(self.process_manager.request_save_metadata)
         return review_page
 
     def CreateDocumentPage(self):

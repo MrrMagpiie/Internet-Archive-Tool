@@ -39,23 +39,22 @@ class DatabaseManager(QObject):
                     break 
 
                 try:
-                    if command == 'load_documents':
-                        filter_data = data
-                        docs = self._load_documents(filter_data)
-                        signals.data.emit(docs,signals.job_id)
-                        
-                    
-                    elif command == 'load_single_document':
-                        doc_id = data
-                        doc = self._load_single_document(doc_id)
-                        signals.data.emit(doc,signals.job_id)
-                        
-
-                    elif command == 'save_document':
-                        document = data
-                        self._save_document(document)
-                        signals.data.emit(document,signals.job_id)
-                        self.update.emit(document,signals.job_id)
+                    match command: 
+                        case 'load_documents':
+                            filter_data = data
+                            docs = self._load_documents(filter_data)
+                            if not signals.is_cancelled():
+                                signals.data.emit(docs,signals.job_id)
+                        case 'load_single_document':
+                            doc_id = data
+                            doc = self._load_single_document(doc_id)
+                            if not signals.is_cancelled():
+                                signals.data.emit(doc,signals.job_id)
+                        case 'save_document':
+                            document = data
+                            self._save_document(document)
+                            signals.data.emit(document,signals.job_id)
+                            self.update.emit(document,signals.job_id)
                 
                 except Exception as e:
                     signals.error.emit(f"Error processing command {command} for {signals.job_id}: {e}",signals.job_id)
@@ -201,3 +200,8 @@ class DatabaseManager(QObject):
                 VALUES (?, ?, ?, ?, ?)
             ''', (image_id, doc.doc_id, image_data['order'], image_data['original'], image_data['processed']))
         self.conn.commit()
+
+    def cancel_current_query(self):
+        """Called by the main GUI thread to instantly abort the active SQLite query."""
+        if self.conn:
+            self.conn.interrupt()

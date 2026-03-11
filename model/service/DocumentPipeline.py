@@ -1,3 +1,4 @@
+from sqlite3 import OperationalError
 from pathlib import Path
 from queue import Queue
 from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot
@@ -41,34 +42,44 @@ class DocumentPipelineWorker(QObject):
                     break 
 
                 try:
-                    if command == 'discover':
-                        doc_data = data
-                        in_dir, out_dir = doc_data
-                        doc = self.discover(in_dir,out_dir)
-                        if isinstance(doc,Document):
-                            signals.data.emit(doc,signals.job_id)
-                            self.success.emit(doc,signals.job_id)
+                    match command:
+                        case 'discover':
+                            doc_data = data
+                            in_dir, out_dir = doc_data
+                            doc = self.discover(in_dir,out_dir)
+                            if isinstance(doc,Document) and  not signals.is_cancelled():
+                                signals.data.emit(doc,signals.job_id)
+                                self.success.emit(doc,signals.job_id)
                             
-                    if command == 'metadata':
-                        doc, metadata, metadata_type = data
-                        if isinstance(doc,Document):
-                            doc = add_metadata_to_document(doc, metadata,metadata_type)
-                            doc.status['metadata'] = True
-                            signals.data.emit(doc,signals.job_id)
-                            self.success.emit(doc,signals.job_id)
+                        case 'metadata':
+                            doc, metadata, metadata_type = data
+                            if isinstance(doc,Document):
+                                doc = add_metadata_to_document(doc, metadata,metadata_type)
+                                doc.status['metadata'] = True
+                            if not signals.is_cancelled():
+                                signals.data.emit(doc,signals.job_id)
+                                self.success.emit(doc,signals.job_id)
 
-                    if command == 'deskew':
-                        doc = data
-                        if isinstance(doc,Document):
-                            self.deskew(doc)
-                            doc.status['deskewed'] = True
-                            signals.data.emit(doc,signals.job_id)
-                            self.success.emit(doc,signals.job_id)
+                        case 'deskew':
+                            doc = data
+                            if isinstance(doc,Document):
+                                self.deskew(doc)
+                                doc.status['deskewed'] = True
+                            if not signals.is_cancelled():
+                                signals.data.emit(doc,signals.job_id)
+                                self.success.emit(doc,signals.job_id)
 
                 except Exception as e:
                     err_msg =f"Error processing command {command} for {signals.job_id}: {e}"
                     signals.error.emit(err_msg,signals.job_id)
                     self.error.emit(err_msg,signals.job_id)
+
+                except sqlite3.OperationalError as e:
+                    if "interrupted" in str(e).lower():
+                        print(f"Database query for {signals.job_id} was successfully aborted.")
+                        signals.error.emit("Cancelled by user", signals.job_id)
+                    else:
+                        signals.error.emit(f"SQLite Error: {e}", signals.job_id)
 
         except Exception as e:
             self.error.emit(f"Document Worker-level error:  {e}",'')

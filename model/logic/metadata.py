@@ -4,10 +4,14 @@ from model.data.document import Document
 import json
 
 def add_metadata_to_document(doc:Document,metadata:Metadata,metadata_file_type):
-    doc.metadata_file = doc.path / 'metadata.json'
-    doc.metadata_file_type = metadata_file_type
-    
-    data = metadata.to_dict()
+    if not doc.metadata_file or not doc.metadata_file.exists():
+        doc.metadata_file = doc.path / 'metadata.json'
+        doc.metadata_file_type = metadata_file_type
+    if isinstance(metadata,Metadata):
+        data = metadata.to_dict()
+    elif isinstance(metadata,dict):
+        data = metadata
+
     try:
         doc.metadata_file.parent.mkdir(parents=True, exist_ok=True)
         with open(doc.metadata_file,'w') as f:

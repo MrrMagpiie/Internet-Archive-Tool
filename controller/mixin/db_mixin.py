@@ -1,7 +1,7 @@
 from PyQt6.QtCore import QThread, pyqtSlot, pyqtSignal,QObject
 from queue import Queue
 from model.service.DatabaseManager import DatabaseManager
-from model.service.signals import JobTicket
+from model.service.signals import JobTicket, DatabaseTicket
 from config import DB_PATH
 
 class DatabaseMixin:
@@ -21,18 +21,25 @@ class DatabaseMixin:
         self.db_thread.start()
 
     @pyqtSlot(object, QObject)
-    def request_docs_by_status(self, filter_data, ticket):
+    def request_docs_by_status(self, filter_data, ticket:DatabaseTicket):
+        ticket.interupt.connect(self.db_interupt)
         self.db_queue.put(('load_documents', ticket, filter_data))
    
     @pyqtSlot(str, QObject)
-    def request_doc_by_id(self, doc_id, ticket):
+    def request_doc_by_id(self, doc_id, ticket:DatabaseTicket):
+        ticket.interupt.connect(self.db_interupt)
         self.db_queue.put(('load_single_document', ticket, doc_id))
     
     @pyqtSlot(object,QObject)
     def request_update_doc(self, doc, ticket=None):
         if not ticket:
-            ticket = JobTicket()
+            ticket = DatabaseTicket()
+        ticket.interupt.connect(self.db_interupt)
         self.db_queue.put(('save_document', ticket, doc))
+
+    @pyqtSlot()
+    def db_interupt():
+        self.db_manager.cancel_current_query()
 
     @pyqtSlot(object,str)
     def _handle_db_update(self, doc,job_id):

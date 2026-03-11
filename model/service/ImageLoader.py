@@ -34,25 +34,26 @@ class ImageLoader(QObject):
                     break 
 
                 try:
-                    if command == 'single':
-                        image_path = data
-                        if isinstance(image_path,Path):
-                            pixmap = load_image(image_path)
-                            signals.data.emit(pixmap,signals.job_id)
-                            self.success.emit(signals.job_id)
-                    if command == 'series':
-                        
-                        image_path_list = data
-                        if isinstance(image_path_list,list):
-                            pixmap_list = load_image_series(image_path_list)
-                            signals.data.emit(pixmap_list,signals.job_id)
-                            self.success.emit(signals.job_id)
+                    match command:
+                        case 'single':
+                            image_path = data
+                            if isinstance(image_path,Path):
+                                pixmap = load_image(image_path)
+                                if not signals.is_cancelled():
+                                    signals.data.emit(pixmap,signals.job_id)
+                                    self.success.emit(signals.job_id)
+                        case 'series':
+                            image_path_list = data
+                            if isinstance(image_path_list,list):
+                                pixmap_list = load_image_series(image_path_list)
+                                if not signals.is_cancelled():
+                                    signals.data.emit(pixmap_list,signals.job_id)
+                                    self.success.emit(signals.job_id)
+
                 except Exception as e:
                     err_msg = f"Error processing command {command} for {signals.job_id}: {e}"
                     signals.error.emit(err_msg,signals.job_id)
                     self.error.emit(err_msg,signals.job_id)
-
-
 
         except Exception as e:
             self.error.emit(f"Image Worker-level error:  {e}",'')
