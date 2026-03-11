@@ -17,21 +17,22 @@ class ImageLoader(QObject):
     def __init__(self, queue: Queue):
         super().__init__()
         self.queue = queue
-        print('initImageLoader')
+        print('init ImageLoader')
 
     @pyqtSlot()
     def run(self):
         """The main worker loop. This runs in the QThread."""
         
         try:
-            print('Hello from Image Loader')
+            print('Image Loader queue running')
             while True:
                 command,signals, data = self.queue.get()
+                if command == 'shutdown':
+                    break 
                 if signals.is_cancelled():
                             continue
                 print(f'running {command}')
-                if command == 'shutdown':
-                    break 
+                
 
                 try:
                     match command:

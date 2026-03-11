@@ -19,24 +19,25 @@ class DatabaseManager(QObject):
         self.db_path = db_path
         self.queue = queue
         self.conn = None 
-        print('initDB')
+        print('init DatabaseManager')
 
     @pyqtSlot()
     def run(self):
         """The main worker loop. This runs in the QThread."""
         try:
-            print('Hello from the Database Manager')
+            print('Database Manager queue running')
             self.db_path.parent.mkdir(parents=True, exist_ok=True)
             self.conn = sqlite3.connect(self.db_path)
             self._create_tables()
 
             while True:
                 command, signals, data = self.queue.get()
+                if command == 'shutdown':
+                    break 
                 if signals.is_cancelled():
                             continue
                 print(f'db running {command}')
-                if command == 'shutdown':
-                    break 
+                
 
                 try:
                     match command: 

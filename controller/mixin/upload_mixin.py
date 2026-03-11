@@ -49,6 +49,6 @@ class UploadMixin:
         print(f'Upload Success: {doc.doc_id}')
 
     def shutdown_upload(self):
-        self.upload_queue.put(('shutdown', None))
+        self.upload_queue.put(('shutdown', None, None))
         self.upload_thread.quit()
         self.upload_thread.wait()

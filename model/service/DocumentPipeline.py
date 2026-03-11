@@ -24,28 +24,27 @@ class DocumentPipelineWorker(QObject):
     def __init__(self,queue: Queue):
         super().__init__()
         self.queue = queue
-        print('initDocProc')
+        print('init DocumentPipelineWorker')
         
 
     @pyqtSlot()
     def run(self):
         """The main worker loop. This runs in the QThread."""
         try:
-            print('Hello from Document Pipeline')
+            print('Document Pipeline queue running')
             signals = None
             while True:
                 command,signals, data = self.queue.get()
+                if command == 'shutdown':
+                    break 
                 if signals.is_cancelled():
                             continue
                 print(f'running {command}')
-                if command == 'shutdown':
-                    break 
-
+            
                 try:
                     match command:
                         case 'discover':
-                            doc_data = data
-                            in_dir, out_dir = doc_data
+                            in_dir, out_dir = data
                             doc = self.discover(in_dir,out_dir)
                             if isinstance(doc,Document) and  not signals.is_cancelled():
                                 signals.data.emit(doc,signals.job_id)
@@ -98,7 +97,7 @@ class DocumentPipelineWorker(QObject):
                         doc = create_document(doc_id,documents_dict[doc_id])
                         return doc
                     except Exception as e:
-                        self.error.emit(f'Document Creation Error: {doc_id},{e}')
+                        raise(f'Document Creation Error: {doc_id}',{e})
             else:
                 print('more that one Doc in folder')
                 return False
@@ -107,5 +106,5 @@ class DocumentPipelineWorker(QObject):
         try:
             deskew_document(doc)
         except Exception as e:
-            self.error.emit(f'Deskewing Error: {doc.doc_id},{e}')
+            raise(f'Deskewing Error: {doc.doc_id},{e}')
     

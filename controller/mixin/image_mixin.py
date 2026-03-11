@@ -35,3 +35,8 @@ class ImageMixin:
     def _handle_image_success(self,job_id):
         self.task_finished.emit(job_id)
         print('image loaded')
+
+    def shutdown_image_loading(self):
+        self.image_queue.put(('shutdown', None, None))
+        self.image_thread.quit()
+        self.image_thread.wait()

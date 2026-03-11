@@ -47,6 +47,6 @@ class DatabaseMixin:
         self.db_update.emit(doc)
 
     def shutdown_database(self):
-        self.db_queue.put(('shutdown', None))
+        self.db_queue.put(('shutdown', None, None))
         self.db_thread.quit()
         self.db_thread.wait()

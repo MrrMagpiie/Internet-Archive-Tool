@@ -40,6 +40,6 @@ class ProcessingMixin:
         print(f'Pipeline Success: {job_id} {doc.doc_id}')
 
     def shutdown_processing(self):
-        self.proc_queue.put(('shutdown', None))
+        self.proc_queue.put(('shutdown', None, None))
         self.proc_thread.quit()
         self.proc_thread.wait()

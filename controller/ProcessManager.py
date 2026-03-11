@@ -67,5 +67,6 @@ class ProcessManager(QObject, DatabaseMixin, ProcessingMixin, UploadMixin, Image
         self.shutdown_database()
         self.shutdown_processing()
         self.shutdown_upload()
+        self.shutdown_image_loading()
         if event:
             event.accept()
