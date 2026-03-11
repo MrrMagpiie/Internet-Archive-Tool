@@ -14,7 +14,7 @@ from model.data.document import Document
 from model.data.schema import DocumentSchema
 from model.logic.helpers import *
 import json
-from config import RESOURCES_PATH
+from config import DOCUMENT_SCHEMA_PATH
 
 class MetadataPage(Page):
     new_schema = pyqtSignal(DocumentSchema)
@@ -61,7 +61,7 @@ class MetadataPage(Page):
         
     # form stuff
     def _load_metadata_formats(self):
-        with open(RESOURCES_PATH /'document_schema.json','r') as f:
+        with open(DOCUMENT_SCHEMA_PATH,'r') as f:
             self.metadata_formats = json.load(f)
         self.doc_type_combo.clear()
         for key,value in self.metadata_formats.items():

@@ -11,8 +11,8 @@ from controller.mixin import *
 # Import Data Models
 from model.data.document import Document
 from model.data.schema import DocumentSchema
-from config import IA_CONFIG
-from SetupGui import FirstRunSetupDialog
+from config import IA_CONFIG_PATH
+from view.pages.SetupGui import FirstRunSetupDialog
 
 class ProcessManager(QObject, DatabaseMixin, ProcessingMixin, UploadMixin, ImageMixin, SchemaMixin):
     """
@@ -27,20 +27,25 @@ class ProcessManager(QObject, DatabaseMixin, ProcessingMixin, UploadMixin, Image
     task_finished = pyqtSignal(str) # job_id
 
     db_update = pyqtSignal(Document) # Broadcasts DB changes to all views
-    need_setup = pyqtSignal()        # Trigger Setup Wizard if config missing
+    need_setup = pyqtSignal(bool)        # Trigger Setup Wizard if config missing
     global_error = pyqtSignal(str) # Global error log, msg
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        # Check First Run
-        if not IA_CONFIG.exists():
-            self._first_run()
-
         # Initialize the subsystems from Mixins
         self.setup_database()
         self.setup_processing()
         self.setup_upload()
         self.setup_image_loading()
+
+
+
+    def check_setup(self):
+        if not IA_CONFIG_PATH.exists():
+            self.need_setup.emit(True)
+        else:
+            self.need_setup.emit(False)
+
 
     # --- Error Handling ---
     @pyqtSlot(str)
@@ -49,16 +54,6 @@ class ProcessManager(QObject, DatabaseMixin, ProcessingMixin, UploadMixin, Image
         self.busy_stop.emit()
         print(f"{error_msg}")
         self.global_error.emit(error_msg)
-
-    def _first_run(self):
-        """Checks if ia.ini exists and has the [s3] keys configured."""
-        dialog = FirstRunSetupDialog()
-        dialog.creds.connect(self.ia_config)
-        result = dialog.exec() 
-        
-        if result == QDialog.DialogCode.Rejected:
-            sys.exit(0) # User canceled, close the app safely
-
 
     # --- Cleanup ---
     def closeEvent(self, event=None):

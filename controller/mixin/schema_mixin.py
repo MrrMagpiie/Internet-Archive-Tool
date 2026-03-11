@@ -1,10 +1,8 @@
 import json
 from PyQt6.QtCore import QThread, pyqtSlot, QObject
 from pathlib import Path
-from config import RESOURCES_PATH
+from config import DOCUMENT_SCHEMA_PATH
 from model.data.schema import DocumentSchema
-
-schema_path = RESOURCES_PATH / 'document_schema.json'
 
 class SchemaMixin:
     """Handles Schema creation/deletion logic."""   
@@ -17,7 +15,7 @@ class SchemaMixin:
 
             data[schema_dict.get('schema_name')] = schema_dict
             
-            with open(schema_path, 'w') as f: 
+            with open(DOCUMENT_SCHEMA_PATH, 'w') as f: 
                 json.dump(data, f, indent=4)
                     
         except Exception as e:
@@ -30,7 +28,7 @@ class SchemaMixin:
             if schema_name in data:
                 del data[schema_name]
                 
-                with open(schema_path, 'w') as f: 
+                with open(DOCUMENT_SCHEMA_PATH, 'w') as f: 
                     json.dump(data, f, indent=4)
             
         except Exception as e:
@@ -38,8 +36,8 @@ class SchemaMixin:
             
     def load_schema(self):
         try:    
-            if schema_path.exists():
-                with open(schema_path, 'r') as f: 
+            if DOCUMENT_SCHEMA_PATH.exists():
+                with open(DOCUMENT_SCHEMA_PATH, 'r') as f: 
                     data = json.load(f)
             else:
                 data = {}

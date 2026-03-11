@@ -10,15 +10,17 @@ from view.components.ActionDashboard import ActionDashboard
 from view.components.Page import Page
 from view.components.SchemaForm import *
 from view.pages.SchemaEditPage import SchemaEditPage
+from model.settings_manager import app_settings
 
-from config import RESOURCES_PATH
-from config import SETTINGS_PATH
 
 
 class SettingsPage(Page):
     def __init__(self,parent=None):
         super().__init__(parent)
-        self.current_settings = self.load_settings()
+        self.current_settings = app_settings.get_all()
+        self.create_layout()
+        
+    def create_layout(self):
         
         # This will map the JSON key to the PyQt Widget
         # e.g., {"ia_api_key": <QLineEdit object>}
@@ -92,30 +94,23 @@ class SettingsPage(Page):
     def save_settings(self):
         new_settings = {}
         
-        # Loop through our stored widgets and extract the data based on type
+        # Loop through stored widgets and extract the data based on type
         for key, widget in self.dynamic_widgets.items():
             if isinstance(widget, QCheckBox):
-                new_settings[key] = widget.isChecked()
+                app_settings.set(key, widget.isChecked())
             elif isinstance(widget, QSpinBox) or isinstance(widget, QDoubleSpinBox):
-                new_settings[key] = widget.value()
+                app_settings.set(key, widget.value())
+                #new_settings[key] = widget.value()
             elif isinstance(widget, QLineEdit):
-                new_settings[key] = widget.text()
+                app_settings.set(key, widget.text())
+                #new_settings[key] = widget.text()
 
-        print("New Settings to save:", new_settings)
-        
-        with open(SETTINGS_PATH, "w") as f:
-            json.dump(new_settings, f, indent=4)
+        app_settings.save()
         
         # Call your config.py save function here
         # save_config(new_settings)
         
-        QMessageBox.information(self, "Success", "Settings saved successfully.\nYou will need to restart the program for changes to take effect")
-
-    def load_settings(self):
-        if os.path.exists(SETTINGS_PATH):
-            with open(SETTINGS_PATH, "r") as f:
-                return json.load(f)
-        return default_settings
+        QMessageBox.information(self, "Success", "Settings saved successfully.")
     
     def edit_document_schema(self):
         print('edit schema pressed')

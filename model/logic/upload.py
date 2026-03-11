@@ -1,4 +1,4 @@
-from config import IA_CONFIG, DEV_MODE
+from config import IA_CONFIG_PATH, DEV_MODE
 import internetarchive as ia
 import zipfile
 import os
@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 from wand.image import Image
 import datetime
-from exceptions import*
+from model.exceptions import*
 
 def update_metadata(doc,metadata):
     metadata_file = doc.metadata_file
@@ -36,7 +36,7 @@ def uploadDocument(doc:Document,ticket:JobTicket):
 
 def setup(email: str, password: str):
         try:
-            ia.configure(email,password=password,config_file=IA_CONFIG) 
+            ia.configure(email,password=password,config_file=IA_CONFIG_PATH) 
         except Exception as e:
             raise e 
 

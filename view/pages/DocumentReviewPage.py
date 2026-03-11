@@ -17,7 +17,8 @@ from view.components.Page import Page
 from model.logic.helpers import clear_layout
 from model.logic.upload import IdentifierStatus
 from model.service.signals import JobTicket, DatabaseTicket
-from config import ADMIN_UPLOAD, AUTO_ID
+from model.settings_manager import app_settings
+
 
 class DocumentReviewPage(Page):
     document_reviewed = pyqtSignal(Document,QObject)
@@ -132,7 +133,7 @@ class DocumentReviewPage(Page):
         self._review_document("rejected")
 
     def _on_upload(self):
-        if AUTO_ID:
+        if app_settings.get('AUTO_GENERATE_IDENTIFIER'):
             self.request_unique_identifier()
         else:
             self.request_identifier_status()
@@ -143,7 +144,7 @@ class DocumentReviewPage(Page):
                 self.current_document.status['needs_approval'] = True
                 self.current_document.status['rejected'] = False
                 self.current_document.status['approved'] = True
-                if not ADMIN_UPLOAD: #or PROFILE == "Admin":
+                if not app_settings.get('ADMIN_UPLOAD'): #or PROFILE == "Admin":
                     self.upload_btn.setVisible(True)
                     
             elif new_status == 'rejected':
@@ -164,7 +165,7 @@ class DocumentReviewPage(Page):
 
     @pyqtSlot(object,str)
     def _handle_status_return(self,status:IdentifierStatus,job_id):
-        if AUTO_ID:
+        if app_settings.get('AUTO_GENERATE_IDENTIFIER'):
             match status:
                 case IdentifierStatus.FREE:
                     self.request_upload()
@@ -180,7 +181,7 @@ class DocumentReviewPage(Page):
     def request_unique_identifier(self):
         ticket = JobTicket()
         ticket.data.connect(self._handle_unique_identifier)
-        if AUTO_ID:
+        if app_settings.get('AUTO):
             self.pending_requests[ticket.job_id] = 'Auto'
         else:
             self.pending_requests[ticket.job_id] = 'Manual'

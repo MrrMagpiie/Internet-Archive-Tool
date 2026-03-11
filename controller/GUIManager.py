@@ -3,7 +3,7 @@ from pathlib import Path
 from PyQt6.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QHBoxLayout,
     QPushButton, QStackedWidget,QMainWindow, QGridLayout, 
-    QSizePolicy, QSpacerItem,
+    QSizePolicy, QSpacerItem, QDialog
 )
 from PyQt6.QtCore import pyqtSlot,pyqtSignal, QSize, QObject, Qt
 from PyQt6.QtGui import QFont
@@ -17,6 +17,7 @@ class GUIManager(QObject):
         self.process_manager = manager
         self.process_manager.busy_start.connect(self.start_loading_cursor)
         self.process_manager.busy_stop.connect(self.stop_loading_cursor)
+        self.process_manager.need_setup.connect(self.run_setup)
 
 
     def MainWindow(self):
@@ -102,7 +103,23 @@ class GUIManager(QObject):
         """Helper to restore the default cursor."""
         QApplication.restoreOverrideCursor()
 
-    @pyqtSlot()    
-    def run_setup(self):
-        FirstRunSetupDialog()
+    @pyqtSlot(bool)    
+    def run_setup(self,need_setup):
+        if need_setup:
+            dialog = FirstRunSetupDialog()
+            dialog.creds.connect(self.process_manager.ia_config)
+            result = dialog.exec() 
+            
+            if result == QDialog.DialogCode.Rejected:
+                self.process_manager.closeEvent()
+                sys.exit(1)
+            
+    
+        self.window = self.MainWindow()
+        self.window.show()
+
+
+
+
+
     

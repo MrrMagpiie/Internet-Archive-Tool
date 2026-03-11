@@ -9,7 +9,7 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtGui import QIntValidator, QDoubleValidator, QRegularExpressionValidator
 from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot, QRegularExpression
 
-from config import RESOURCES_PATH
+from config import FIELD_TYPES_PATH, RESOURCES_PATH
 from model.data.schema import DocumentSchema
 from model.data.metadata import Metadata
 from model.logic.helpers import clear_layout
@@ -25,9 +25,8 @@ class SchemaForm(QWidget):
         self._load_field_rules()
 
     def _load_field_rules(self):
-        rules_path = RESOURCES_PATH / 'field_types.json'
-        if rules_path.exists():
-            with open(rules_path, 'r') as f:
+        if FIELD_TYPES_PATH.exists():
+            with open(FIELD_TYPES_PATH, 'r') as f:
                 self.field_rules = json.load(f)
         else:
             self.field_rules = {}

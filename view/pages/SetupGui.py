@@ -8,7 +8,6 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt,pyqtSignal,pyqtSlot
 from PyQt6.QtGui import QFont
 from model.service.signals import JobTicket
-from config import SETTINGS_PATH
 
 class FirstRunSetupDialog(QDialog):
     creds = pyqtSignal(object,object)
@@ -90,7 +89,6 @@ class FirstRunSetupDialog(QDialog):
         ticket.data.connect(self._handle_setup_success)
         ticket.error.connect(self._handle_setup_error)
         self.creds.emit(ticket,(access,secret))
-
 
     @pyqtSlot(object, str)
     def _handle_setup_success(self, success, job_id):

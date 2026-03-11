@@ -3,7 +3,7 @@ from queue import Queue
 from pathlib import Path
 import os
 from model.service.UploadManager import UploadManager
-from config import IA_CONFIG
+from config import IA_CONFIG_PATH
 
 class UploadMixin:
     """Handles Internet Archive Upload logic."""
@@ -12,15 +12,14 @@ class UploadMixin:
         self.upload_thread = QThread()
         self.upload_queue = Queue()
         self.upload_worker = UploadManager(self.upload_queue)
-
         self.upload_worker.success.connect(self._handle_upload_success)
         self.upload_worker.error.connect(self._handle_worker_error)
 
         self.upload_worker.moveToThread(self.upload_thread)
         self.upload_thread.started.connect(self.upload_worker.run)
         self.upload_thread.start()
-
-        os.environ['IA_CONFIG_FILE'] =str(IA_CONFIG)
+        
+        os.environ['IA_CONFIG_FILE'] =str(IA_CONFIG_PATH)
 
     @pyqtSlot(object,object)
     def ia_config(self,ticket,data):

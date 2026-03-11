@@ -24,11 +24,12 @@ class UploadManager(QObject):
             signals = None
             while True:
                 command,signals, data = self.queue.get()
+                if command == 'shutdown':
+                    break 
                 if signals.is_cancelled():
                             continue
                 print(f'running {command}')
-                if command == 'shutdown':
-                    break 
+                
 
                 try:
                     match command:

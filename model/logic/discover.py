@@ -1,6 +1,8 @@
 from pathlib import Path
 from model.data.document import Document
-from config import DEFAULT_OUTPUT_DIR
+from model.settings_manager import app_settings
+
+from pathlib import Path
 
 def discover_images(directory) -> list:
     path = Path(directory)
@@ -28,7 +30,7 @@ def images_to_documents(image_list) -> dict:
     
 def create_document(doc_id,images):
     Doc = Document(doc_id=doc_id)
-    Doc.path = DEFAULT_OUTPUT_DIR / doc_id
+    Doc.path = Path(app_settings.get('DEFAULT_OUTPUT_DIR')) / doc_id
     print(Doc.path)
     for file, image_id, order in images:
         Doc.add_image(
