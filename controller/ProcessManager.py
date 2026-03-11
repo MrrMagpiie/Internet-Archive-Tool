@@ -11,7 +11,7 @@ from controller.mixin import *
 # Import Data Models
 from model.data.document import Document
 from model.data.schema import DocumentSchema
-from config import RESOURCES_PATH, SETTINGS_PATH
+from config import IA_CONFIG
 from SetupGui import FirstRunSetupDialog
 
 class ProcessManager(QObject, DatabaseMixin, ProcessingMixin, UploadMixin, ImageMixin, SchemaMixin):
@@ -32,6 +32,10 @@ class ProcessManager(QObject, DatabaseMixin, ProcessingMixin, UploadMixin, Image
 
     def __init__(self, parent=None):
         super().__init__(parent)
+        # Check First Run
+        if not IA_CONFIG.exists():
+            self._first_run()
+
         # Initialize the subsystems from Mixins
         self.setup_database()
         self.setup_processing()

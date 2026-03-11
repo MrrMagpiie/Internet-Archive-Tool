@@ -20,11 +20,7 @@ class UploadMixin:
         self.upload_thread.started.connect(self.upload_worker.run)
         self.upload_thread.start()
 
-        # Config Check
-        if IA_CONFIG.exists():
-            os.environ['IA_CONFIG_FILE'] =str(IA_CONFIG)
-        else:
-            self._first_run()
+        os.environ['IA_CONFIG_FILE'] =str(IA_CONFIG)
 
     @pyqtSlot(object,object)
     def ia_config(self,ticket,data):
