@@ -7,7 +7,6 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import pyqtSlot,pyqtSignal, QSize, QObject, Qt
 from PyQt6.QtGui import QFont
-
 from view.pages import *
 from view.components import ProcessManagerWidget, DocumentImagePanel
 
@@ -102,8 +101,5 @@ class GUIManager(QObject):
 
     @pyqtSlot()    
     def run_setup(self):
-        '''
-        nothing for now, will run the setup script
-        '''
-        pass
+        FirstRunSetupDialog()
     

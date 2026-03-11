@@ -1,6 +1,8 @@
 import json
+import sys
 from pathlib import Path
 from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot
+from PyQt6.QtWidgets import QDialog
 from uuid import uuid4
 
 # Import Mixins
@@ -9,7 +11,8 @@ from controller.mixin import *
 # Import Data Models
 from model.data.document import Document
 from model.data.schema import DocumentSchema
-from config import RESOURCES_PATH
+from config import RESOURCES_PATH, SETTINGS_PATH
+from SetupGui import FirstRunSetupDialog
 
 class ProcessManager(QObject, DatabaseMixin, ProcessingMixin, UploadMixin, ImageMixin, SchemaMixin):
     """
@@ -20,9 +23,8 @@ class ProcessManager(QObject, DatabaseMixin, ProcessingMixin, UploadMixin, Image
     busy_start = pyqtSignal()   # UI should show loading cursor
     busy_stop = pyqtSignal()    # UI should restore cursor
 
-    task_started = pyqtSignal(str,str,str) # command, doc_id, task_id
-    task_finished = pyqtSignal(str) # task_id
-
+    task_started = pyqtSignal(str,str,object) # command, doc_id, ticket
+    task_finished = pyqtSignal(str) # job_id
 
     db_update = pyqtSignal(Document) # Broadcasts DB changes to all views
     need_setup = pyqtSignal()        # Trigger Setup Wizard if config missing
@@ -30,7 +32,6 @@ class ProcessManager(QObject, DatabaseMixin, ProcessingMixin, UploadMixin, Image
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        
         # Initialize the subsystems from Mixins
         self.setup_database()
         self.setup_processing()
@@ -44,6 +45,16 @@ class ProcessManager(QObject, DatabaseMixin, ProcessingMixin, UploadMixin, Image
         self.busy_stop.emit()
         print(f"{error_msg}")
         self.global_error.emit(error_msg)
+
+    def _first_run(self):
+        """Checks if ia.ini exists and has the [s3] keys configured."""
+        dialog = FirstRunSetupDialog()
+        dialog.creds.connect(self.ia_config)
+        result = dialog.exec() 
+        
+        if result == QDialog.DialogCode.Rejected:
+            sys.exit(0) # User canceled, close the app safely
+
 
     # --- Cleanup ---
     def closeEvent(self, event=None):
