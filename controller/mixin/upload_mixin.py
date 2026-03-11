@@ -3,7 +3,7 @@ from queue import Queue
 from pathlib import Path
 import os
 from model.service.UploadManager import UploadManager
-from config import user_config
+from config import IA_CONFIG
 
 class UploadMixin:
     """Handles Internet Archive Upload logic."""

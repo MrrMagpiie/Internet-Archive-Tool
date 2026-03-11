@@ -10,4 +10,4 @@ from .DocumentImagePanel import *
 from .ProcessManagerWidget import *
 from .DashboardDocumentCard import *
 from .CenteredFlowLayout import *
-from .InteractiveImageViewer import *
+from .InteractiveImageView import *
