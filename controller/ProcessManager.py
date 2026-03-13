@@ -12,7 +12,9 @@ from controller.mixin import *
 from model.data.document import Document
 from model.data.schema import DocumentSchema
 from config import IA_CONFIG_PATH
-from view.pages.SetupGui import FirstRunSetupDialog
+from model.service.signals import JobTicket, DatabaseTicket
+
+
 
 class ProcessManager(QObject, DatabaseMixin, ProcessingMixin, UploadMixin, ImageMixin, SchemaMixin):
     """
@@ -38,8 +40,6 @@ class ProcessManager(QObject, DatabaseMixin, ProcessingMixin, UploadMixin, Image
         self.setup_upload()
         self.setup_image_loading()
 
-
-
     def check_setup(self):
         if not IA_CONFIG_PATH.exists():
             self.need_setup.emit(True)
@@ -54,7 +54,7 @@ class ProcessManager(QObject, DatabaseMixin, ProcessingMixin, UploadMixin, Image
         self.busy_stop.emit()
         print(f"{error_msg}")
         self.global_error.emit(error_msg)
-
+        
     # --- Cleanup ---
     def closeEvent(self, event=None):
         """Ensures all threads are killed properly on exit."""

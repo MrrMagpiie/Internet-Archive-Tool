@@ -11,6 +11,8 @@ class JobTicket(QObject):
     data = pyqtSignal(object,str)# data return, job_id 
     error = pyqtSignal(str,str)# error msg, job_id
     progress = pyqtSignal(int,object)
+    canceled = pyqtSignal(str) #job_id
+
 
     def __init__(self, job_id=None, parent=None):
         super().__init__(parent)
@@ -20,6 +22,7 @@ class JobTicket(QObject):
     def cancel(self):
         """Called by the UI to request cancellation."""
         self._cancel_flag.set()
+        self.canceled.emit(self.job_id)
 
     def is_cancelled(self) -> bool:
         """Called by the Worker to check if it should stop."""

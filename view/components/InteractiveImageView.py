@@ -6,19 +6,22 @@ class InteractiveImageViewer(QGraphicsView):
     def __init__(self, parent=None):
         super().__init__(parent)
         
+        # 1. NEW: Assign the stylesheet ID
+        self.setObjectName("interactiveImageViewer")
+        
         self.scene = QGraphicsScene(self)
         self.setScene(self.scene)
         self.pixmap_item = QGraphicsPixmapItem()
 
         self.pixmap_item.setTransformationMode(Qt.TransformationMode.SmoothTransformation)
-        
         self.scene.addItem(self.pixmap_item)
         
         # Viewport & Interaction Settings
         self.setDragMode(QGraphicsView.DragMode.ScrollHandDrag)
         self.setTransformationAnchor(QGraphicsView.ViewportAnchor.AnchorUnderMouse)
         self.setResizeAnchor(QGraphicsView.ViewportAnchor.AnchorUnderMouse)
-        self.setBackgroundBrush(Qt.GlobalColor.darkGray)
+        
+        # REMOVED: self.setBackgroundBrush(Qt.GlobalColor.darkGray)
         
         self.render_timer = QTimer()
         self.render_timer.setSingleShot(True)
@@ -26,7 +29,7 @@ class InteractiveImageViewer(QGraphicsView):
 
     def set_pixmap(self, pixmap):
         """Loads the scan and processes it for Moiré-free viewing."""
-        if not pixmap.isNull():
+        if isinstance(pixmap, QPixmap):
             working_pixmap = pixmap
             max_dimension = 2500 
             

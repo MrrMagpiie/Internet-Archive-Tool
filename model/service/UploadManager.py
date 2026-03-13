@@ -1,8 +1,6 @@
-from pathlib import Path
 from queue import Queue
 from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot
 
-from model.data.document import Document
 from model.logic.upload import uploadDocument, setup, get_unique_identifier,check_identifier_status
 
 class UploadManager(QObject):
@@ -57,4 +55,3 @@ class UploadManager(QObject):
 
         except Exception as e:
             self.error.emit(f"Upload Worker-level error: {e}",'')
-

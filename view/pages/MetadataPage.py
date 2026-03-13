@@ -106,14 +106,6 @@ class MetadataPage(Page):
     def doc_error(self,error_msg,job_id):
         pass
 
-    @pyqtSlot(DocumentSchema)
-    def _new_schema(self,schema):
-        schema_dict = schema.to_dict()
-        schema_dict['schema_name'] = self.doc_type_line.text()
-        schema = DocumentSchema.from_dict(schema_dict)
-        self.new_schema.emit(schema)
-        self._reset()
-
     @pyqtSlot()
     def _reset(self):
         clear_layout(self.main_layout)

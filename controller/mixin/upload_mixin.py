@@ -4,6 +4,8 @@ from pathlib import Path
 import os
 from model.service.UploadManager import UploadManager
 from config import IA_CONFIG_PATH
+from model.service.signals import JobTicket
+
 
 class UploadMixin:
     """Handles Internet Archive Upload logic."""
@@ -21,8 +23,10 @@ class UploadMixin:
         
         os.environ['IA_CONFIG_FILE'] =str(IA_CONFIG_PATH)
 
-    @pyqtSlot(object,object)
-    def ia_config(self,ticket,data):
+    @pyqtSlot(tuple,JobTicket)
+    def ia_config(self,data,ticket=None):
+        if not ticket:
+            ticket = JobTicket()
         self.busy_start.emit()
         ticket.data.connect(lambda:self.busy_stop.emit())
         ticket.error.connect(lambda:self.busy_stop.emit())

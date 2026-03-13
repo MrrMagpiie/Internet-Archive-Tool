@@ -3,6 +3,8 @@ from pathlib import Path
 from queue import Queue
 from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot
 
+import shutil
+
 from model.data.document import Document
 from model.logic.discover import *
 from model.logic.deskew import *
@@ -67,13 +69,22 @@ class DocumentPipelineWorker(QObject):
                             if not signals.is_cancelled():
                                 signals.data.emit(doc,signals.job_id)
                                 self.success.emit(doc,signals.job_id)
-
+                        case 'delete':
+                            doc_path = data
+                            if isinstance(doc_path,Path):
+                                self.delete_document_files(doc_path)
+                                if not signals.is_cancelled():
+                                    signals.data.emit(True,signals.job_id)
+                                    self.success.emit(True,signals.job_id)
+                        case _:
+                            raise ValueError(f"Worker {self} received an unknown command: {command}")
+                            
                 except Exception as e:
                     err_msg =f"Error processing command {command} for {signals.job_id}: {e}"
                     signals.error.emit(err_msg,signals.job_id)
                     self.error.emit(err_msg,signals.job_id)
 
-                except sqlite3.OperationalError as e:
+                except OperationalError as e:
                     if "interrupted" in str(e).lower():
                         print(f"Database query for {signals.job_id} was successfully aborted.")
                         signals.error.emit("Cancelled by user", signals.job_id)
@@ -108,3 +119,19 @@ class DocumentPipelineWorker(QObject):
         except Exception as e:
             raise(f'Deskewing Error: {doc.doc_id},{e}')
     
+    def delete_document_files(document) -> bool:
+        """
+        Safely deletes all physical files associated with a Document.
+        Returns True if fully successful, False if a file was locked.
+        """
+        success = True
+        
+        parent_dir = Path(document.path).parent
+        if parent_dir.exists() and parent_dir.is_dir():
+            try:
+                shutil.rmtree(parent_dir)
+            except Exception as e:
+                raise(f"Failed to delete directory: {e}")
+
+
+        return success

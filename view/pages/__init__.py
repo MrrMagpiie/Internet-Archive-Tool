@@ -8,3 +8,5 @@ from .ReviewDashboard import ReviewPage
 from .HelpPage import HelpPage
 from .SchemaEditPage import SchemaEditPage
 from .SetupGui import FirstRunSetupDialog
+from .LoginPage import LoginPage
+from .SetupWizard import FirstRunSetupWizard

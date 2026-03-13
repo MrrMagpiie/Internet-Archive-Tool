@@ -48,6 +48,21 @@ class SchemaForm(QWidget):
                 
                 self.form_layout.addRow(label, input_widget)
 
+    def _build_form_from_metadata(self, metadata: dict):
+        fields = self.current_schema.to_dict().get('fields')
+        self.clear_form()
+        
+        if isinstance(fields, dict):
+            for field_name, field_type_name in fields.items():
+                label = QLabel(field_name)
+                input_widget = QLineEdit()
+                input_widget.setText(str(metadata.get(field_name, '')))
+                
+                # Apply dynamic UI validation based on the schema's specified type
+                self._apply_validation_rules(input_widget, field_type_name)
+                
+                self.form_layout.addRow(label, input_widget)
+
     def _apply_validation_rules(self, widget: QLineEdit, type_name: str):
         """Looks up the rule in JSON and attaches the correct PyQt6 validator."""
         rule = self.field_rules.get(type_name, {"type": "string"})
@@ -71,6 +86,7 @@ class SchemaForm(QWidget):
         self.clear_form()
         self.current_schema = DocumentSchema.from_dict(schema_format)
         self._build_form()
+
 
     def form_from_metadata(self, metadata: dict):
         self.clear_form()
@@ -117,21 +133,29 @@ class EditableSchemaForm(SchemaForm):
         main_layout.addLayout(self.form_layout)
         
         btn_layout = QHBoxLayout()
+        
+        # NEW: Assign Secondary Button ID
         default_btn = QPushButton('New Default Template')
+        default_btn.setObjectName("schemaSecondaryBtn") 
         default_btn.clicked.connect(self.new_default)
         btn_layout.addWidget(default_btn)
         
+        # NEW: Assign Secondary Button ID
         field_btn = QPushButton('New Field')
+        field_btn.setObjectName("schemaSecondaryBtn")
         field_btn.clicked.connect(self.new_field)
         btn_layout.addWidget(field_btn)
 
+        # NEW: Assign Primary Button ID for the main action
         save_btn = QPushButton("Save Schema")
+        save_btn.setObjectName("schemaPrimaryBtn") 
         save_btn.clicked.connect(self._save)
 
         main_layout.addLayout(btn_layout)
         main_layout.addWidget(save_btn)
 
     def _load_ia_keys(self):
+        # ... (Keep existing logic) ...
         keys_path = RESOURCES_PATH / 'IAMetadataKeys.json'
         if keys_path.exists():
             with open(keys_path, 'r') as f:
@@ -140,6 +164,7 @@ class EditableSchemaForm(SchemaForm):
             self.IA_keys = {}
 
     def _load_default_format(self):
+        # ... (Keep existing logic) ...
         fmt_path = RESOURCES_PATH / 'default_schema.json'
         if fmt_path.exists():
             with open(fmt_path, 'r') as f:
@@ -148,6 +173,7 @@ class EditableSchemaForm(SchemaForm):
             self.default_format = {"default": {"fields": {}, "defaults": {}}}
 
     def new_form(self, schema_format: dict = None):
+        # ... (Keep existing logic) ...
         if schema_format is None:
             self.schema_dict = self.default_format['default']
         else:
@@ -158,9 +184,10 @@ class EditableSchemaForm(SchemaForm):
         line = QFrame()
         line.setFrameShape(QFrame.Shape.HLine)
         line.setFrameShadow(QFrame.Shadow.Sunken)
+        line.setObjectName("schemaSectionLine") # NEW: Added hook just in case
         
         header_label = QLabel(title_text)
-        header_label.setStyleSheet("font-weight: bold; font-size: 14px; margin-top: 10px;")
+        header_label.setObjectName("schemaSectionHeader")
 
         self.form_layout.addRow(header_label)
         self.form_layout.addRow(line)

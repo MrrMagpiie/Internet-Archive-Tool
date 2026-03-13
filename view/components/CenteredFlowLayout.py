@@ -1,13 +1,5 @@
-import sys
-from PyQt6.QtWidgets import (
-    QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 
-    QListWidget, QStackedWidget, QLabel, QPushButton, QSplitter, 
-    QListWidgetItem, QFrame, QFormLayout, QLineEdit, QDateEdit,
-    QProgressBar, QComboBox, QGraphicsView, QGraphicsScene,QGridLayout,
-    QScrollArea,QSizePolicy, QLayout,QStyle
-)
-from PyQt6.QtCore import Qt, QSize, pyqtSignal, QRect, QPoint
-from PyQt6.QtGui import QIcon, QFont, QColor, QCursor,QPixmap,QPainter,QAction
+from PyQt6.QtWidgets import QLayout
+from PyQt6.QtCore import Qt, QSize, QRect, QPoint
 
 class CenteredFlowLayout(QLayout):
     def __init__(self, parent=None, margin=0, spacing=-1):

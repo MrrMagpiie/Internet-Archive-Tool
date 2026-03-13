@@ -2,6 +2,8 @@ from PyQt6.QtCore import QThread, pyqtSlot, QObject
 from queue import Queue
 from model.data.document import Document
 from model.service.DocumentPipeline import DocumentPipelineWorker, DocPipelineRequest
+from pathlib import Path
+
 
 class ProcessingMixin:
     """Handles Image Processing & Discovery logic."""
@@ -32,6 +34,11 @@ class ProcessingMixin:
     def request_save_metadata(self,data,ticket):
         self.task_started.emit('metadata',data[0].doc_id,ticket)
         self.proc_queue.put(('metadata', ticket, data))
+
+    @pyqtSlot(Path,QObject)
+    def request_remove_document_files(self,doc_path,ticket):
+        self.proc_queue.put(('delete', ticket, doc_path))
+
 
     @pyqtSlot(Document,str)
     def _handle_proc_success(self,doc,job_id):

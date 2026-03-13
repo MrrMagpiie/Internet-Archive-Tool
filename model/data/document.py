@@ -55,13 +55,17 @@ class Document:
         if self.last_modified is None:
             self.last_modified = datetime.now(timezone.utc).isoformat()
 
-    def add_image(self, image_id: str, order: int, original_path: str, processed_path: str = None):
+    def add_image(self, image_id: str, order: int, original_path: str, processed_path: str = None,changes: list[str, Any] = None):
         """Adds or updates an image entry in the document."""
         self.images[image_id] = {
             "order": order,
             "original": str(original_path),
-            "processed": str(processed_path) if processed_path else None
+            "processed": str(processed_path) if processed_path else None,
+            "changes": changes if changes else []
         }
+
+    def add_change(self,image_id,change):
+        self.images[image_id]['changes'].append(change)
 
     def to_dict(self) -> dict:
         """Converts the Document object to a dictionary for JSON serialization."""

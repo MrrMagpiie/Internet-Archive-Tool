@@ -1,12 +1,12 @@
+import sys
 from PyQt6.QtWidgets import (
      QWidget, QVBoxLayout, QHBoxLayout, QSizePolicy,
-    QPushButton, QLabel,QSplitter,QListWidget, QStackedWidget,
+    QPushButton, QLabel, QSplitter, QListWidget, QStackedWidget,
 )
 from PyQt6.QtGui import QPixmap, QColor
-from PyQt6.QtCore import pyqtSignal, pyqtSlot, Qt,QObject
+from PyQt6.QtCore import pyqtSignal, pyqtSlot, Qt, QObject
 
 from model.data import Document
-from view.components import Page
 from view.components import ImageLabel
 from view.components.InteractiveImageView import InteractiveImageViewer
 from model.service.signals import JobTicket
@@ -14,9 +14,9 @@ from pathlib import Path
 
 class DocumentImagePanel(QWidget):
     document_reviewed = pyqtSignal(str, str)
-    image_request = pyqtSignal(Path,QObject)
+    image_request = pyqtSignal(Path, QObject)
 
-    def __init__(self,parent=None):
+    def __init__(self, parent=None):
         super().__init__()
         self.parent = parent
         self.current_doc: Document = None
@@ -28,9 +28,9 @@ class DocumentImagePanel(QWidget):
         self._create_layout()
       
     def _create_loading_placeholder(self) -> QPixmap:
-        """Creates a simple gray placeholder image. You can replace this with a real image file."""
+        """Creates a placeholder image to hold the layout dimensions."""
         pixmap = QPixmap(800, 1000)
-        pixmap.fill(QColor(220, 220, 220)) # Light gray
+        pixmap.fill(QColor(220, 220, 220)) # Light gray fallback
         self.loading_pixmap = pixmap
 
     def _create_layout(self):
@@ -39,29 +39,34 @@ class DocumentImagePanel(QWidget):
         
         image_layout = QHBoxLayout()
         self.image_label = ImageLabel()
-        self.image_label.setStyleSheet("background-color: gray;")
-
+        
+        # 1. NEW: Assign an ID instead of inline CSS
+        self.image_label.setObjectName("documentImageLabel")
         image_layout.addWidget(self.image_label)
-
         self.image_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         
         nav_layout = QHBoxLayout()
-        prev_image_btn = QPushButton("< Previous Page")
-        next_image_btn = QPushButton("Next Page >")
-        self.image_pos_label = QLabel("Page 1 of 1") 
         
-        nav_layout.addWidget(prev_image_btn)
+        self.prev_image_btn = QPushButton("< Previous Page")
+        self.prev_image_btn.setObjectName("imageNavButton") # NEW: Group ID for styling
+        
+        self.next_image_btn = QPushButton("Next Page >")
+        self.next_image_btn.setObjectName("imageNavButton") # NEW: Group ID for styling
+        
+        self.image_pos_label = QLabel("Page 1 of 1") 
+        self.image_pos_label.setObjectName("imagePosLabel") # NEW: ID for typography
+        
+        nav_layout.addWidget(self.prev_image_btn)
         nav_layout.addStretch()
         nav_layout.addWidget(self.image_pos_label)
         nav_layout.addStretch()
-        nav_layout.addWidget(next_image_btn)
-
+        nav_layout.addWidget(self.next_image_btn)
 
         layout.addLayout(image_layout)
         layout.addLayout(nav_layout)
 
-        prev_image_btn.clicked.connect(self._go_to_previous_image)
-        next_image_btn.clicked.connect(self._go_to_next_image)
+        self.prev_image_btn.clicked.connect(self._go_to_previous_image)
+        self.next_image_btn.clicked.connect(self._go_to_next_image)
         
     def show_new_document(self, doc: Document):
         self.current_doc = doc
@@ -89,42 +94,43 @@ class DocumentImagePanel(QWidget):
             self.image_label.set_pixmap(pixmap)
         else:
             self.image_label.set_pixmap(self.loading_pixmap)
-        # Update position label
+            
         self.image_pos_label.setText(f"Page {self.current_image_index + 1} of {len(self.images)}")
 
-    def fetch_image_rel_current(self,indx_diff):
+    def fetch_image_rel_current(self, indx_diff):
         indx = self.current_image_index + indx_diff
         if indx >=0 and indx < len(self.images):
             path = Path(self.get_image_path(indx))
             if indx not in self.pixmap_cache:
                 self.pixmap_cache[indx] = ''
-                self.fetch_image(path,indx)
+                self.fetch_image(path, indx)
                 
     def _prefetch_neighbors(self):
         self.fetch_image_rel_current(-1)
         self.fetch_image_rel_current(1)
     
-    def get_image_path(self,index):
+    def get_image_path(self, index):
         if self.current_doc and self.images:
             image_key = self.images[index]
             image_path = self.current_doc.images[image_key]["processed"]
             if image_path == '':
-                image_path = doc.images[image_key]['original']
+                image_path = self.current_doc.images[image_key]['original']
             return image_path
 
-    def cache_image(self,pixmap,job_id):
-        ticket, indx = self.pending_requests.pop(job_id)
-        self.pixmap_cache[indx] = pixmap
-        if indx == self.current_image_index:
-            self.display_image()
+    def cache_image(self, pixmap, job_id):
+        if job_id in self.pending_requests:
+            ticket, indx = self.pending_requests.pop(job_id)
+            self.pixmap_cache[indx] = pixmap
+            if indx == self.current_image_index:
+                self.display_image()
 
-    def fetch_image(self,path,indx):
+    def fetch_image(self, path, indx):
         ticket = JobTicket()
         ticket.data.connect(self.image_return)
         ticket.error.connect(self.image_error)
         self.pending_requests[ticket.job_id] = (ticket, indx)
 
-        self.image_request.emit(path,ticket)
+        self.image_request.emit(path, ticket)
 
     def clear_cache(self):
         for ticket, value in self.pending_requests.values():
@@ -132,17 +138,16 @@ class DocumentImagePanel(QWidget):
         self.pixmap_cache.clear()
         self.display_image()
         
-    @pyqtSlot(object,str)
-    def image_return(self, pixmap,job_id):
-        self.cache_image(pixmap,job_id)
+    @pyqtSlot(object, str)
+    def image_return(self, pixmap, job_id):
+        self.cache_image(pixmap, job_id)
     
-    @pyqtSlot(str,str)
-    def image_error(self,msg,job_id):
+    @pyqtSlot(str, str)
+    def image_error(self, msg, job_id):
         pass
 
     def mousePressEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:
-            # Emit the signal with this card's title
             if self.current_image_index in self.pixmap_cache:
                 self.interactive_popout = InteractiveImageViewer()
                 self.interactive_popout.set_pixmap(self.pixmap_cache[self.current_image_index])

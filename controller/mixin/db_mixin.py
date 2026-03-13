@@ -3,6 +3,8 @@ from queue import Queue
 from model.service.DatabaseManager import DatabaseManager
 from model.service.signals import JobTicket, DatabaseTicket
 from config import DB_PATH
+from model.data.document import Document
+
 
 class DatabaseMixin:
     """Handles Database Worker logic."""
@@ -36,6 +38,33 @@ class DatabaseMixin:
             ticket = DatabaseTicket()
         ticket.interupt.connect(self.db_interupt)
         self.db_queue.put(('save_document', ticket, doc))
+
+    @pyqtSlot(Document,QObject)
+    def request_delete_doc(self, doc, ticket=None):
+        if not ticket:
+            ticket = DatabaseTicket()
+        ticket.interupt.connect(self.db_interupt)
+        ticket.data.connect(lambda:self.request_remove_document_files(doc.path,ticket))
+        self.db_queue.put(('delete_document', ticket, doc.doc_id))
+    
+    @pyqtSlot(Document,QObject)
+    def request_remove_doc(self, doc, ticket=None):
+        if not ticket:
+            ticket = DatabaseTicket()
+        ticket.interupt.connect(self.db_interupt)
+        self.db_queue.put(('delete_document', ticket, doc.doc_id))
+
+    @pyqtSlot(tuple,DatabaseTicket)
+    def request_login(self,data, ticket:DatabaseTicket):
+        ticket.interupt.connect(self.db_interupt)
+        self.db_queue.put(('verify_login', ticket, data))
+        
+    @pyqtSlot(tuple,DatabaseTicket)
+    def new_user(self,data,ticket):
+        if not ticket:
+            ticket = DatabaseTicket()
+        ticket.interupt.connect(self.db_interupt)
+        self.db_queue.put(('new_user', ticket, data))
 
     @pyqtSlot()
     def db_interupt():

@@ -1,9 +1,5 @@
-from PyQt6.QtWidgets import (
-     QWidget, QVBoxLayout, QHBoxLayout, QSizePolicy,
-    QPushButton, QLabel,QSplitter,QListWidget, QStackedWidget,
-)
-from PyQt6.QtGui import QPixmap
-from PyQt6.QtCore import pyqtSignal, pyqtSlot, Qt
+from PyQt6.QtWidgets import QWidget
+from PyQt6.QtCore import pyqtSlot
 from model.data.document import Document
 
 class Page(QWidget):

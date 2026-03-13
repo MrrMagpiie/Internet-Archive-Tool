@@ -1,7 +1,6 @@
 from pathlib import Path
 from queue import Queue
 from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot
-from PyQt6.QtGui import QPixmap   
 
 from model.logic.loadImage import load_image
 
