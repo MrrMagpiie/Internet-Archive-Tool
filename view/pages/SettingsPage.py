@@ -5,8 +5,6 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import Qt
 
-from view.components import ActionCard
-from view.components.ActionDashboard import ActionDashboard
 from view.components.Page import Page
 from view.components.SchemaForm import *
 from view.pages.SchemaEditPage import SchemaEditPage
