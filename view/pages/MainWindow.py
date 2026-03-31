@@ -174,9 +174,7 @@ class MainWindow(QMainWindow):
         self.views['settings'] = self.settings
         
     def _review_page(self):
-        self.review = self.gui_manager.ReviewPage()
-        self.review.request_ready_documents()
-        self.review.request_uploaded_documents()
+        self.review = self.gui_manager.UploadDashboard()
         self.stack.addWidget(self.review)
         self.views['review'] = self.review
 

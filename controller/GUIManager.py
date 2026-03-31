@@ -62,11 +62,12 @@ class GUIManager(QObject):
         metadata_page.save_metadata.connect(self.process_manager.request_save_metadata)
         return metadata_page
 
-    def ReviewPage(self):
-        review_page = ReviewPage(self)
-        review_page.db_request.connect(self.process_manager.request_docs_by_status)
-        self.process_manager.db_update.connect(review_page.db_update)
-        return review_page
+    def UploadDashboard(self):
+        upload_page = UploadDashboard(self)
+        upload_page.db_request.connect(self.process_manager.request_docs_by_status)
+        self.process_manager.document_update.connect(upload_page.document_update)
+        self.process_manager.document_delete.connect(upload_page.request_documents)
+        return upload_page
 
     def HelpPage(self):
         help_page = HelpPage(self)

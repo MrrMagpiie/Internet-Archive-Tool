@@ -4,7 +4,7 @@ from .MetadataPage import MetadataPage
 from .DocumentReviewPage import DocumentReviewPage
 from .CreateDocumentPage import CreateDocumentPage
 from .SettingsPage import SettingsPage
-from .UploadDashboard import ReviewPage
+from .UploadDashboard import UploadDashboard
 from .HelpPage import HelpPage
 from .SchemaEditPage import SchemaEditPage
 from .SetupGui import FirstRunSetupDialog

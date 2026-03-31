@@ -16,9 +16,9 @@ from model.service.signals import DatabaseTicket, JobTicket
 from model.logic.helpers import clear_layout
 
 
-class ReviewPage(Page):
-    project_selected = pyqtSignal(object,int)
-    db_request = pyqtSignal(dict,QObject)
+class UploadDashboard(Page):
+    project_selected = pyqtSignal(object, int)
+    db_request = pyqtSignal(dict, QObject)
 
     def __init__(self,parent):
         super().__init__(parent=parent)
