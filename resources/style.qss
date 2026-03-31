@@ -1,0 +1,486 @@
+/* =========================================
+   Global Typography Definitions
+========================================= */
+
+#pageTitle {
+    font-family: "Segoe UI", sans-serif;
+    font-size: 24px;
+    font-weight: bold;
+    color: {{text_main}};
+}
+
+#sectionTitle {
+    font-family: "Segoe UI", sans-serif;
+    font-size: 18px;
+    font-weight: bold;
+    color: {{text_main}};
+}
+
+/* Typography Helpers */
+#boldLabel {
+    font-weight: bold;
+    color: {{text_main}};
+}
+
+#highlightLabel {
+    font-weight: bold;
+    color: {{accent}}; 
+    font-size: 14px;
+}
+
+#instructionText {
+    color: {{text_muted}};
+    font-size: 15px;
+    font-style: italic;
+    margin: 20px;
+}
+
+#warningText {
+    color: {{danger}}; 
+    font-size: 16px;
+    padding: 10px;
+}
+
+/* =========================================
+   Main Window Layout & Sidebar
+========================================= */
+
+
+#sidebarContainer,#brandWidget {
+    background-color: {{sidebar}};
+    border: none;
+}
+
+#brandTitleLabel {
+    font-family: "Segoe UI", sans-serif;
+    font-size: 20px;
+    font-weight: bold;
+    color: {{text_main}};
+}
+
+#versionLabel {
+    color: {{text_inverted}};
+    padding: 10px;
+    font-size: 11px;
+}
+
+/* Sidebar Navigation Menu */
+#sidebarList {
+    background-color: transparent;
+    color: {{text_main}};
+    font-size: 14px;
+    outline: 0; 
+    border: none;
+    
+}
+
+#sidebarList::item {
+    padding: 12px 20px;
+    border-radius: 4px;
+
+}
+
+#sidebarList::item:hover {
+    background-color: {{bg_secondary}};
+    color: {{text_main}};
+}
+
+#sidebarList::item:selected {
+    background-color: {{bg_secondary}};
+    color: {{text_main}};
+    border-left: 4px solid {{accent}}; 
+}
+
+/* =========================================
+   Global Action Buttons
+========================================= */
+
+#primaryActionBtn {
+    min-width: 140px;
+    padding: 8px;
+    background-color: {{accent}}; 
+    color: #ffffff; 
+    font-weight: bold;
+    border-radius: 4px;
+    border: none;
+}
+#primaryActionBtn:hover { background-color: {{accent_hover}}; }
+
+#successBtn {
+    background-color: {{success}}; 
+    color: #ffffff;
+    font-weight: bold;
+    min-width: 120px;
+    padding: 8px;
+    border-radius: 4px;
+    border: none;
+}
+#successBtn:hover { background-color: {{success_hover}}; }
+
+#dangerBtn {
+    background-color: {{danger}}; 
+    color: #ffffff;
+    font-weight: bold;
+    min-width: 120px;
+    padding: 8px;
+    border-radius: 4px;
+    border: none;
+}
+#dangerBtn:hover { background-color: {{danger_hover}}; }
+
+#infoBtn {
+    background-color: {{accent}}; 
+    color: #ffffff;
+    font-weight: bold;
+    min-width: 120px;
+    padding: 8px;
+    border-radius: 4px;
+    border: none;
+}
+#infoBtn:hover { background-color: {{accent_hover}}; }
+
+/* =========================================
+   Standard Form Inputs (Unified)
+========================================= */
+
+#formLineEdit, #formSpinBox, #formComboBox {
+    padding: 8px;
+    border: 1px solid {{custom_border}};
+    border-radius: 4px;
+    background-color: {{bg_main}};
+    color: {{text_main}};
+    font-size: 14px;
+    min-height: 24px;
+}
+
+#formLineEdit:focus, #formSpinBox:focus, #formComboBox:focus {
+    border: 1px solid {{accent}};
+}
+
+/* =========================================
+   Dashboard Elements & Document Cards
+========================================= */
+
+
+
+
+#actionCard {
+    background-color: transparent;
+    border: 2px dashed {{custom_border}};
+    border-radius: 8px;
+    padding: 20px;
+}
+
+#actionCard:hover {
+    background-color: {{accent_faint}}; 
+    border-color: {{accent}};
+}
+
+#actionCard:hover #actionCardIcon, 
+#actionCard:hover #actionCardText {
+    color: {{accent}};
+}
+
+#actionCardIcon {
+    color: {{text_muted}}; 
+    font-size: 40px;
+    font-weight: 300;
+}
+
+#actionCardText {
+    color: {{text_muted}}; 
+    font-size: 14px;
+    font-weight: bold;
+}
+
+/* The Standard Document Card */
+
+#docuCard {
+    background-color: {{bg_secondary}};
+    border: 1px solid {{custom_border}};
+    border-radius: 8px;
+}
+
+#docuCard:hover {
+    border: 3px solid {{accent}};
+}
+
+#cardTitle {
+    font-family: "Segoe UI", sans-serif;
+    font-size: 16px;
+    font-weight: bold;
+    color: {{text_main}};
+    border: none;
+    background: transparent;
+}
+
+#cardSubtitle {
+    color: {{text_main}};
+    border: none;
+    background: transparent;
+}
+
+/* Document Card Status Strips & Progress */
+QProgressBar[objectName^="cardProgressBar"] {
+    border: none;
+    background-color: {{bg_hover}};
+    border-radius: 3px;
+}
+
+QProgressBar[objectName^="cardProgressBar"]::chunk {
+    border-radius: 3px;
+}
+
+#statusStrip_0 { background-color: {{status_blue}}; border-radius: 2px; }
+#cardProgressBar_0::chunk { background-color: {{status_blue}}; }
+
+#statusStrip_1 { background-color: {{status_yellow}}; border-radius: 2px; }
+#cardProgressBar_1::chunk { background-color: {{status_yellow}}; }
+
+#statusStrip_2 { background-color: {{status_green}}; border-radius: 2px; }
+#cardProgressBar_2::chunk { background-color: {{status_green}}; }
+
+#statusStrip_3 { background-color: {{status_green}}; border-radius: 2px; }
+#cardProgressBar_3::chunk { background-color: {{status_green}}; }
+
+/* =========================================
+   Workflow Stepper Header
+========================================= */
+
+#workflowNavBar {
+    background-color: {{bg_secondary}};
+    border-bottom: 0px solid {{custom_border}};
+}
+
+#workflowBackBtn {
+    border: none; 
+    color: {{text_muted}}; 
+    font-weight: bold;
+    background: transparent;
+}
+
+#workflowBackBtn:hover {
+    color: {{accent}};
+}
+
+#workflowTitle {
+    font-family: "Segoe UI", sans-serif;
+    font-size: 16px;
+    font-weight: bold;
+    color: {{text_main}};
+}
+
+QPushButton#workflowStepBtn {
+    border: none; 
+    padding: 5px 15px; 
+    color: {{text_muted}}; 
+    font-weight: 600;
+    background: transparent;
+}
+
+QPushButton#workflowStepBtn:hover {
+    color: {{accent}};
+}
+
+QPushButton#workflowStepBtn:checked {
+    color: {{accent}}; 
+    border-bottom: 3px solid {{accent}}; 
+}
+
+/* =========================================
+   Create Document Page
+========================================= */
+
+#createDocControlsPanel {
+    border-right: 1px solid {{custom_border}};
+}
+
+#thumbnailScrollArea, #transparentScrollArea {
+    background-color: transparent;
+    border: none;
+}
+
+#thumbnailGridContainer {
+    background-color: transparent;
+}
+
+/* =========================================
+   Thumbnail Cards
+========================================= */
+
+#thumbnailCard {
+    border: 0px solid {{custom_border}};
+    border-radius: 6px;
+}
+
+#thumbnailCard:hover {
+    border: 1px solid {{accent}};
+}
+
+#thumbnailCard[selected="true"] {
+    background-color: {{accent_faint}}; 
+    border: 2px solid {{accent}};
+    border-radius: 6px;
+}
+
+#thumbnailPageLabel {
+    border: none; 
+    font-weight: bold; 
+    font-family: "Segoe UI", sans-serif;
+    font-size: 12px;
+    color: {{text_main}};
+}
+
+/* =========================================
+   Document Image Panel
+========================================= */
+
+#documentImageLabel {
+    background-color: {{bg_hover}}; 
+    border: 1px solid {{custom_border}};
+    border-radius: 4px;
+}
+
+#imagePosLabel {
+    font-family: "Segoe UI", sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    color: {{text_muted}};
+}
+
+QPushButton#imageNavButton {
+    background-color: {{sidebar}};
+    color: {{text_inverted}};
+    min-width: 130px; 
+}
+
+#imageLabel {
+    background-color: transparent; 
+}
+
+#interactiveImageViewer {
+    background-color: {{bg_main}}; 
+    border: none; 
+}
+
+/* =========================================
+   Process Manager Header & Drawer
+========================================= */
+
+#processHeader {
+    background-color: {{bg_dark_panel}}; 
+    color: {{text_inverted}};
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+}
+
+#processHeader:hover {
+    background-color: {{text_muted}};
+}
+
+#processSummaryLabel, #processIconLabel {
+    font-weight: 600; 
+    font-size: 12px;
+    color: {{text_inverted}};
+}
+
+#processScrollArea {
+    border: none; 
+    background-color: {{bg_secondary}};
+}
+
+#processItem {
+    background-color: {{bg_main}};
+    border-bottom: 1px solid {{custom_border}};
+}
+
+#processItemLabel, #processItemStep {
+    font-weight: bold; 
+    color: {{text_main}};
+}
+
+#processItemProgressBar {
+    background: {{bg_hover}}; 
+    border-radius: 4px; 
+    border: none;
+}
+
+#processItemProgressBar::chunk {
+    background: {{success}}; 
+    border-radius: 4px; 
+}
+
+#processItemCancelBtn {
+    border: none; 
+    color: {{text_muted}}; 
+    font-weight: bold;
+    background: transparent;
+}
+
+#processItemCancelBtn:hover {
+    color: {{danger}}; 
+    background-color: rgba(215, 58, 73, 0.1); 
+    border-radius: 12px; 
+}
+
+/* =========================================
+   Editable Schema Form
+========================================= */
+
+#schemaSectionHeader {
+    font-weight: bold; 
+    font-size: 14px; 
+    margin-top: 10px;
+    color: {{text_main}};
+}
+
+#schemaSectionLine {
+    color: {{custom_border}}; 
+}
+
+#schemaSecondaryBtn {
+    min-width: 140px;
+    padding: 6px;
+}
+
+#schemaPrimaryBtn {
+    min-width: 140px;
+    padding: 8px;
+    background-color: {{accent}}; 
+    color: #ffffff; 
+    font-weight: bold;
+    border-radius: 4px;
+    border: none;
+    margin-top: 10px; 
+}
+
+#schemaPrimaryBtn:hover {
+    background-color: {{accent_hover}}; 
+}
+
+/* =========================================
+   Dialog Specific Elements
+========================================= */
+
+#suggestionFrame {
+    background-color: {{bg_hover}}; 
+    border: 1px solid {{custom_border}};
+    border-radius: 6px;
+    padding: 10px;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+/* ==========================================
+   DIALOG & MESSAGE BOX TWEAKS
+   ========================================== */
+
+QMessageBox {
+    min-width: 400px;
+}
+
+QMessageBox QPushButton {
+    min-width: 130px;      
+    min-height: 24px;      
+    padding: 6px 16px;  
+}
