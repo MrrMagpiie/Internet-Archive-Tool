@@ -11,7 +11,7 @@ class DatabaseManager(QObject):
     in a separate thread.
     """
     update = pyqtSignal(object,str)
-    error = pyqtSignal(str,str) #error_msg, job_id
+    error = pyqtSignal(Exception,str) #error_msg, job_id
     prog = pyqtSignal(int)# progress
 
     def __init__(self, db_path: Path, queue: Queue):
@@ -56,13 +56,19 @@ class DatabaseManager(QObject):
                             self._save_document(document)
                             signals.data.emit(document,signals.job_id)
                             self.update.emit(document,signals.job_id)
+                except sqlite3.OperationalError as e:
+                    if "interrupted" in str(e).lower():
+                        print(f"Database query for {signals.job_id} was successfully aborted.")
+                        signals.error.emit("Cancelled by user", signals.job_id)
+                    else:
+                        signals.error.emit(f"SQLite Error: {e}", signals.job_id)
                 
                 except Exception as e:
-                    signals.error.emit(f"Error processing command {command} for {signals.job_id}: {e}",signals.job_id)
-                    self.error.emit((f"Error processing command {command} for {signals.job_id}: {e}"),signals.job_id)
+                    signals.error.emit(e,signals.job_id)
+                    self.error.emit(e,signals.job_id)
 
         except Exception as e:
-            self.error.emit(f"Database Worker-level error:  {e}","")
+            self.error.emit(e,'')
         finally:
             if self.conn:
                 self.conn.close()

@@ -7,18 +7,13 @@ from model.data.document import Document
 from model.logic.discover import *
 from model.logic.deskew import *
 from model.logic.metadata import *
-
-class DocPipelineRequest(QObject):
-    data = pyqtSignal(str,Document)# Document Return
-    error = pyqtSignal(str)# Error Message Return
-    prog = pyqtSignal(int)# progress update
-
+from model.exceptions import DeskewError, ImageDiscoveryError, DocumentCreationError, DocumentDeletionError, TaskCancelledError
 class DocumentPipelineWorker(QObject):
     """
     A QObject worker that runs the full document pipeline
     """
-    success = pyqtSignal(Document,str) # job_id
-    error = pyqtSignal(str,str) # error_msg job_id 
+    success = pyqtSignal(object,str) # job_id
+    error = pyqtSignal(Exception,str) # error_msg job_id 
     prog = pyqtSignal(int)# Progress Update
 
     def __init__(self,queue: Queue):
@@ -69,19 +64,12 @@ class DocumentPipelineWorker(QObject):
                                 self.success.emit(doc,signals.job_id)
 
                 except Exception as e:
-                    err_msg =f"Error processing command {command} for {signals.job_id}: {e}"
-                    signals.error.emit(err_msg,signals.job_id)
-                    self.error.emit(err_msg,signals.job_id)
-
-                except sqlite3.OperationalError as e:
-                    if "interrupted" in str(e).lower():
-                        print(f"Database query for {signals.job_id} was successfully aborted.")
-                        signals.error.emit("Cancelled by user", signals.job_id)
-                    else:
-                        signals.error.emit(f"SQLite Error: {e}", signals.job_id)
+                    signals.error.emit(e,signals.job_id)
+                    self.error.emit(e,signals.job_id)
 
         except Exception as e:
-            self.error.emit(f"Document Worker-level error:  {e}",'')
+            self.error.emit(e,'')
+            traceback.print_exc()
 
     def discover(self,in_dir,out_dir):
             image_list = discover_images(in_dir)

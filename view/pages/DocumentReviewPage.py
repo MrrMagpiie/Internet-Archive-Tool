@@ -215,15 +215,17 @@ class DocumentReviewPage(Page):
 
     def request_upload(self):
         ticket = JobTicket()
-        self.upload.emit(self.current_document,ticket)
+        ticket.data.connect(self._handle_upload_success)
+        ticket.error.connect(self._handle_upload_error)
+        self.upload.emit(self.current_document, ticket)
 
-    @pyqtSlot(object,str)
-    def _handle_upload_success(self,doc,job_id):
-        pass
+    @pyqtSlot(object, str)
+    def _handle_upload_success(self, doc, job_id):
+        print('upload_success')
 
-    @pyqtSlot(str,str)
-    def _handle_upload_error(self,err_msg,job_id):
-        pass
+    @pyqtSlot(Exception, str)
+    def _handle_upload_error(self, error, job_id):
+        print(f'upload_error:{error}')
 
 class CollisionResolutionDialog(QDialog):
     user_choice = pyqtSignal(str)

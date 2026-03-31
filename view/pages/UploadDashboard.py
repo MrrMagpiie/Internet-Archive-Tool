@@ -187,19 +187,18 @@ class UploadDashboard(Page):
             self.update_documents(document)
         self.show_documents()
 
-    @pyqtSlot(str,str)
-    def doc_error(self,error_msg,job_id):
-        print(f'db_error: {error_msg}')
+    @pyqtSlot(Exception, str)
+    def doc_error(self, error, job_id):
+        print(f'db_error: {error}')
 
     @pyqtSlot(Document)
-    def db_update(self,doc):
+    def document_update(self, doc):
         is_relevant = (
-            doc.status['needs_approval'],
-            doc.status['uploaded'],
+            doc.status.get('needs_approval',False),
+            doc.status.get('uploaded', True),
             doc.doc_id in self.documents.keys()
         )
-        if is_relevant:
-            self.update_documents(doc)
-            self.show_documents()
+        if any(is_relevant):
+            self.request_documents()
 
 

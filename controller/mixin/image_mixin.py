@@ -1,7 +1,7 @@
 from PyQt6.QtCore import QThread, pyqtSlot, QObject
 from pathlib import Path
 from queue import Queue
-from model.service.ImageLoader import ImageLoader,FetchImageRequest
+from model.service.ImageLoader import ImageLoader
 
 class ImageMixin:
     """Handles Image Processing & Discovery logic."""
@@ -20,10 +20,11 @@ class ImageMixin:
 
     @pyqtSlot(Path,QObject)
     def request_image(self,data,ticket):
-        self.task_started.emit('fetch image',str(data),ticket)
+        self.register_task('fetch_image',ticket,str(data))
         self.image_queue.put(('single',ticket,data))
     
     def request_image_series(self,data,ticket):
+        self.register_task('fetch_image_series',ticket)
         self.image_queue.put(('series',ticket,data))
 
     @pyqtSlot()

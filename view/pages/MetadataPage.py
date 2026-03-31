@@ -8,11 +8,10 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot, Qt
 from view.components.Page import Page
 from view.components.SchemaForm import SchemaForm, EditableSchemaForm
-from model.service.signals import JobTicket
-from model.data.metadata import Metadata
-from model.data.document import Document
-from model.data.schema import DocumentSchema
-from model.logic.helpers import *
+from model.service.signals import JobTicket, DatabaseTicket
+from model.data import Metadata,Document,DocumentSchema
+from model.logic import *
+from model.logic.helpers import clear_layout, load_metadata_formats
 import json
 from config import DOCUMENT_SCHEMA_PATH
 
@@ -95,7 +94,7 @@ class MetadataPage(Page):
             pass
 
     @pyqtSlot(Document)
-    def db_update(self,doc):
+    def document_update(self,doc):
         pass
 
     @pyqtSlot(Document,str)

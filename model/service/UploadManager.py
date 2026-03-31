@@ -2,15 +2,14 @@ from pathlib import Path
 from queue import Queue
 from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot
 
-from model.data.document import Document
-from model.logic.upload import uploadDocument, setup, get_unique_identifier,check_identifier_status
-
+from model.exceptions import MetadataError, PdfGenerationError, TaskCancelledError
+from model.data import Document
 class UploadManager(QObject):
     """
     A QObject worker that runs the full document pipeline
     """
     success = pyqtSignal(object,str)
-    error = pyqtSignal(str,str)
+    error = pyqtSignal(Exception,str)
 
     def __init__(self,queue: Queue):
         super().__init__()
@@ -51,10 +50,8 @@ class UploadManager(QObject):
                             raise ValueError(f"Worker {self} received an unknown command: {command}")
                             
                 except Exception as e:
-                    err_msg = (f"Error processing command {command} for {signals.job_id}: {e}")
-                    signals.error.emit(err_msg,signals.job_id)
-                    self.error.emit(err_msg, signals.job_id)
+                    signals.error.emit(e,signals.job_id)
+                    self.error.emit(e, signals.job_id)
 
         except Exception as e:
-            self.error.emit(f"Upload Worker-level error: {e}",'')
-
+            self.error.emit(e,'')

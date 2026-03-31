@@ -12,8 +12,7 @@ class DatabaseMixin:
         self.db_queue = Queue()
         self.db_manager = DatabaseManager(DB_PATH, self.db_queue)
         
-        # Connect Internal ticket
-        self.db_manager.update.connect(self._handle_db_update)
+        self.db_manager.update.connect(self._handle_database_update)
         self.db_manager.error.connect(self._handle_worker_error)
         
         self.db_manager.moveToThread(self.db_thread)
@@ -23,18 +22,20 @@ class DatabaseMixin:
     @pyqtSlot(object, QObject)
     def request_docs_by_status(self, filter_data, ticket:DatabaseTicket):
         ticket.interupt.connect(self.db_interupt)
+        self.register_task('load_documents', ticket)
         self.db_queue.put(('load_documents', ticket, filter_data))
    
     @pyqtSlot(str, QObject)
     def request_doc_by_id(self, doc_id, ticket:DatabaseTicket):
         ticket.interupt.connect(self.db_interupt)
-        self.db_queue.put(('load_single_document', ticket, doc_id))
+        filter_data = {'doc_id': doc_id}
+        self.register_task('load_documents', ticket)
+        self.db_queue.put(('load_documents', ticket, filter_data))
     
     @pyqtSlot(object,QObject)
-    def request_update_doc(self, doc, ticket=None):
-        if not ticket:
-            ticket = DatabaseTicket()
+    def request_update_doc(self, doc, ticket:DatabaseTicket):
         ticket.interupt.connect(self.db_interupt)
+        self.register_task('save_document', ticket)
         self.db_queue.put(('save_document', ticket, doc))
 
     @pyqtSlot()
@@ -42,9 +43,11 @@ class DatabaseMixin:
         self.db_manager.cancel_current_query()
 
     @pyqtSlot(object,str)
-    def _handle_db_update(self, doc,job_id):
-        """Re-emits the update so the whole UI knows a doc changed."""
-        self.db_update.emit(doc)
+    def _handle_database_update(self, doc,job_id):
+        if isinstance(doc,Document):
+            self.document_update.emit(doc)
+        elif isinstance(doc,str):
+            self.document_delete.emit(doc)
 
     def shutdown_database(self):
         self.db_queue.put(('shutdown', None, None))

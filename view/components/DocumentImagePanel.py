@@ -136,9 +136,9 @@ class DocumentImagePanel(QWidget):
     def image_return(self, pixmap,job_id):
         self.cache_image(pixmap,job_id)
     
-    @pyqtSlot(str,str)
-    def image_error(self,msg,job_id):
-        pass
+    @pyqtSlot(Exception, str)
+    def image_error(self, error, job_id):
+        print(f"Failed to load image for job {job_id}: {error}")
 
     def mousePressEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:

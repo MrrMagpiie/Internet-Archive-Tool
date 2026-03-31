@@ -5,14 +5,9 @@ from PyQt6.QtGui import QPixmap
 
 from model.logic.loadImage import load_image
 
-class FetchImageRequest(QObject):
-    data = pyqtSignal(object) # QPixMap Return
-    error = pyqtSignal(str) # Error Message Return
-
-
 class ImageLoader(QObject):
     success = pyqtSignal(str)#Job_id
-    error = pyqtSignal(str,str)# error_msg, Job_id
+    error = pyqtSignal(Exception,str)# error_msg, Job_id
 
     def __init__(self, queue: Queue):
         super().__init__()
@@ -52,9 +47,8 @@ class ImageLoader(QObject):
                                     self.success.emit(signals.job_id)
 
                 except Exception as e:
-                    err_msg = f"Error processing command {command} for {signals.job_id}: {e}"
-                    signals.error.emit(err_msg,signals.job_id)
-                    self.error.emit(err_msg,signals.job_id)
+                    signals.error.emit(e,signals.job_id)
+                    self.error.emit(e,signals.job_id)
 
         except Exception as e:
-            self.error.emit(f"Image Worker-level error:  {e}",'')
+            self.error.emit(e,'')
