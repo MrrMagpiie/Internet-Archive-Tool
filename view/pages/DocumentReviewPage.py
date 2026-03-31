@@ -9,10 +9,10 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import pyqtSignal, pyqtSlot, Qt,  QObject
 from PyQt6.QtGui import QFont
 
-from view.components.ActionCard import ActionCard
+from view.components import ActionCard
 from view.components.SchemaForm import SchemaForm
 from model.data.document import Document
-from view.components.DashboardDocumentCard import DocumentCard
+from view.components import DocumentCard
 from view.components.Page import Page
 from model.logic.helpers import clear_layout
 from model.logic.upload import IdentifierStatus

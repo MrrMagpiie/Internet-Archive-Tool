@@ -4,7 +4,7 @@ from PyQt6.QtWidgets import (
     QPushButton, QLabel, QStackedWidget,QApplication
 )
 
-from view.components.ActionCard import ActionCard
+from view.components import ActionCard
 
 
 

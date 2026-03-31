@@ -11,7 +11,7 @@ from PyQt6.QtGui import QIcon, QFont, QColor, QCursor
 
 from view.components.Page import Page
 from view.components.CenteredFlowLayout import CenteredFlowLayout
-from view.components.DashboardDocumentCard import DocumentCard
+from view.components import DocumentCard
 from model.data.document import Document
 from model.logic.helpers import clear_layout
 from model.service.signals import JobTicket, DatabaseTicket

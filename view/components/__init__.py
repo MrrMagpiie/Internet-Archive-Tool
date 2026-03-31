@@ -1,4 +1,3 @@
-from .ActionCard import *
 from .ActionDashboard import *
 from .ClickableFrame import *
 from .ExpandingCard import *
@@ -8,6 +7,6 @@ from .StyleManager import *
 from .ImageLabel import *
 from .DocumentImagePanel import *
 from .ProcessManagerWidget import *
-from .DashboardDocumentCard import *
+from .DashboardCards import *
 from .CenteredFlowLayout import *
 from .InteractiveImageView import *

@@ -4,7 +4,7 @@ from PyQt6.QtWidgets import (
     QPushButton, QLabel
 )
 
-from view.components.ActionCard import ActionCard
+from view.components import ActionCard
 from view.components.ActionDashboard import ActionDashboard
 from view.components.Page import Page
 
