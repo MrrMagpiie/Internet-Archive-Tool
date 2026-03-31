@@ -1,9 +1,11 @@
+import sys
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QProgressBar, 
     QPushButton, QScrollArea, QFrame, QSizePolicy
 )
 from PyQt6.QtCore import Qt, QSize, pyqtSignal, QPropertyAnimation, QEasingCurve, pyqtSlot
 from model.service.signals import JobTicket
+
 # --- A Single Row in the Process List ---
 class ProcessItem(QFrame):
     cancel_requested = pyqtSignal(str) # Signal to stop the thread
@@ -12,50 +14,36 @@ class ProcessItem(QFrame):
         super().__init__()
         self.ticket = ticket
         self.setFixedHeight(50)
-        self.setStyleSheet("""
-            ProcessItem {
-                background-color: white;
-                border-bottom: 1px solid #e1e4e8;
-            }
-        """)
+        self.setObjectName("processItem")
         
         layout = QHBoxLayout()
         layout.setContentsMargins(10, 5, 10, 5)
         
-        # 1. Label
+        # Label
         self.lbl_name = QLabel(title)
-        self.lbl_name.setStyleSheet("font-weight: bold; color: #444;")
+        self.lbl_name.setObjectName("processItemLabel")
 
         self.step_lbl = QLabel()
-        self.step_lbl.setStyleSheet("font-weight: bold; color: #444;")
+        self.step_lbl.setObjectName("processItemStep")
         
-        # 2. Progress Bar
+        # Progress Bar
         self.pbar = QProgressBar()
         self.pbar.setFixedHeight(8)
         self.pbar.setTextVisible(False)
-        self.pbar.setStyleSheet("""
-            QProgressBar { background: #eee; border-radius: 4px; }
-            QProgressBar::chunk { background: #2da44e; border-radius: 4px; }
-        """)
+        self.pbar.setObjectName("processItemProgressBar")
         
-        # 3. Cancel Button
+        # Cancel Button
         btn_cancel = QPushButton("✕")
         btn_cancel.setFixedSize(24, 24)
         btn_cancel.setCursor(Qt.CursorShape.PointingHandCursor)
         btn_cancel.setToolTip("Cancel Process")
-        btn_cancel.setStyleSheet("""
-            QPushButton {
-                border: none; color: #999; font-weight: bold;
-            }
-            QPushButton:hover { color: #d73a49; background: #ffeef0; border-radius: 12px; }
-        """)
+        btn_cancel.setObjectName("processItemCancelBtn")
         btn_cancel.clicked.connect(self.cancel)
         
         # Layout Assembly
-        # Stack Label and Bar vertically for compactness
         v_col = QVBoxLayout()
         v_col.setSpacing(2)
-        v_col.setContentsMargins(0,0,0,0)
+        v_col.setContentsMargins(0, 0, 0, 0)
         v_col.addWidget(self.lbl_name)
         v_col.addWidget(self.step_lbl)
         v_col.addWidget(self.pbar)
@@ -64,7 +52,7 @@ class ProcessItem(QFrame):
         layout.addLayout(v_col)
         self.setLayout(layout)
 
-    def update_progress(self,value,step_text):
+    def update_progress(self, value, step_text):
         self.pbar.setValue(value)
         if step_text:
             self.step_lbl.setText(step_text)
@@ -73,142 +61,232 @@ class ProcessItem(QFrame):
         self.ticket.cancel()
         self.cancel_requested.emit(self.ticket.job_id)
 
-            
-'''class Task():
-    def __init__(command, doc_id, ticket):
-        self.ticket = ticket
-        self.command = command
-        self.doc_id = doc_id'''
+class ProcessCategoryWidget(QFrame):
+    height_changed = pyqtSignal()
+    empty = pyqtSignal(str)       
+    def __init__(self, category_name):
+        super().__init__()
+        self.category_name = category_name
+        self.items = {}
+        self.is_expanded = False
+        
+        self.HEADER_HEIGHT = 40
+        self.ITEM_HEIGHT = 60
+        
+        self.setObjectName("processCategoryWidget")
+        self.layout = QVBoxLayout()
+        self.layout.setContentsMargins(0, 0, 0, 0)
+        self.layout.setSpacing(0)
+        
+        # --- Category Header ---
+        self.header = QFrame()
+        self.header.setFixedHeight(self.HEADER_HEIGHT)
+        self.header.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.header.mousePressEvent = self.toggle_expand
+        self.header.setStyleSheet("background-color: rgba(0,0,0,0.05); border-bottom: 1px solid rgba(0,0,0,0.1);")
+        
+        header_layout = QHBoxLayout()
+        header_layout.setContentsMargins(20, 0, 15, 0)
+        
+        self.lbl_title = QLabel(f"{category_name.capitalize()} (0)")
+        self.lbl_title.setStyleSheet("font-weight: bold;")
+        self.lbl_icon = QLabel("▼")
+        
+        header_layout.addWidget(self.lbl_title)
+        header_layout.addStretch()
+        header_layout.addWidget(self.lbl_icon)
+        self.header.setLayout(header_layout)
+        
+        # --- Items Container ---
+        self.item_container = QWidget()
+        self.item_layout = QVBoxLayout()
+        self.item_layout.setContentsMargins(10, 0, 0, 0) 
+        self.item_layout.setSpacing(0)
+        self.item_container.setLayout(self.item_layout)
+        self.item_container.setVisible(False) 
+        
+        self.layout.addWidget(self.header)
+        self.layout.addWidget(self.item_container)
+        self.setLayout(self.layout)
 
+    def toggle_expand(self, event=None):
+        if len(self.items) == 0: return
+        self.is_expanded = not self.is_expanded
+        self.item_container.setVisible(self.is_expanded)
+        self.lbl_icon.setText("▲" if self.is_expanded else "▼")
+        self.height_changed.emit()
+
+    def add_task(self, item_widget, job_id):
+        self.items[job_id] = item_widget
+        self.item_layout.addWidget(item_widget)
+        self.update_title()
+        self.height_changed.emit()
+
+    def remove_task(self, job_id):
+        if job_id in self.items:
+            item = self.items.pop(job_id)
+            item.deleteLater()
+            self.update_title()
+            
+            if len(self.items) == 0:
+                self.empty.emit(self.category_name)
+            else:
+                self.height_changed.emit()
+
+    def update_task(self, job_id, progress, step_text):
+        if job_id in self.items:
+            self.items[job_id].update_progress(progress, step_text)
+
+    def update_title(self):
+        self.lbl_title.setText(f"{self.category_name.capitalize()} ({len(self.items)})")
+
+    def get_target_height(self):
+        """Calculates how tall this specific category block is."""
+        h = self.HEADER_HEIGHT
+        if self.is_expanded:
+            h += len(self.items) * self.ITEM_HEIGHT
+        return h
 
 # --- The Main Expandable Widget ---
 class ProcessManagerWidget(QWidget):
     def __init__(self):
         super().__init__()
-        
-        # Data storage
-        self.active_tasks = {} # {id: ProcessItem_widget}
+        self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
         self.is_expanded = False
         
-        # Layout
+        # --- Data Storage ---
+        self.categories = {}
+        self.task_routing = {}
+        
+        self.MAX_LIST_HEIGHT = 500
+        
         self.layout = QVBoxLayout()
         self.layout.setContentsMargins(0, 0, 0, 0)
         self.layout.setSpacing(0)
+        self.layout.setAlignment(Qt.AlignmentFlag.AlignBottom)
         
-        # --- 1. The Expandable List Area (Hidden by default) ---
+        # --- 1. The Expandable List Area ---
         self.list_container = QWidget()
         self.list_layout = QVBoxLayout()
         self.list_layout.setContentsMargins(0, 0, 0, 0)
         self.list_layout.setSpacing(0)
-        self.list_layout.addStretch() # Push items to bottom (so they stack up from header)
+        self.list_layout.addStretch() 
         self.list_container.setLayout(self.list_layout)
         
-        # Scroll Area wrapper
         self.scroll_area = QScrollArea()
         self.scroll_area.setWidget(self.list_container)
         self.scroll_area.setWidgetResizable(True)
         self.scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        self.scroll_area.setStyleSheet("border: none; background: #f6f8fa;")
-        self.scroll_area.setFixedHeight(0)
+        self.scroll_area.setMaximumHeight(0)
+        self.scroll_area.setObjectName("processScrollArea")
         
-        # --- 2. The Header  ---
+        # --- 2. The Master Header ---
         self.header = QFrame()
-        self.header.setFixedHeight(40)
+        self.header.setFixedHeight(50)
         self.header.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.header.setStyleSheet("""
-            QFrame {
-                background-color: #24292e; 
-                color: white;
-                border-top-left-radius: 8px;
-                border-top-right-radius: 8px;
-            }
-            QFrame:hover { background-color: #444d56; }
-        """)
+        self.header.mousePressEvent = self.toggle_expand
+        self.header.setObjectName("processHeader")
         
-        # Header Layout
         header_layout = QHBoxLayout()
         header_layout.setContentsMargins(15, 0, 15, 0)
         
         self.lbl_summary = QLabel("No active processes")
-        self.lbl_summary.setStyleSheet("font-weight: 600; font-size: 12px;")
-        
-        self.lbl_icon = QLabel("▲")
+        self.lbl_summary.setObjectName("processSummaryLabel")
+        self.lbl_icon = QLabel("▼")
         
         header_layout.addWidget(self.lbl_summary)
         header_layout.addStretch()
         header_layout.addWidget(self.lbl_icon)
         self.header.setLayout(header_layout)
         
-        # Click event to toggle
-        self.header.mousePressEvent = self.toggle_expand
-        
         self.layout.addWidget(self.scroll_area)
         self.layout.addWidget(self.header)
-        
         self.setLayout(self.layout)
-        
-        # Hide entirely if no tasks
-        #self.setVisible(False)
 
-    def toggle_expand(self, event):
+    def toggle_expand(self, event=None):
         self.is_expanded = not self.is_expanded
-        
-        # Animate height
-        target_height = 200 if self.is_expanded else 0
-        
+        self._recalculate_height()
+
+    def _recalculate_height(self):
+        """Triggers the animation to perfectly fit all expanded categories."""
+        if not self.is_expanded or len(self.task_routing) == 0:
+            target = 0
+        else:
+            total_h = sum(cat.get_target_height() for cat in self.categories.values())
+            target = min(total_h, self.MAX_LIST_HEIGHT)
+            
+        self._animate_height(target)
+
+    def _animate_height(self, target_height):
+        if hasattr(self, 'anim') and self.anim.state() == QPropertyAnimation.State.Running:
+            self.anim.stop()
+            
         self.anim = QPropertyAnimation(self.scroll_area, b"maximumHeight")
-        self.anim.setDuration(300)
+        self.anim.setDuration(250)
         self.anim.setStartValue(self.scroll_area.height())
         self.anim.setEndValue(target_height)
         self.anim.setEasingCurve(QEasingCurve.Type.InOutQuad)
-        self.anim.start()
         
-        # Update Icon
-        self.lbl_icon.setText("▼" if self.is_expanded else "▲")
+        self.anim.valueChanged.connect(self.scroll_area.setMinimumHeight)
+        self.anim.valueChanged.connect(self._keep_scrolled_to_bottom)
+        self.lbl_icon.setText("▲" if self.is_expanded else "▼")
+        self.anim.start()
 
-        # Ensure layout updates
-        self.anim.finished.connect(lambda: self.scroll_area.setFixedHeight(target_height))
+    def _keep_scrolled_to_bottom(self):
+        scrollbar = self.scroll_area.verticalScrollBar()
+        scrollbar.setValue(scrollbar.maximum())
 
-    @pyqtSlot(str,str,object)
-    def add_task(self,task_command ,task_item,ticket,):
-        """Adds a new row to the list"""
-        if ticket.job_id in self.active_tasks:
+    @pyqtSlot(str, str, object)
+    def add_task(self, task_command, task_item, ticket):
+        if ticket.job_id in self.task_routing:
             return
             
-        task_name = f'{task_command} {task_item}'
-        # Create item
-        item = ProcessItem(task_name, ticket)
-        
-        # Connect cancel signal
+        # 1. Ensure the category widget exists
+        if task_command not in self.categories:
+            cat_widget = ProcessCategoryWidget(task_command)
+            cat_widget.height_changed.connect(self._recalculate_height)
+            cat_widget.empty.connect(self._remove_category)
+            
+            self.categories[task_command] = cat_widget
+            self.list_layout.insertWidget(self.list_layout.count() - 1, cat_widget)
+
+        # 2. Build and route the item
+        ticket.canceled.connect(self.remove_task)
+        item = ProcessItem(f"{task_command} {task_item}", ticket)
         item.cancel_requested.connect(self.remove_task)
         
-        # Add to layout (Insert at 0 to put new tasks at the bottom closest to header)
-        self.list_layout.insertWidget(self.list_layout.count() - 1, item)
-        self.active_tasks[ticket.job_id] = item
+        self.task_routing[ticket.job_id] = task_command
+        self.categories[task_command].add_task(item, ticket.job_id)
         
         self.update_summary()
-        self.setVisible(True) # Show the bar
-
-    @pyqtSlot(str, int, object)
-    def update_task_progress(self, job_id, progress,step_text):
-        if job_id in self.active_tasks:
-            self.active_tasks[job_id].update_progress(progress,step_text)
 
     @pyqtSlot(str)
     def remove_task(self, job_id):
-        if job_id in self.active_tasks:
-            widget = self.active_tasks.pop(job_id)
-            widget.deleteLater()
+        if job_id in self.task_routing:
+            category_name = self.task_routing.pop(job_id)
+            self.categories[category_name].remove_task(job_id)
             self.update_summary()
-            
-            # Hide entire bar if empty
-            '''if not self.active_tasks:
-                self.setVisible(False)'''
+
+    @pyqtSlot(str)
+    def _remove_category(self, category_name):
+        """Called automatically when a category runs out of items."""
+        if category_name in self.categories:
+            widget = self.categories.pop(category_name)
+            widget.deleteLater()
+            self._recalculate_height()
+
+    @pyqtSlot(str, int, str)
+    def update_task_progress(self, job_id, progress, step_text):
+        if job_id in self.task_routing:
+            category_name = self.task_routing[job_id]
+            self.categories[category_name].update_task(job_id, progress, step_text)
 
     @pyqtSlot()
     def update_summary(self):
-        count = len(self.active_tasks)
+        count = len(self.task_routing)
         if count == 0:
             self.lbl_summary.setText("No active processes")
+            self.is_expanded = False
+            self._recalculate_height()
         else:
             self.lbl_summary.setText(f"{count} Processes Running...")

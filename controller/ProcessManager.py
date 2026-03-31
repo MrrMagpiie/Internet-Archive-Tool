@@ -31,9 +31,10 @@ class ProcessManager(QObject, DatabaseMixin, ProcessingMixin, UploadMixin, Image
     task_finished = pyqtSignal(str) # job_id
     queue_empty = pyqtSignal() # Queue is empty
 
+    document_update = pyqtSignal(Document) # Broadcasts Document changes to all views
+    document_delete = pyqtSignal(str) # Broadcasts Document deletion to all views
 
-    db_update = pyqtSignal(Document) # Broadcasts DB changes to all views
-    need_setup = pyqtSignal(bool)        # Trigger Setup Wizard if config missing
+    need_setup = pyqtSignal(tuple)# Trigger Setup Wizard if config or db missing
     global_error = pyqtSignal(str) # Global error log, msg
 
     def __init__(self, parent=None):
@@ -46,6 +47,9 @@ class ProcessManager(QObject, DatabaseMixin, ProcessingMixin, UploadMixin, Image
         self._active_tasks = {}
 
     def check_setup(self):
+        check = (self.need_config, self.need_db)
+        self.need_setup.emit(check)
+
     # --- Task Managment ---
     def register_task(self, command: str,ticket: JobTicket,text=None):
         ticket.data.connect(lambda: self.complete_task(ticket.job_id))

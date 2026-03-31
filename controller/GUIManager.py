@@ -18,6 +18,7 @@ class GUIManager(QObject):
         self.process_manager.busy_start.connect(self.start_loading_cursor)
         self.process_manager.busy_stop.connect(self.stop_loading_cursor)
         self.process_manager.need_setup.connect(self.run_setup)
+        self.main_window = None
 
 
     def MainWindow(self):
@@ -25,6 +26,13 @@ class GUIManager(QObject):
         return self.MainWindow
 
     # --- Pages --- 
+    
+    def LoginPage(self):
+        login_page = LoginPage()
+        login_page.login_request.connect(self.process_manager.request_login)
+        login_page.login_successful.connect(self.transition_to_app)
+        return login_page
+
 
     def DashboardPage(self,navigation_stack):
         workflow_view = Dashboard.WorkflowView(self)
@@ -104,21 +112,37 @@ class GUIManager(QObject):
         """Helper to restore the default cursor."""
         QApplication.restoreOverrideCursor()
 
-    @pyqtSlot(bool)    
-    def run_setup(self,need_setup):
-        if need_setup:
-            dialog = FirstRunSetupDialog()
-            dialog.creds.connect(self.process_manager.ia_config)
-            result = dialog.exec() 
+    @pyqtSlot(tuple)    
+    def run_setup(self, need_setup):
+        
+        if any(need_setup):
+            wizard = SetupWizard()
+            need_config, need_db = need_setup
+
+            if need_config:
+                ia_page = IAPage()
+                ia_page.verify_ia_creds.connect(self.process_manager.ia_config)
+                wizard.addPage(ia_page)
             
+            if need_db:
+                admin_page = AdminPage()
+                admin_page.admin_setup_data.connect(self.process_manager.new_user)
+                wizard.addPage(admin_page)
+            
+            result = wizard.exec() 
+                
             if result == QDialog.DialogCode.Rejected:
                 self.process_manager.closeEvent()
                 sys.exit(1)
-            
-    
-        self.window = self.MainWindow()
-        self.window.show()
 
+        self.login_page = self.LoginPage()
+        self.login_page.login_successful.connect(self.transition_to_app)
+        self.login_page.show()
+
+    def transition_to_app(self):
+        if not self.main_window:
+            self.main_window = MainWindow(self)
+            self.main_window.show()
 
 
 

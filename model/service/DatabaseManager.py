@@ -56,6 +56,24 @@ class DatabaseManager(QObject):
                             self._save_document(document)
                             signals.data.emit(document,signals.job_id)
                             self.update.emit(document,signals.job_id)
+                        case 'verify_login':
+                            username, password = data
+                            success, role = self._verify_login(username, password)
+                            
+                            if not signals.is_cancelled():
+                                result = {'success': success, 'role': role, 'username': username}
+                                signals.data.emit(result, signals.job_id)
+
+                        case 'new_user':
+                            username, password = data
+                            if not signals.is_cancelled():
+                                success, msg = self._create_user(username, password)
+                                if success:
+                                    signals.data.emit(True, signals.job_id)
+                                else:
+                                    signals.error.emit(msg, signals.job_id)
+                            
+
                 except sqlite3.OperationalError as e:
                     if "interrupted" in str(e).lower():
                         print(f"Database query for {signals.job_id} was successfully aborted.")
@@ -72,6 +90,36 @@ class DatabaseManager(QObject):
         finally:
             if self.conn:
                 self.conn.close()
+
+    def _create_user(self, username, password) -> tuple[bool, str]:
+        """Generates a new user and safely handles duplicate usernames."""
+        cursor = self.conn.cursor()
+        salt = secrets.token_hex(16)
+        hashed_pw = hashlib.pbkdf2_hmac(
+            'sha256', 
+            password.encode('utf-8'), 
+            salt.encode('utf-8'), 
+            100000 
+        ).hex()
+
+        try:
+            cursor.execute('''
+                INSERT INTO users (username, password_hash, salt, role)
+                VALUES (?, ?, ?, ?)
+            ''', (username, hashed_pw, salt, 'admin'))
+            
+            self.conn.commit()
+            return True, "User created successfully."
+            
+        except sqlite3.IntegrityError:
+            # The username already exists! Roll back the transaction.
+            self.conn.rollback()
+            return False, f"The username '{username}' is already taken."
+            
+        except Exception as e:
+            # Catch any other weird database errors (like a locked file)
+            self.conn.rollback()
+            return False, f"Database error: {str(e)}"
 
     def _create_tables(self):
         """Internal method to create tables. Called by run()."""
@@ -92,6 +140,17 @@ class DatabaseManager(QObject):
                 error_msg TEXT
             )
         ''')
+
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS users (
+            user_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT UNIQUE NOT NULL,
+            password_hash TEXT NOT NULL,
+            salt TEXT NOT NULL,
+            role TEXT NOT NULL DEFAULT 'user' 
+                )
+        ''')
+
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS images (
                 image_id TEXT PRIMARY KEY,
@@ -207,6 +266,37 @@ class DatabaseManager(QObject):
                 VALUES (?, ?, ?, ?, ?)
             ''', (image_id, doc.doc_id, image_data['order'], image_data['original'], image_data['processed']))
         self.conn.commit()
+
+    def _verify_login(self, username, plaintext_password) -> tuple[bool, str | None]:
+        """
+        Hashes the incoming password and compares it to the database.
+        Returns (True, role) if successful, (False, None) if failed.
+        """
+        cursor = self.conn.cursor()
+        cursor.execute("SELECT password_hash, salt, role FROM users WHERE username = ?", (username,))
+        row = cursor.fetchone()
+        
+        # Username doesn't exist
+        if not row:
+            return False, None
+            
+        stored_hash = row['password_hash']
+        salt = row['salt']
+        role = row['role']
+        
+        # Hash the attempted password using the exact same algorithm and salt
+        test_hash = hashlib.pbkdf2_hmac(
+            'sha256', 
+            plaintext_password.encode('utf-8'), 
+            salt.encode('utf-8'), 
+            100000
+        ).hex()
+        
+        # Compare the hashes
+        if test_hash == stored_hash:
+            return True, role
+            
+        return False, None
 
     def cancel_current_query(self):
         """Called by the main GUI thread to instantly abort the active SQLite query."""

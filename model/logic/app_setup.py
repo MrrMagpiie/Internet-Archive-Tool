@@ -2,8 +2,6 @@ import os
 import sys
 import shutil
 from pathlib import Path
-
-# Import the pre-calculated paths from config.py
 from config import USER_RESOURCES_DIR, LIVE_SETTINGS_FILE, APPDATA_DIR, DB_PATH, DOCUMENT_SCHEMA_PATH, FIELD_TYPES_PATH, DEFAULT_OUTPUT_DIR
 from model.settings_manager import app_settings
 

@@ -8,6 +8,7 @@ class DatabaseMixin:
     """Handles Database Worker logic."""
     
     def setup_database(self):
+        self.need_db = not DB_PATH.exists()
         self.db_thread = QThread()
         self.db_queue = Queue()
         self.db_manager = DatabaseManager(DB_PATH, self.db_queue)
@@ -37,6 +38,19 @@ class DatabaseMixin:
         ticket.interupt.connect(self.db_interupt)
         self.register_task('save_document', ticket)
         self.db_queue.put(('save_document', ticket, doc))
+
+
+    @pyqtSlot(tuple,DatabaseTicket)
+    def request_login(self,data, ticket:DatabaseTicket):
+        ticket.interupt.connect(self.db_interupt)
+        self.register_task('verify_login', ticket)
+        self.db_queue.put(('verify_login', ticket, data))
+        
+    @pyqtSlot(tuple,DatabaseTicket)
+    def new_user(self,data,ticket:DatabaseTicket):
+        ticket.interupt.connect(self.db_interupt)
+        self.register_task('new_user', ticket)
+        self.db_queue.put(('new_user', ticket, data))
 
     @pyqtSlot()
     def db_interupt():
