@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field, asdict
 from typing import Dict, Any, Set
 import string
+import re
 
 from model.data.metadata import Metadata
 
@@ -10,6 +11,7 @@ class DocumentSchema:
     A class to represent and validate a document processing schema.
     """
     schema_name: str 
+    filename_template: str = ''
     fields: Dict[str, str] = field(default_factory=dict)
     defaults: Dict[str, str] = field(default_factory=dict)
 
@@ -75,14 +77,14 @@ class DocumentSchema:
         self.defaults[key] = template
         print(f"Default '{key}' added successfully.")
 
-    # --- THE MAJOR CHANGE IS HERE ---
     def generate_metadata(self, user_inputs: Dict[str, Any]) -> Metadata:
         """
         Generates the final document metadata by applying the provided 
         user_inputs to the schema's default templates.
         """
-        # Optional: Validate that the user provided all the fields we expect
-        missing_inputs = set(self.fields.keys()) - set(user_inputs.keys())
+        clean_inputs = self._normalize_inputs(user_inputs)
+
+        missing_inputs = set(self.fields.keys()) - set(clean_inputs.keys())
         if missing_inputs:
              print(f"Warning: Generating metadata with missing inputs: {missing_inputs}")
 
@@ -90,8 +92,7 @@ class DocumentSchema:
 
         for default_key, default_template in self.defaults.items():
             try:
-                # Interpolate using the passed-in user_inputs!
-                generated_value = default_template.format(**user_inputs)
+                generated_value = default_template.format(**clean_inputs)
                 generated_metadata_dict[default_key] = generated_value
             except KeyError as e:
                 print(f"Runtime Format Error: Field {e} required for default '{default_key}' was not supplied.")
@@ -112,6 +113,81 @@ class DocumentSchema:
             optional_fields=generated_metadata_dict
         )
 
+    def generate_metadata_from_name(self, filename: str) -> Metadata:
+        if not self.filename_template:
+            raise ValueError("No template defined.")
+        regex_pattern = "^"
+        formatter = string.Formatter()
+        
+        for literal, field_name, _, _ in formatter.parse(self.filename_template):
+            if literal:
+                # 1. Split the literal wherever there is a space, dash, or underscore
+                parts = re.split(r'[\s\-_]+', literal)
+                
+                # 2. Safely escape the remaining text
+                escaped_parts = [re.escape(p) for p in parts]
+                
+                # 3. Glue it back together using  flexible character class
+                forgiving_literal = r'[\s\-_]+'.join(escaped_parts)
+                
+                regex_pattern += forgiving_literal
+                
+            if field_name:
+                regex_pattern += f"(?P<{field_name}>.+?)"
+                
+        regex_pattern += "$" 
+
+        match = re.match(regex_pattern, filename, re.IGNORECASE)
+        if not match:
+             raise ValueError(f"Could not parse '{filename}' using template '{self.filename_template}'.")
+
+        extracted_inputs = match.groupdict()
+        
+        # Strip any accidental trailing whitespace the non-greedy capture might have grabbed
+        clean_inputs = {k: v.strip(' -_') for k, v in extracted_inputs.items()}
+        
+        return self.generate_metadata(clean_inputs)
+
+    def _normalize_inputs(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
+        """Cleans and standardizes raw inputs before they are applied to templates."""
+        
+        MONTH_MAP = {
+            'jan': '01', 'january': '01',
+            'feb': '02', 'february': '02',
+            'mar': '03', 'march': '03',
+            'apr': '04', 'april': '04',
+            'may': '05',
+            'jun': '06', 'june': '06',
+            'jul': '07', 'july': '07',
+            'aug': '08', 'august': '08',
+            'sep': '09', 'september': '09',
+            'oct': '10', 'october': '10',
+            'nov': '11', 'november': '11',
+            'dec': '12', 'december': '12'
+        }
+
+        normalized = {}
+        for key, value in inputs.items():
+            # Target any field the user named 'month' (case-insensitive)
+            if 'month' in key.lower() and isinstance(value, str):
+                clean_val = value.lower().strip()
+                
+                if clean_val in MONTH_MAP:
+                    # Convert text to the 2-digit number
+                    normalized[key] = MONTH_MAP[clean_val]
+                elif clean_val.isdigit():
+                    # If it's already a number (like '1'), ensure it is padded to '01'
+                    normalized[key] = clean_val.zfill(2)
+                else:
+                    # Fallback if they typed something unrecognizable
+                    normalized[key] = value
+            else:
+                # Pass all other fields through untouched
+                normalized[key] = value
+
+        return normalized
+
+
     @classmethod
     def from_dict(cls, data: Dict[str,Any]):
         required_keys = ['schema_name']
@@ -120,6 +196,7 @@ class DocumentSchema:
         try:
             return cls(
                 schema_name=data['schema_name'],
+                filename_template=data.get('filename_template', ''),
                 fields=data.get('fields', {}),
                 defaults=data.get('defaults', {})
             )

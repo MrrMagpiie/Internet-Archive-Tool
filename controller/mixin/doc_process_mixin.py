@@ -1,7 +1,10 @@
 from PyQt6.QtCore import QThread, pyqtSlot, QObject
 from queue import Queue
 from model.data.document import Document
-from model.service.DocumentPipeline import DocumentPipelineWorker, DocPipelineRequest
+from model.service.DocumentPipeline import DocumentPipelineWorker
+from pathlib import Path
+from model.service.signals import DatabaseTicket, JobTicket
+
 
 class ProcessingMixin:
     """Handles Image Processing & Discovery logic."""
@@ -18,26 +21,38 @@ class ProcessingMixin:
         self.proc_thread.started.connect(self.proc_worker.run)
         self.proc_thread.start()
 
-    @pyqtSlot(tuple, QObject)
+    @pyqtSlot(Path, QObject)
     def request_discovery(self, data, ticket):
-        self.task_started.emit('discover',data[0],ticket)
+        self.register_task('discover', ticket, str(data))
         self.proc_queue.put(('discover', ticket, data))
+
+    @pyqtSlot(Path,QObject)
+    def request_batch_discovery(self,data,ticket):
+        self.register_task('batch_discover', ticket)
+        self.proc_queue.put(('batch_discover', ticket, data))
 
     @pyqtSlot(tuple, QObject)
     def request_deskew(self, data, ticket):
-        self.task_started.emit('deskew',data.doc_id,ticket)
+        self.register_task('deskew', ticket,data.doc_id)
         self.proc_queue.put(('deskew', ticket, data))
     
-    @pyqtSlot(tuple,QObject)
+    @pyqtSlot(tuple,JobTicket)
     def request_save_metadata(self,data,ticket):
-        self.task_started.emit('metadata',data[0].doc_id,ticket)
+        self.register_task('metadata', ticket,data[0].doc_id)
         self.proc_queue.put(('metadata', ticket, data))
+
+    @pyqtSlot(Path,QObject)
+    def request_delete_document_files(self,doc_path,ticket):
+        ticket.data.disconnect()
+        self.register_task('delete', ticket)
+        self.proc_queue.put(('delete', ticket, doc_path))
 
     @pyqtSlot(Document,str)
     def _handle_proc_success(self,doc,job_id):
-        self.task_finished.emit(job_id)
-        self.request_update_doc(doc)
-        print(f'Pipeline Success: {job_id} {doc.doc_id}')
+        ticket = DatabaseTicket()
+        if isinstance(doc, bool):
+            return
+        self.request_update_doc(doc,ticket)
 
     def shutdown_processing(self):
         self.proc_queue.put(('shutdown', None, None))

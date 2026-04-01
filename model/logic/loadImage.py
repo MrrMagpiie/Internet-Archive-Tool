@@ -1,15 +1,11 @@
+from PyQt6.QtGui import QImage           
+from wand.image import Image
 
-
-from PyQt6.QtGui import QPixmap
-from PyQt6.QtCore import Qt
-
-from wand.image import Image as WandImage 
-from PyQt6.QtGui import QImage, QPixmap            
-
-def load_image(image_path) -> QPixmap:
+def load_image(image_path) -> QImage:
     """Store the original pixmap and update the display."""
     try:
-        with WandImage(filename=image_path) as img:
+
+        with Image(filename=image_path) as img:
             
             img.format = 'rgba'
             
@@ -21,15 +17,10 @@ def load_image(image_path) -> QPixmap:
                 img.height,
                 QImage.Format.Format_RGBA8888
             )
-            pixmap = QPixmap.fromImage(qimage)
-            return pixmap
+            return qimage.copy()
 
     except Exception as e:
         print(f"Wand Error: {e}")
 
 def load_image_series(image_path_list) -> list:
-    image_list = []
-    for image_path in image_path_list:
-        image_list.append(load_image(image_path))
-
-    return image_list
+    return [load_image(path) for path in image_path_list]

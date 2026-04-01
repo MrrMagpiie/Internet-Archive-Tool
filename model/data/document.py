@@ -2,6 +2,9 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from datetime import datetime, timezone
 from typing import Dict, Any, Optional, Union
+from model.data.metadata import Metadata
+import json
+
 
 # --- Helper Function for Mutable Defaults ---
 
@@ -31,6 +34,7 @@ class Document:
     path: Optional[Union[Path, str]] = None
     metadata_file: Optional[Union[Path, str]] = None
     metadata_file_type: Optional[str] = None
+    metadata: Optional[Metadata] = None
     error_msg: Optional[str] = None
     last_modified: Optional[str] = None
     status: Dict[str, bool] = field(default_factory=_default_status_factory)
@@ -55,13 +59,17 @@ class Document:
         if self.last_modified is None:
             self.last_modified = datetime.now(timezone.utc).isoformat()
 
-    def add_image(self, image_id: str, order: int, original_path: str, processed_path: str = None):
+    def add_image(self, image_id: str, order: int, original_path: str, processed_path: str = None,changes: list[str, Any] = None):
         """Adds or updates an image entry in the document."""
         self.images[image_id] = {
             "order": order,
             "original": str(original_path),
-            "processed": str(processed_path) if processed_path else None
+            "processed": str(processed_path) if processed_path else None,
+            "changes": changes if changes else []
         }
+
+    def add_change(self,image_id,change):
+        self.images[image_id]['changes'].append(change)
 
     def to_dict(self) -> dict:
         """Converts the Document object to a dictionary for JSON serialization."""
@@ -72,20 +80,47 @@ class Document:
             "path": str(self.path) if self.path else None,
             "metadata_file": str(self.metadata_file) if self.metadata_file else None,
             "metadata_file_type": self.metadata_file_type,
+            "metadata_json": self.metadata.to_json() if self.metadata else None,
             "last_modified": self.last_modified,
             "error_msg": self.error_msg
         }
 
+    def add_metadata(self, metadata):
+        if isinstance(metadata, Metadata):
+            self.metadata = metadata
+        elif isinstance(metadata, dict):
+            self.metadata = Metadata.from_dict(metadata)
+        elif isinstance(metadata, str):
+            self.metadata = Metadata.from_json(metadata)
+        else:
+            return
+        self.status['metadata'] = True
+
     @classmethod
-    def from_dict(cls, doc_id: str, data: dict) -> 'Document':
-        """Creates a Document object from a dictionary."""
-        return cls(
-            doc_id=doc_id,
-            status=data.get("status"),
-            path=data.get("path"),
-            metadata_file=data.get("metadata_file"),
-            metadata_file_type=data.get("metadata_file_type"),
-            last_modified=data.get("last_modified"),
-            error_msg=data.get("error_msg"),
-            images=data.get("images", {})
+    def from_db_row(cls, row) -> 'Document':
+        """
+        Creates a Document instance from a dictionary-like SQLite row.
+        """
+        status = { 
+            'metadata': bool(row['metadata']),
+            'deskewed': bool(row['deskewed']),
+            'needs_approval': bool(row['needs_approval']),
+            'approved': bool(row['approved']),
+            'rejected': bool(row['rejected']),
+            'uploaded': bool(row['uploaded'])
+        }
+        
+        doc = cls(
+            doc_id=row['doc_id'], 
+            status=status, 
+            path=row['path'], 
+            metadata_file=row['metadata_file'], 
+            metadata_file_type=row['metadata_file_type'],
+            last_modified=row['last_modified'], 
+            error_msg=row['error_msg']
         )
+
+        if row['metadata_json']:
+            doc.add_metadata(row['metadata_json'])
+
+        return doc

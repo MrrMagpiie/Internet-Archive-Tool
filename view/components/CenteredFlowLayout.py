@@ -1,13 +1,5 @@
-import sys
-from PyQt6.QtWidgets import (
-    QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 
-    QListWidget, QStackedWidget, QLabel, QPushButton, QSplitter, 
-    QListWidgetItem, QFrame, QFormLayout, QLineEdit, QDateEdit,
-    QProgressBar, QComboBox, QGraphicsView, QGraphicsScene,QGridLayout,
-    QScrollArea,QSizePolicy, QLayout,QStyle
-)
-from PyQt6.QtCore import Qt, QSize, pyqtSignal, QRect, QPoint
-from PyQt6.QtGui import QIcon, QFont, QColor, QCursor,QPixmap,QPainter,QAction
+from PyQt6.QtWidgets import QLayout
+from PyQt6.QtCore import Qt, QSize, QRect, QPoint
 
 class CenteredFlowLayout(QLayout):
     def __init__(self, parent=None, margin=0, spacing=-1):
@@ -24,6 +16,7 @@ class CenteredFlowLayout(QLayout):
 
     def addItem(self, item):
         self.itemList.append(item)
+        self.invalidate()
 
     def count(self):
         return len(self.itemList)
@@ -35,7 +28,9 @@ class CenteredFlowLayout(QLayout):
 
     def takeAt(self, index):
         if 0 <= index < len(self.itemList):
-            return self.itemList.pop(index)
+            item = self.itemList.pop(index)
+            self.invalidate() 
+            return item
         return None
 
     def expandingDirections(self):
@@ -58,7 +53,6 @@ class CenteredFlowLayout(QLayout):
         size = QSize()
         for item in self.itemList:
             size = size.expandedTo(item.minimumSize())
-        # Add margins
         m = self.contentsMargins()
         size += QSize(m.left() + m.right(), m.top() + m.bottom())
         return size
@@ -69,10 +63,8 @@ class CenteredFlowLayout(QLayout):
         line_height = 0
         spacing = self.spacing()
         
-        # This list will hold items for the current row
         current_row_items = []
         
-        # Helper to process a finished row
         def layout_row(items, row_y, row_height):
             if not items:
                 return

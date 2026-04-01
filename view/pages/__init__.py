@@ -2,9 +2,11 @@ from .Dashboard import DashboardPage
 from .MainWindow import MainWindow
 from .MetadataPage import MetadataPage
 from .DocumentReviewPage import DocumentReviewPage
-from .CreateDocumentPage import CreateDocumentPage
+from .CreateDocumentPage import SingleDocumentPage, BatchDocumentPage
 from .SettingsPage import SettingsPage
-from .ReviewDashboard import ReviewPage
+from .UploadDashboard import UploadDashboard
 from .HelpPage import HelpPage
 from .SchemaEditPage import SchemaEditPage
 from .SetupGui import FirstRunSetupDialog
+from .LoginPage import LoginPage
+from .SetupWizard import SetupWizard, AdminPage, IAPage

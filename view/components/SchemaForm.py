@@ -21,7 +21,6 @@ class SchemaForm(QWidget):
         self._create_layout()
         self.current_schema: DocumentSchema = None
         
-        # Load validation rules
         self._load_field_rules()
 
     def _load_field_rules(self):
@@ -42,6 +41,21 @@ class SchemaForm(QWidget):
             for field_name, field_type_name in fields.items():
                 label = QLabel(field_name)
                 input_widget = QLineEdit()
+                
+                # Apply dynamic UI validation based on the schema's specified type
+                self._apply_validation_rules(input_widget, field_type_name)
+                
+                self.form_layout.addRow(label, input_widget)
+
+    def _build_form_from_metadata(self, metadata: dict):
+        fields = self.current_schema.to_dict().get('fields')
+        self.clear_form()
+        
+        if isinstance(fields, dict):
+            for field_name, field_type_name in fields.items():
+                label = QLabel(field_name)
+                input_widget = QLineEdit()
+                input_widget.setText(str(metadata.get(field_name, '')))
                 
                 # Apply dynamic UI validation based on the schema's specified type
                 self._apply_validation_rules(input_widget, field_type_name)
@@ -72,7 +86,12 @@ class SchemaForm(QWidget):
         self.current_schema = DocumentSchema.from_dict(schema_format)
         self._build_form()
 
-    def form_from_metadata(self, metadata: dict):
+    def from_metadata(self, schema_format,metadata: dict):
+        self.clear_form()
+        self.current_schema = DocumentSchema.from_dict(schema_format)
+        self._build_form_from_metadata(metadata)
+
+    def list_from_metadata(self,metadata:dict):
         self.clear_form()
         for key, value in metadata.items():
             self.form_layout.addRow(QLabel(key), QLabel(str(value)))
@@ -117,15 +136,19 @@ class EditableSchemaForm(SchemaForm):
         main_layout.addLayout(self.form_layout)
         
         btn_layout = QHBoxLayout()
+        
         default_btn = QPushButton('New Default Template')
+        default_btn.setObjectName("schemaSecondaryBtn") 
         default_btn.clicked.connect(self.new_default)
         btn_layout.addWidget(default_btn)
         
         field_btn = QPushButton('New Field')
+        field_btn.setObjectName("schemaSecondaryBtn")
         field_btn.clicked.connect(self.new_field)
         btn_layout.addWidget(field_btn)
 
         save_btn = QPushButton("Save Schema")
+        save_btn.setObjectName("schemaPrimaryBtn") 
         save_btn.clicked.connect(self._save)
 
         main_layout.addLayout(btn_layout)
@@ -148,19 +171,20 @@ class EditableSchemaForm(SchemaForm):
             self.default_format = {"default": {"fields": {}, "defaults": {}}}
 
     def new_form(self, schema_format: dict = None):
-        if schema_format is None:
-            self.schema_dict = self.default_format['default']
-        else:
+        if schema_format:
             self.schema_dict = schema_format
+        else:
+            self.schema_dict = self.default_format['default']
         self._build_form()
 
     def add_section_header(self, title_text):
         line = QFrame()
         line.setFrameShape(QFrame.Shape.HLine)
         line.setFrameShadow(QFrame.Shadow.Sunken)
+        line.setObjectName("schemaSectionLine") 
         
         header_label = QLabel(title_text)
-        header_label.setStyleSheet("font-weight: bold; font-size: 14px; margin-top: 10px;")
+        header_label.setObjectName("schemaSectionHeader")
 
         self.form_layout.addRow(header_label)
         self.form_layout.addRow(line)
@@ -203,6 +227,7 @@ class EditableSchemaForm(SchemaForm):
         self.form_layout.addRow(key_combo, value_input)
 
     # --- Add New Rows ---
+
     def new_field(self):
         self._write_form_to_schema()
         fields = self.schema_dict.setdefault('fields', {})
@@ -218,10 +243,27 @@ class EditableSchemaForm(SchemaForm):
         self._build_form()
 
     def _build_form(self):
+        filename_template = self.schema_dict.get('filename_template', '')
         fields = self.schema_dict.get('fields', {})
         defaults = self.schema_dict.get('defaults', {})
 
         self.clear_form()
+
+        self.add_section_header('Auto-Metadata Generation')
+        
+        self.template_input = QLineEdit(filename_template)
+        self.template_input.setPlaceholderText("e.g., {date}_{identifier}_{title}")
+        self.template_input.setObjectName("formLineEdit")
+
+        template_appended_label = QLabel("-000.tif")
+
+        template_input_contianer = QWidget()
+        template_input_layout = QHBoxLayout(template_input_contianer)
+        template_input_layout.addWidget(self.template_input)
+        template_input_layout.addWidget(template_appended_label)
+
+        
+        self.form_layout.addRow("<b>Filename Template:</b>", template_input_contianer)
         
         self.add_section_header('Fields (Variables)')
         for key, value in fields.items():
@@ -243,6 +285,10 @@ class EditableSchemaForm(SchemaForm):
     def _write_form_to_schema(self):
         new_fields = {}
         new_defaults = {}
+
+
+        if hasattr(self, 'template_input') and self.template_input:
+            self.schema_dict['filename_template'] = self.template_input.text().strip()
 
         for row in range(self.form_layout.rowCount()):
             label_item = self.form_layout.itemAt(row, QFormLayout.ItemRole.LabelRole)

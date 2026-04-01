@@ -4,41 +4,26 @@ import zipfile
 import os
 import json
 from pathlib import Path
-from wand.image import Image
 import datetime
 from model.exceptions import*
+from model.logic.metadata import update_metadata_file, get_metadata_from_file
 
-def update_metadata(doc,metadata):
-    metadata_file = doc.metadata_file
-    if metadata_file != None:
-        with open(metadata_file,'w') as f:
-            try:
-                json.dump(metadata,f,indent=4)
-                print('metadata updated')
-            except Exception as e:
-                print(f'metadata save error: {e}')
-
-def load_metadata(doc):
-    '''load metadata for current document'''
-    metadata_file = doc.metadata_file
-    if metadata_file != None:
-        with open(metadata_file,'r') as f:
-            metadata = json.load(f)
-            return metadata
-
-def uploadDocument(doc:Document,ticket:JobTicket):
-        if not doc.metadata_file or not Path(doc.metadata_file).is_file():
-            raise MetadataError(f"Error: Metadata file not found for {doc.doc_id}")
-
-        zip_path = zip_doc(doc)
-        pdf_path = create_pdf_from_tiffs(doc)
-        upload(doc,[zip_path,pdf_path])
+from model.data.document import Document
+from model.service.signals import JobTicket
 
 def setup(email: str, password: str):
         try:
             ia.configure(email,password=password,config_file=IA_CONFIG_PATH) 
         except Exception as e:
             raise e 
+
+def uploadDocument(doc:Document,ticket:JobTicket):
+        if not doc.metadata_file or not Path(doc.metadata_file).is_file():
+            raise MetadataError(doc.doc_id,f"Metadata file not found")
+
+        zip_path = zip_doc(doc)
+        pdf_path = create_pdf_from_tiffs(doc)
+        upload(doc,[zip_path,pdf_path])
 
 def zip_doc(doc):
     output_dir = Path(doc.path)
@@ -57,20 +42,19 @@ def zip_doc(doc):
     except Exception as e:
         raise e
 
-def create_pdf_from_tiffs(doc):
-    pdf_path = os.path.join(doc.path,f'{doc.doc_id}.pdf')
+def pdf_from_tiffs(images_dict, pdf_path, queue):
+    """The isolated Laborer. Do not pass the full Document object, just what it needs!"""
     try:
+        from wand.image import Image
         with Image() as pdf:
-            for tiff in doc.images.values():
+            for tiff in images_dict.values():
                 with Image(filename=tiff.get('processed')) as img:
                     pdf.sequence.append(img)
             
-            # Save the combined PDF
-            pdf.save(filename=pdf_path)
-            print('pdf created Successfully.')
-            return pdf_path
+            pdf.save(filename=str(pdf_path))
+            queue.put({"status": "success", "pdf_path": str(pdf_path)})
     except Exception as e:
-        raise e
+        queue.put({"status": "error", "error": str(e)})
 
 from enum import Enum
 class IdentifierStatus(Enum):
@@ -78,7 +62,7 @@ class IdentifierStatus(Enum):
     ACTIVE = 2
     OFFLINE = 3
 
-def check_identifier_status(identifier: str) -> IdentifierStatus:
+def _check_identifier_status(identifier: str) -> IdentifierStatus:
     """Pings the IA database and returns the current state of the identifier."""
     item = ia.get_item(identifier)
     
@@ -89,8 +73,10 @@ def check_identifier_status(identifier: str) -> IdentifierStatus:
         return IdentifierStatus.OFFLINE
         
     return IdentifierStatus.ACTIVE
-        
-        
+
+def check_identifier_status(identifier: str) -> IdentifierStatus:
+    return IdentifierStatus.FREE
+
 def get_unique_identifier(base_identifier:str) -> str:
     """
     Pings the Internet Archive for collisions.
@@ -113,15 +99,31 @@ def get_unique_identifier(base_identifier:str) -> str:
         
     return current_id
 
-def upload(doc:Document, files:list,edit = False):
-    metadata_dict = load_metadata(doc)
+def update_metadata(doc:Document, metadata:dict):
+    doc.add_metadata(metadata)
+    update_metadata_file(doc)
+
+def upload(doc:Document, files:list,edit= False):
+    metadata_dict = doc.metadata.to_dict()
     identifier = metadata_dict.get('identifier')
     if not identifier:
         raise MetadataError(f"Error: 'identifier' not found in metadata for {doc.doc_id}")
 
     if DEV_MODE:
         print("DEV MODE ACTIVE: Redirecting upload to test_collection...")
-        # Override the collection to the sandbox
+        metadata_dict['collection'] = 'test_collection'
+        identifier = f"{identifier}_TEST"
+        metadata_dict['identifier'] = identifier
+        update_metadata(doc,metadata_dict)
+
+def _upload(doc:Document, files:list,edit = False):
+    metadata_dict = doc.metadata.to_dict()
+    identifier = metadata_dict.get('identifier')
+    if not identifier:
+        raise MetadataError(f"Error: 'identifier' not found in metadata for {doc.doc_id}")
+
+    if DEV_MODE:
+        print("DEV MODE ACTIVE: Redirecting upload to test_collection...")
         metadata_dict['collection'] = 'test_collection'
         identifier = f"{identifier}_TEST"
         metadata_dict['identifier'] = identifier

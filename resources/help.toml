@@ -1,0 +1,14 @@
+[Settings]
+DEFAULT_OUTPUT_DIR = 'Set the output directory for processed documents'
+ADMIN_UPLOAD = 'Toggle this off if you what all users to be able to upload files'
+AUTO_GENERATE_OFFLINE_IDENTIFIERS = "Toggle this setting on if you don't want to be asked about generating new identifiers if an inactive Identifer match is found"
+AUTO_DESKEW =  'This settings currently does nothing as deskewing is always automatic'
+
+[Dashboard]
+BATCH_PROCESS = 'Process a folder containing images for more than one Document'
+BATCH_PROCESS_REQUIRES = 'Requires a Document naming schema defined for that type of document'
+NEW_DOCUMENT = 'Process a folder containing images for a single Document'
+
+[Document]
+FIND_METADATA = 'Use a predefined Filename format to create metadata for scanned documents'
+CHOOSE_SCHEMA = 'Choose a Schema that has a defined filemane template'

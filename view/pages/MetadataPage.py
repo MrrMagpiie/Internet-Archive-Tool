@@ -8,28 +8,27 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot, Qt
 from view.components.Page import Page
 from view.components.SchemaForm import SchemaForm, EditableSchemaForm
-from model.service.signals import JobTicket
-from model.data.metadata import Metadata
-from model.data.document import Document
-from model.data.schema import DocumentSchema
-from model.logic.helpers import *
+from model.service.signals import JobTicket, DatabaseTicket
+from model.data import Metadata,Document,DocumentSchema
+from model.logic import *
+from model.logic.helpers import clear_layout, load_metadata_formats
 import json
 from config import DOCUMENT_SCHEMA_PATH
 
 class MetadataPage(Page):
     new_schema = pyqtSignal(DocumentSchema)
     next_stage = pyqtSignal()
-    save_metadata = pyqtSignal(object,QObject)
+    save_metadata = pyqtSignal(Document,DatabaseTicket)
 
     def __init__(self, parent):
         super().__init__(parent)
-        self.form = None
-        self.main_layout = QVBoxLayout(self)
-        self.create_layout()
-        self._load_metadata_formats()
         self.current_document = None
-
-    def create_layout(self):
+        self.form = None
+        self.metadata_formats = load_metadata_formats()
+        self.main_layout = QVBoxLayout(self)
+        self._create_layout()
+        
+    def _create_layout(self):
         title_layout = QHBoxLayout()
         metadata_layout = QVBoxLayout()
         doc_type_layout = QHBoxLayout()
@@ -42,48 +41,66 @@ class MetadataPage(Page):
         self.doc_type_info.setAlignment(Qt.AlignmentFlag.AlignHCenter)
         metadata_layout.addWidget(self.doc_type_info)
 
-        self._load_metadata_formats()
+        self._populate_metadata_formats()
         self.doc_type_combo.currentTextChanged.connect(self._on_select_format)
         metadata_layout.addLayout(doc_type_layout)
         
         # add metadata input table
         self.form = SchemaForm()
+        self.current_metadata_form = SchemaForm()
+        self.current_metadata_form.setVisible(False)
         metadata_layout.addWidget(self.form)
+        metadata_layout.addWidget(self.current_metadata_form)
 
         # add next stage button
         next_stage_btn = QPushButton('Add Metadata')
+        next_stage_btn.setObjectName("primaryActionBtn")
         next_stage_btn.clicked.connect(self.to_next_stage)
 
         self.main_layout.addLayout(title_layout)
         self.main_layout.addLayout(metadata_layout)
         self.main_layout.addStretch()
         self.main_layout.addWidget(next_stage_btn)
-        
-    # form stuff
-    def _load_metadata_formats(self):
-        with open(DOCUMENT_SCHEMA_PATH,'r') as f:
-            self.metadata_formats = json.load(f)
+
+    def _populate_metadata_formats(self):
         self.doc_type_combo.clear()
-        for key,value in self.metadata_formats.items():
+        self.doc_type_combo.addItem('', '')
+        for key,value in load_metadata_formats().items():
             self.doc_type_combo.addItem(value['schema_name'], key)
 
-    def _on_select_format(self,format_name=None):
+    def _on_select_format(self):
         format_key = self.doc_type_combo.currentData()
+        print(format_key)
         if format_key and format_key != '':
             self.doc_type_info.setVisible(False)
-            schema_format = self.metadata_formats[format_key]
-            self.form.new_form(schema_format)
+            self.create_form(format_key)
         else:
             self.doc_type_info.setVisible(True)
             self.form.clear_form()
 
+        if self.current_document and self.current_document.metadata:
+            self.current_metadata_form.list_from_metadata(self.current_document.metadata.to_dict())
+            self.current_metadata_form.setVisible(True)
+        else:
+            self.current_metadata_form.setVisible(False)
+
+    def create_form(self,format_key):
+        if self.current_document and self.current_document.metadata_file_type == format_key:
+            metadata = self.current_document.metadata.to_dict()
+            schema_format = self.metadata_formats[format_key]
+            self.form.from_metadata(schema_format,metadata)
+        else:
+            schema_format = self.metadata_formats[format_key]
+            self.form.new_form(schema_format)
+
     def to_next_stage(self):
         metadata = self.form.get_metadata()
         metadata_type = self.doc_type_combo.currentData()
-        data = (self.current_document,metadata,metadata_type)
+        self.current_document.metadata_file_type = metadata_type
+        self.current_document.add_metadata(metadata)
         
-        ticket = JobTicket()
-        self.save_metadata.emit(data,ticket)
+        ticket = DatabaseTicket()
+        self.save_metadata.emit(self.current_document,ticket)
         self.next_stage.emit()
 
     def set_current_document(self,document:Document):
@@ -92,10 +109,9 @@ class MetadataPage(Page):
         if document != None:
             cmb_indx = self.doc_type_combo.findText(self.current_document.metadata_file_type)
             self.doc_type_combo.setCurrentIndex(cmb_indx)
-            pass
 
     @pyqtSlot(Document)
-    def db_update(self,doc):
+    def document_update(self,doc):
         pass
 
     @pyqtSlot(Document,str)
@@ -106,16 +122,7 @@ class MetadataPage(Page):
     def doc_error(self,error_msg,job_id):
         pass
 
-    @pyqtSlot(DocumentSchema)
-    def _new_schema(self,schema):
-        schema_dict = schema.to_dict()
-        schema_dict['schema_name'] = self.doc_type_line.text()
-        schema = DocumentSchema.from_dict(schema_dict)
-        self.new_schema.emit(schema)
-        self._reset()
-
     @pyqtSlot()
     def _reset(self):
         clear_layout(self.main_layout)
-        self.create_layout()
-        self._on_select_format()
+        self._create_layout()
