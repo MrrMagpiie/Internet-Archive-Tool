@@ -1,19 +1,15 @@
 import sys
 from PyQt6.QtWidgets import (
-    QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 
-    QListWidget, QStackedWidget, QLabel, QPushButton, QSplitter, 
-    QListWidgetItem, QFrame, QFormLayout, QLineEdit, QDateEdit,
-    QProgressBar, QComboBox, QGraphicsView, QGraphicsScene,QGridLayout,
-    QScrollArea,QSizePolicy, QLayout
+    QWidget, QVBoxLayout, QLabel, QFrame
 )
-from PyQt6.QtCore import Qt, QSize, pyqtSignal, QRect, QPoint
-from PyQt6.QtGui import QIcon, QFont, QColor, QCursor,QPixmap
-from view.components.ImageLabel import ImageLabel
+from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtGui import QCursor, QImage
+from view.components.ImageLabel import ImageLabel 
 
-class ThumbnailCard(ImageLabel):
+class ThumbnailCard(QFrame):
     clicked = pyqtSignal(str)
 
-    def __init__(self, page_number, pixmap=None):
+    def __init__(self, page_number, qimage=None):
         super().__init__()
         self.page_number = page_number
         self.is_selected = False
@@ -21,46 +17,42 @@ class ThumbnailCard(ImageLabel):
         self.setFixedSize(140, 180)
         self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         
-        # Styles
-        self.default_style = """
-            QFrame { background-color: white; border: 1px solid #d1d5da; border-radius: 6px; }
-            QFrame:hover { border: 1px solid #0366d6; }
-        """
-        self.selected_style = """
-            QFrame { background-color: #f0f8ff; border: 2px solid #0366d6; border-radius: 6px; }
-        """
-        self.setStyleSheet(self.default_style)
+        self.setObjectName("thumbnailCard")
+        self.setProperty("selected", False)
         
         layout = QVBoxLayout()
         layout.setContentsMargins(10, 10, 10, 10)
         layout.setSpacing(5)
         
-        # --- 1. THE IMAGE LABEL ---
-        self.image_lbl = QLabel()
-        self.image_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.image_lbl.setStyleSheet("border: none; background: transparent;")
+        self.image_view = ImageLabel()
         
-        # Load the image if path exists
-        if pixmap:
-            self.set_pixmap(pixmap)
+        if qimage:
+            self.image_view.set_image(qimage)
         else:
-            self.image_lbl.setText("No Image") # Fallback
+            self.image_view.setText("No Image")
             
-        layout.addWidget(self.image_lbl, 1)
+        layout.addWidget(self.image_view, 1)
         
-        # --- 2. The Page Label ---
         self.text_lbl = QLabel(f"Page {page_number}")
         self.text_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.text_lbl.setStyleSheet("border: none; font-weight: bold; color: #555;")
-        self.text_lbl.setFont(QFont("Segoe UI", 9))
+        self.text_lbl.setObjectName("thumbnailPageLabel")
+        
         layout.addWidget(self.text_lbl)
         
         self.setLayout(layout)
 
+    def set_image(self, qimage: QImage):
+        """Pass-through method to update the internal ImageLabel."""
+        self.image_view.set_image(qimage)
+
+    def set_selected(self, selected: bool):
+        """Updates the state and forces the QSS to re-evaluate."""
+        self.is_selected = selected
+        self.setProperty("selected", selected)
+        self.style().unpolish(self)
+        self.style().polish(self)
 
     def mousePressEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:
             self.clicked.emit(str(self.page_number))
         super().mousePressEvent(event)
-
- 

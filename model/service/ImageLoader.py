@@ -1,7 +1,6 @@
 from pathlib import Path
 from queue import Queue
 from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot
-from PyQt6.QtGui import QPixmap   
 
 from model.logic.loadImage import load_image
 
@@ -34,16 +33,16 @@ class ImageLoader(QObject):
                         case 'single':
                             image_path = data
                             if isinstance(image_path,Path):
-                                pixmap = load_image(image_path)
+                                qimage = load_image(image_path)
                                 if not signals.is_cancelled():
-                                    signals.data.emit(pixmap,signals.job_id)
+                                    signals.data.emit(qimage,signals.job_id)
                                     self.success.emit(signals.job_id)
                         case 'series':
                             image_path_list = data
                             if isinstance(image_path_list,list):
-                                pixmap_list = load_image_series(image_path_list)
+                                qimage_list = load_image_series(image_path_list)
                                 if not signals.is_cancelled():
-                                    signals.data.emit(pixmap_list,signals.job_id)
+                                    signals.data.emit(qimage_list,signals.job_id)
                                     self.success.emit(signals.job_id)
 
                 except Exception as e:
