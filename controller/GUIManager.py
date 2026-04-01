@@ -38,19 +38,21 @@ class GUIManager(QObject):
         workflow_view = Dashboard.WorkflowView(self)
         list_view = Dashboard.ListView(self)
         list_view.db_request.connect(self.process_manager.request_docs_by_status)
+        self.process_manager.document_update.connect(list_view.document_update)
+        self.process_manager.document_delete.connect(list_view.request_documents)
         dashboard_page = DashboardPage(parent=self,workflow_view=workflow_view,list_view=list_view)
-        self.process_manager.db_update.connect(workflow_view.db_update)
+        self.process_manager.document_update.connect(workflow_view.document_update)
     
         return dashboard_page
 
     def DocumentReviewPage(self):
         review_page = DocumentReviewPage(self)
         review_page.document_reviewed.connect(self.process_manager.request_update_doc)
-        self.process_manager.db_update.connect(review_page.db_update)
+        self.process_manager.document_update.connect(review_page.document_update)
         review_page.upload.connect(self.process_manager.request_upload)
         review_page.identifier_status.connect(self.process_manager.request_identifier_status)
         review_page.unique_identifier.connect(self.process_manager.request_unique_identifier)
-        review_page.save_metadata.connect(self.process_manager.request_save_metadata)
+        review_page.save_metadata.connect(self.process_manager.request_update_doc)
         return review_page
 
     def CreateDocumentPage(self):
@@ -58,7 +60,7 @@ class GUIManager(QObject):
         self.process_manager.db_update.connect(create_doc_page.db_update)
         create_doc_page.discover_document.connect(self.process_manager.request_discovery)
         create_doc_page.deskew_document.connect(self.process_manager.request_deskew)
-        create_doc_page.image_request.connect(self.process_manager.request_image)
+        create_doc_page.save_metadata.connect(self.process_manager.request_update_doc)
         return create_doc_page
 
     def SettingsPage(self):
@@ -67,7 +69,7 @@ class GUIManager(QObject):
      
     def MetadataPage(self):
         metadata_page = MetadataPage(self)
-        metadata_page.save_metadata.connect(self.process_manager.request_save_metadata)
+        metadata_page.save_metadata.connect(self.process_manager.request_update_doc)
         return metadata_page
 
     def UploadDashboard(self):

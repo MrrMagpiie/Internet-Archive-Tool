@@ -63,6 +63,18 @@ class DocumentPipelineWorker(QObject):
                                 signals.data.emit(doc,signals.job_id)
                                 self.success.emit(doc,signals.job_id)
 
+                        case 'delete':
+                            doc_path = data
+                            if isinstance(doc_path,Path):
+                                self.delete_document_files(doc_path)
+                                signals.data.emit(None,signals.job_id)
+                                self.success.emit(None,signals.job_id)
+                        case _:
+                            raise ValueError(f"Worker {self} received an unknown command: {command}")
+                
+                except TaskCancelledError:
+                    print(f"Job {signals.job_id} was safely aborted.")
+
                 except Exception as e:
                     signals.error.emit(e,signals.job_id)
                     self.error.emit(e,signals.job_id)
@@ -88,3 +100,13 @@ class DocumentPipelineWorker(QObject):
                         raise DocumentCreationError(doc_id)
             else:
                 raise ImageDiscoveryError('Directory formated incorrectly for single document scan') from e
+    def delete_document_files(self,document_path) -> bool:
+        """
+        deletes all physical files associated with a Document.
+        """        
+        parent_dir = Path(document_path)
+        if parent_dir.exists() and parent_dir.is_dir():
+            try:
+                shutil.rmtree(parent_dir)
+            except Exception as e:
+                raise DocumentDeletionError(f"Failed to delete directory") from e

@@ -20,6 +20,9 @@ stages = {
 
 class DocumentCard(QFrame):
     clicked = pyqtSignal(Document, int)
+    delete_requested = pyqtSignal(Document,QObject)
+    remove_requested = pyqtSignal(Document,QObject)
+    
     def __init__(self, document: Document, stage: int):
         super().__init__()
         self.setObjectName("docuCard")
@@ -71,6 +74,63 @@ class DocumentCard(QFrame):
             self.clicked.emit(self.doc, self.stage)
             
         super().mousePressEvent(event)
+
+    def contextMenuEvent(self, event):
+        """Automatically triggered when the user right-clicks the card."""
+        if not SessionManager.is_admin():
+            return
+        
+        context_menu = QMenu(self)
+        
+        remove_action = context_menu.addAction("Remove Document")
+        delete_action = context_menu.addAction("Delete Document")
+        if DEV_MODE:
+            dev_action = context_menu.addAction('Print Document')
+        
+        trash_icon = qta.icon('fa5s.trash-alt', color='#d73a49') 
+        delete_action.setIcon(trash_icon)
+        
+        remove_icon = qta.icon('mdi6.database-minus-outline', color='#d73a49')
+        remove_action.setIcon(remove_icon)
+        
+        clicked_action = context_menu.exec(self.mapToGlobal(event.pos()))
+        
+        if clicked_action == delete_action:
+            self._confirm_deletion()
+        if clicked_action == remove_action:
+            self._confirm_remove()
+        if clicked_action == dev_action:
+            print(self.doc.to_dict())
+
+    def _confirm_deletion(self):
+        """Pops up a warning box to prevent accidental data loss."""
+        
+        reply = QMessageBox.question(
+            self,
+            "Confirm Deletion",
+            f"Are you sure you want to permanently delete '{self.title}'?\n\nThis will remove it from the database and delete all associated files. \nhis will not delete the original scans.",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No
+        )
+        
+        if reply == QMessageBox.StandardButton.Yes:
+            ticket = DatabaseTicket()
+            self.delete_requested.emit(self.doc,ticket)
+
+    def _confirm_remove(self):
+        """Pops up a warning box to prevent accidental data loss."""
+        
+        reply = QMessageBox.question(
+            self,
+            "Confirm Database Removal",
+            f"Are you sure you want to remove '{self.title}' from the database?\n\nThis will remove it from the application database but will not delete any document files.",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No
+        )
+        
+        if reply == QMessageBox.StandardButton.Yes:
+            ticket = DatabaseTicket()
+            self.remove_requested.emit(self.doc,ticket)
 
 class ActionCard(QFrame):
     clicked = pyqtSignal()

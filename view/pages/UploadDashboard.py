@@ -147,8 +147,10 @@ class UploadDashboard(Page):
 
         for document in self.documents.values():
             doc, stage = document
-            card = DocumentCard(doc,stage)
+            card = DocumentCard(doc, stage)
             card.clicked.connect(self.card_clicked)
+            card.delete_requested.connect(self.parent.process_manager.request_delete_doc)
+            card.remove_requested.connect(self.parent.process_manager.request_remove_doc)
             if stage == 3:
                 self.uploaded_flow.addWidget(card)
             else:   

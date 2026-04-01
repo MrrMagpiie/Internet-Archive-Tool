@@ -19,6 +19,11 @@ def clear_layout(layout):
             item.widget().deleteLater()      
         elif item.layout() is not None:
             clear_layout(item.layout())
+
+def load_metadata_formats():
+    with open(DOCUMENT_SCHEMA_PATH,'r') as f:
+            return json.load(f)
+
 def setup_theme(theme_choice = None):
     """
     Resolves the theme choice, compiles the custom QSS, 

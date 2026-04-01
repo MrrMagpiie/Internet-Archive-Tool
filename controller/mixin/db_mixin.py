@@ -3,6 +3,9 @@ from queue import Queue
 from model.service.DatabaseManager import DatabaseManager
 from model.service.signals import JobTicket, DatabaseTicket
 from config import DB_PATH
+from functools import partial
+from model.data.document import Document
+
 
 class DatabaseMixin:
     """Handles Database Worker logic."""
@@ -39,6 +42,19 @@ class DatabaseMixin:
         self.register_task('save_document', ticket)
         self.db_queue.put(('save_document', ticket, doc))
 
+    @pyqtSlot(Document,QObject)
+    def request_delete_doc(self, doc, ticket:DatabaseTicket):
+        ticket.interupt.connect(self.db_interupt)
+        delete_files = partial(self.request_delete_document_files,doc_path = doc.path, ticket = ticket)
+        ticket.data.connect(delete_files)
+        self.register_task('delete_document', ticket)
+        self.db_queue.put(('delete_document', ticket, doc.doc_id))
+    
+    @pyqtSlot(Document,QObject)
+    def request_remove_doc(self, doc, ticket:DatabaseTicket):
+        ticket.interupt.connect(self.db_interupt)
+        self.register_task('delete_document', ticket)
+        self.db_queue.put(('delete_document', ticket, doc.doc_id))
 
     @pyqtSlot(tuple,DatabaseTicket)
     def request_login(self,data, ticket:DatabaseTicket):

@@ -36,6 +36,12 @@ class ProcessingMixin:
         self.register_task('metadata', ticket,data[0].doc_id)
         self.proc_queue.put(('metadata', ticket, data))
 
+    @pyqtSlot(Path,QObject)
+    def request_delete_document_files(self,doc_path,ticket):
+        ticket.data.disconnect()
+        self.register_task('delete', ticket)
+        self.proc_queue.put(('delete', ticket, doc_path))
+
     @pyqtSlot(Document,str)
     def _handle_proc_success(self,doc,job_id):
         ticket = DatabaseTicket()

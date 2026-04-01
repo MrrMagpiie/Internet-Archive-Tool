@@ -65,6 +65,12 @@ class DatabaseManager(QObject):
                             self._save_document(document)
                             signals.data.emit(document,signals.job_id)
                             self.update.emit(document,signals.job_id)
+                        case 'delete_document':
+                            doc_id = data
+                            self._delete_document(doc_id)
+                            if not signals.is_cancelled():
+                                signals.data.emit(doc_id, signals.job_id)
+                                self.update.emit(doc_id, signals.job_id)
                         case 'verify_login':
                             username, password = data
                             success, role = self._verify_login(username, password)
@@ -245,32 +251,12 @@ class DatabaseManager(QObject):
         
         return docs
 
-    def _load_single_document(self, doc_id: str) -> Document | None:
-        """Internal method. Loads a single document by its ID."""
+    def _delete_document(self, doc_id: str):
+        """Internal method. Removes a document and cascades the deletion to its images."""
         cursor = self.conn.cursor()
-        cursor.execute("SELECT doc_id, metadata, deskewed, needs_approval, approved, rejected, uploaded, path, metadata_file, metadata_file_type, last_modified, error_msg FROM documents WHERE doc_id = ?", (doc_id,))
-        doc_row = cursor.fetchone()
         
-        if not doc_row:
-            return None
-
-        # ... (rest of the row parsing is identical) ...
-        doc_id, metadata, deskewed, needs_approval, approved, rejected, uploaded, path, metadata_file, metadata_file_type, last_modified, error_msg = doc_row
-        status = {
-            'metadata': bool(metadata),
-            'deskewed': bool(deskewed),
-            'needs_approval': bool(needs_approval),
-            'approved': bool(approved),
-            'rejected': bool(rejected),
-            'uploaded': bool(uploaded)
-        }
-        doc = Document(doc_id=doc_id, status=status, path=path, metadata_file=metadata_file, metadata_file_type=metadata_file_type, last_modified=last_modified, error_msg=error_msg)
-        
-        cursor.execute("SELECT image_id, sort_order, original_path, processed_path FROM images WHERE doc_id = ?", (doc_id,))
-        for row in cursor.fetchall():
-            image_id, order, orig_path, proc_path = row
-            doc.addImage(image_id, order, orig_path, proc_path)
-        return doc
+        cursor.execute("DELETE FROM documents WHERE doc_id = ?", (doc_id,))
+        self.conn.commit()
 
     def _save_document(self, doc: Document):
         """Internal method. Saves a single Document object."""
