@@ -80,6 +80,7 @@ class GUIManager(QObject):
     def UploadDashboard(self):
         upload_page = UploadDashboard(self)
         upload_page.db_request.connect(self.process_manager.request_docs_by_status)
+        upload_page.request_documents()
         self.process_manager.document_update.connect(upload_page.document_update)
         self.process_manager.document_delete.connect(upload_page.request_documents)
         return upload_page

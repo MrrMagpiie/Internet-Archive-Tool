@@ -124,6 +124,53 @@ class DocumentPipelineWorker(QObject):
                 except Exception as e:
                     raise DocumentCreationError(f'Document Creation Error: {doc_id}')
 
+    def deskew(self, doc: Document, ticket: JobTicket):
+        """Runs inside your PyQt QThread Worker."""
+        doc_directory = Path(doc.path)
+        doc_directory.mkdir(parents=True, exist_ok=True)
+        
+        try:
+            for image_id, image_task in doc.images.items():
+                in_file = Path(image_task["original"])
+                out_file = Path(image_task["processed"])
+
+                queue = multiprocessing.Queue()
+                self.process = multiprocessing.Process(
+                    target=deskew_image,
+                    args=(str(in_file), str(out_file), queue) 
+                )
+                self.process.start()
+
+                while self.process.is_alive():
+                    if ticket.is_cancelled():
+                        self.process.terminate() 
+                        self.process.join()
+                        raise TaskCancelledError()
+                    
+                    self.process.join(timeout=0.2) 
+
+                if not queue.empty():
+                    result = queue.get() 
+                    
+                    if result['status'] == 'success':
+                        angle = result['angle']
+                        doc.add_change(image_id, f'deskew: {angle}')
+                        print(f'Deskewed {image_id} in {doc.doc_id} by {angle} degrees')
+                    else:
+                        raise DeskewError(in_file,out_file,result['error'])
+                else:
+                    raise DeskewError(in_file,out_file,"The deskew process crashed without returning data.")
+
+            return doc
+
+        except DeskewError as e:
+            e.doc_id = doc.doc_id
+            raise
+
+        finally:
+            queue.close()
+            queue.join_thread()
+    
     def delete_document_files(self,document_path) -> bool:
         """
         deletes all physical files associated with a Document.
