@@ -10,7 +10,7 @@ class JobTicket(QObject):
 
     data = pyqtSignal(object,str)# data return, job_id 
     error = pyqtSignal(Exception,str)# error msg, job_id
-    progress = pyqtSignal(int,object)
+    progress = pyqtSignal(str, int, object) # job_id, value, step_text
     canceled = pyqtSignal(str) #job_id
 
 
@@ -29,7 +29,7 @@ class JobTicket(QObject):
         return self._cancel_flag.is_set()
 
     def update_progress(self,value, step_text=None):
-        self.progress.emit(value,step_text)
+        self.progress.emit(self.job_id, value, step_text)
 
     def interceptor(self, base_progress, max_progress):
         self.interceptor = TqdmInterceptor(self, base_progress, max_progress)

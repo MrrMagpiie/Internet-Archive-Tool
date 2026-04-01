@@ -1,4 +1,4 @@
-from queue import Queue
+from queue import Queue, Empty
 from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot
 
 from model.logic.upload import *
@@ -6,6 +6,7 @@ from model.exceptions import MetadataError, PdfGenerationError, TaskCancelledErr
 from model.data import Document
 from model.logic.metadata import get_metadata_from_file 
 
+import sys
 import multiprocessing
 class UploadManager(QObject):
     """
@@ -65,8 +66,8 @@ class UploadManager(QObject):
         '''elif doc.metadata is None:
             doc.add_metadata(get_metadata_from_file(doc))'''
 
-        ticket.update_progress(10, "Zipping files...")
-        zip_path = zip_doc(doc)
+        ticket.update_progress(0, "Zipping files...")
+        zip_path = zip_doc(doc, ticket, 0, 30)
         
         ticket.update_progress(30, "Generating PDF...")
         pdf_path = Path(doc.path) / f'{doc.doc_id}.pdf'
@@ -80,18 +81,29 @@ class UploadManager(QObject):
             )
             self.process.start()
 
-            while self.process.is_alive():
+            success = False
+            while True:
                 if ticket.is_cancelled():
                     self.process.terminate()
                     self.process.join()
                     raise TaskCancelledError("Upload cancelled during PDF generation.")
-                self.process.join(timeout=0.2)
+                
+                try:
+                    result = queue.get(timeout=0.2)
+                    if result['status'] == 'progress':
+                        scaled_progress = 30 + int((result['progress'] / 100) * 40)
+                        ticket.update_progress(scaled_progress, result['step'])
+                    elif result['status'] == 'error':
+                        raise PdfGenerationError(result['error'])
+                    elif result['status'] == 'success':
+                        success = True
+                        break
+                except Empty:
+                    if not self.process.is_alive():
+                        break
 
-            if not queue.empty():
-                result = queue.get()
-                if result['status'] == 'error':
-                    raise PdfGenerationError(result['error'])
-            else:
+            self.process.join()
+            if not success:
                 raise PdfGenerationError("PDF Worker crashed silently.")
                 
         finally:
@@ -103,6 +115,12 @@ class UploadManager(QObject):
         if ticket.is_cancelled():
              raise TaskCancelledError("Cancelled before upload started.")
              
-        response = upload(doc, [zip_path, str(pdf_path)])
+        # Intercept stderr to catch tqdm progress from the internetarchive library
+        original_stderr = sys.stderr
+        sys.stderr = ticket.interceptor(70, 100)
+        try:
+            response = upload(doc, [zip_path, str(pdf_path)])
+        finally:
+            sys.stderr = original_stderr
         
         ticket.update_progress(100, "Upload Complete!")
