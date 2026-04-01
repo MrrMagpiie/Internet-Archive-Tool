@@ -30,3 +30,4 @@ This application is distributed as a Windows executable (`.exe`). It requires an
 
 ### Current Limiations
 This is very much a work in progress and the gui is not complete, however the underlying document process should be functional for deskewing images, generating metadata, and uploading to the Internet Archive.
+in its current state the releases are for testing purposes.
