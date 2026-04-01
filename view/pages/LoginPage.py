@@ -11,7 +11,6 @@ class LoginPage(Page):
     login_successful = pyqtSignal()
     login_request = pyqtSignal(tuple,DatabaseTicket)
 
-    # Pass the db_queue in so the page can talk to the database!
     def __init__(self, parent=None):
         super().__init__(parent)
         self._create_layout()

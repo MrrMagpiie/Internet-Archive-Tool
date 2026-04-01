@@ -9,7 +9,6 @@ image_formats = ['.tif', '.tiff', '.jpg', '.jpeg', '.png']
 def discover_images(directory) -> list:
     path = Path(directory)
     return [p for p in path.iterdir() if p.suffix.lower() in image_formats]
-    #return list(path.glob("*.tif"))
 
 def images_to_documents(image_list) -> dict:
     documents = {}

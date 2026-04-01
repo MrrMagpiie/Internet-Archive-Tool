@@ -75,5 +75,4 @@ class TqdmInterceptor:
             self.ticket.update_progress(overall_pct, f"Uploading file... {file_pct}%")
 
     def flush(self):
-        # tqdm calls flush() frequently, so we must pass it along to the real stderr
         self.original_stderr.flush()

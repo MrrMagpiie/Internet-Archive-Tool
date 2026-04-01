@@ -130,7 +130,7 @@ class AdminPage(QWizardPage):
         self.setTitle("Create Local Administrator")
         self.setSubTitle("Set up the master account for this machine.")
         
-        self.admin_created = False # Our Gatekeeper boolean
+        self.admin_created = False
         
         layout = QVBoxLayout()
         form = QFormLayout()
@@ -146,7 +146,6 @@ class AdminPage(QWizardPage):
         form.addRow("<b>Confirm:</b>", self.admin_confirm_input)
         layout.addLayout(form)
         
-        # Add a custom save button just like the IA Page!
         btn_layout = QHBoxLayout()
         self.btn_save = QPushButton("Create Account")
         self.btn_save.clicked.connect(self.attempt_creation)

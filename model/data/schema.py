@@ -176,13 +176,13 @@ class DocumentSchema:
                     # Convert text to the 2-digit number
                     normalized[key] = MONTH_MAP[clean_val]
                 elif clean_val.isdigit():
-                    # If it's already a number (like '1'), ensure it is padded to '01'
+                    # ensure number padding
                     normalized[key] = clean_val.zfill(2)
                 else:
-                    # Fallback if they typed something unrecognizable
+                    # Fallback if  unrecognizable
                     normalized[key] = value
             else:
-                # Pass all other fields through untouched
+                # Pass all other fields
                 normalized[key] = value
 
         return normalized
