@@ -16,7 +16,6 @@ VALID_FILTERS = {
     'metadata_json', 'last_modified', 'error_msg'
 }
 
-
 class DatabaseManager(QObject):
     """
     A QObject worker that manages all database interactions
