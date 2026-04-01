@@ -9,7 +9,7 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import pyqtSignal, QSize, Qt
 from PyQt6.QtGui import QFont, QColor, QPixmap, QPainter, QIcon
 
-from config import DEV_MODE
+from config import DEV_MODE, VERSION_STRING
 from model.settings_manager import app_settings
 from model.service.SessionManager import SessionManager
 from view.pages.LoginPage import LoginPage
@@ -22,7 +22,7 @@ def build_logo():
     logo_pixmap = QPixmap(40, 40)
     logo_pixmap.fill(Qt.GlobalColor.transparent)
     painter = QPainter(logo_pixmap)
-    painter.setBrush(QColor("#007acc")) # Archive Blue
+    painter.setBrush(QColor("#007acc"))
     painter.setPen(Qt.PenStyle.NoPen)
     painter.drawEllipse(0, 0, 40, 40)
     painter.setPen(QColor("white"))
@@ -34,7 +34,7 @@ def build_logo():
 
 def build_brand_widget():
     brand_widget = QWidget()
-    brand_widget.setObjectName("brandWidget") # NEW: Hook for QSS
+    brand_widget.setObjectName("brandWidget")
     brand_widget.setFixedHeight(100)
     brand_layout = QHBoxLayout()
     brand_layout.setContentsMargins(20, 20, 20, 20)
@@ -49,7 +49,7 @@ def build_brand_widget():
 
     brand_layout.addWidget(status_icon_label)
     title_lbl = QLabel("Archive Pipeline")
-    title_lbl.setObjectName("brandTitleLabel") # NEW: Hook for QSS
+    title_lbl.setObjectName("brandTitleLabel")
     
     brand_layout.addSpacing(10)
     brand_layout.addWidget(title_lbl)
@@ -89,7 +89,7 @@ class MainWindow(QMainWindow):
         # --- 1. THE SIDEBAR CONTAINER ---
         self.sidebar_container = QFrame()
         self.sidebar_container.setFixedWidth(280)
-        self.sidebar_container.setObjectName("sidebarContainer") # NEW: Hook for QSS
+        self.sidebar_container.setObjectName("sidebarContainer")
         
         sidebar_layout = QVBoxLayout()
         sidebar_layout.setContentsMargins(0, 0, 0, 0)
@@ -101,7 +101,7 @@ class MainWindow(QMainWindow):
         # --- B. The Navigation Menu ---
         self.sidebar_list = QListWidget()
         self.sidebar_list.setFocusPolicy(Qt.FocusPolicy.NoFocus)
-        self.sidebar_list.setObjectName("sidebarList") # NEW: Hook for QSS
+        self.sidebar_list.setObjectName("sidebarList")
         
         self.setIconSize(QSize(30, 30))
         
@@ -111,9 +111,9 @@ class MainWindow(QMainWindow):
         
 
         # --- C. Bottom Version Area ---
-        version_lbl = QLabel("v0.0.1")
+        version_lbl = QLabel(VERSION_STRING)
         version_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        version_lbl.setObjectName("versionLabel") # NEW: Hook for QSS
+        version_lbl.setObjectName("versionLabel")
         
         
         # --- 2. THE STACKED PAGES ---
@@ -291,7 +291,6 @@ class MainWindow(QMainWindow):
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     app.setQuitOnLastWindowClosed(False)
-    # Passed None temporarily to bypass crash in standalone test
     window = MainWindow(None) 
     window.show()
     sys.exit(app.exec())
