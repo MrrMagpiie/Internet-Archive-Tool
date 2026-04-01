@@ -1,4 +1,5 @@
 import sys
+import multiprocessing
 from PyQt6.QtWidgets import (
     QApplication)
 from controller.GUIManager import GUIManager
@@ -8,11 +9,7 @@ from model.settings_manager import app_settings
 from model.logic.helpers import setup_theme
 
 
-
-
-
-
-if __name__ == "__main__":
+def main():
     init_app_environment()
     app_settings.load()
     app = QApplication(sys.argv)
@@ -21,6 +18,11 @@ if __name__ == "__main__":
     manager = ProcessManager()
     guimanager = GUIManager(manager)
     manager.check_setup()
-        
     sys.exit(app.exec())
+
+if __name__ == "__main__":
+    multiprocessing.freeze_support()
+    main()
+        
+    
     
