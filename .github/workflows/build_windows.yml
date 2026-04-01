@@ -29,9 +29,13 @@ jobs:
       run: |
         pyinstaller LibraryArchive.spec
 
+    - name: Zip the Application
+      run: |
+        Compress-Archive -Path dist/LibraryArchive/* -DestinationPath LibraryArchive-Windows.zip
+
     - name: Upload to GitHub Release
       uses: softprops/action-gh-release@v2
       with:
-        files: dist/LibraryArchive/LibraryArchive.exe
+        files: LibraryArchive-Windows.zip 
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
