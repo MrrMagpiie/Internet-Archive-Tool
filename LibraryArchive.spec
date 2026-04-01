@@ -2,10 +2,10 @@
 
 
 a = Analysis(
-    ['main.py'],
-    pathex=[],
+    ['source/main.py'],
+    pathex=['source'],
     binaries=[],
-    datas=[('resources', 'resources')],
+    datas=[('source/resources', 'resources')],
     hiddenimports=['PyQt6', 'PyQt6.QtCore', 'PyQt6.QtGui', 'PyQt6.QtWidgets'],
     hookspath=[],
     hooksconfig={},

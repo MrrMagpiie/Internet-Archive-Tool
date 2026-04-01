@@ -29,13 +29,23 @@ jobs:
       run: |
         pyinstaller LibraryArchive.spec
 
+    # 1. Prepare Artifact 1: The Zip
     - name: Zip the Application
       run: |
         Compress-Archive -Path dist/LibraryArchive/* -DestinationPath LibraryArchive-Windows.zip
 
-    - name: Upload to GitHub Release
+    # 2. Prepare Artifact 2: The Installer
+    - name: Compile Installer
+      uses: minicomp/iscc-action@v3
+      with:
+        iss-file: installer.iss
+
+    # 3. Upload both Artifacts
+    - name: Upload Artifacts to GitHub Release
       uses: softprops/action-gh-release@v2
       with:
-        files: LibraryArchive-Windows.zip 
+        files: |
+          LibraryArchive-Windows.zip
+          Output/LibraryArchive_Setup.exe
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
