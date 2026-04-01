@@ -1,6 +1,7 @@
 {
     "default":{
             "schema_name":"default",
+            "filename_template":"",
             "fields":{
             },
             "defaults":{

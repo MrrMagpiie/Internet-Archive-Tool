@@ -36,7 +36,7 @@ class Metadata:
         validates a single field against the schema constraints.
         Raises ValueError or TypeError on failure.
         """
-        # A. Check if the field name is defined in the schema
+        # Check if the field name is defined in the schema
         if key not in METADATA_SCHEMA:
             raise ValueError(
                 f"Validation Error: Field '{key}' is not a valid metadata field "
@@ -48,11 +48,8 @@ class Metadata:
         expected_type_py = TYPE_MAPPING.get(expected_type_str)
 
         if not expected_type_py:
-             # This handles case where schema type is invalid/unsupported
             raise TypeError(f"Internal Schema Error: Unknown type '{expected_type_str}' for field '{key}'.")
 
-        # B. Check the data type
-        # We must special-case list/dict check as isinstance(True, int) is True
         if expected_type_py in (list, dict) and not isinstance(value, expected_type_py):
              raise TypeError(
                 f"Validation Error: Field '{key}' requires type '{expected_type_str}' "
@@ -65,7 +62,6 @@ class Metadata:
             )
 
 
-        # C. Check enum constraints (if defined)
         if "enum" in schema_def:
             allowed_values = schema_def["enum"]
             if value not in allowed_values:
@@ -79,11 +75,8 @@ class Metadata:
         Performs comprehensive validation of all optional_fields provided at instantiation.
         """
 
-        # Iterate through and validate the optional fields provided by the user
         for key, value in self.optional_fields.items():
             self._validate_field(key, value)
-        
-        print("Validation successful.")
 
     def add_optional_field(self, key: str, value: Any):
         """
@@ -97,10 +90,10 @@ class Metadata:
             ValueError: If the field name is not valid or the value fails enum checks.
             TypeError: If the value type does not match the schema's expectation.
         """
-        # 1. Validate the field first
+        # Validate the field first
         self._validate_field(key, value)
         
-        # 2. If validation passes, add/update the field
+        # If validation passes, add/update the field
         self.optional_fields[key] = value
         print(f"Successfully added/updated field '{key}' with value '{value}'.")
 
@@ -116,3 +109,41 @@ class Metadata:
         }
         data.update(self.optional_fields)
         return data
+
+    def to_json(self) -> str:
+        data = self.to_dict()
+        return json.dumps(data)
+
+
+    @classmethod
+    def from_dict(cls, data: dict) -> 'Metadata':
+        """
+        Creates a Metadata object from a dictionary.
+        """
+        if 'optional_fields' not in data:
+            metadata_dict = {
+            'identifier': data.pop('identifier', None),
+            'title': data.pop('title', None),
+            'date': data.pop('date', None),
+            'mediatype': data.pop('mediatype', None),
+            'optional_fields': data
+            }
+        else:
+            metadata_dict = data
+
+        return cls(
+            identifier=metadata_dict.get("identifier"),
+            title=metadata_dict.get("title"),
+            date=metadata_dict.get("date"),
+            mediatype=metadata_dict.get("mediatype"),
+            optional_fields=metadata_dict.get("optional_fields", {})
+        )
+
+
+    @classmethod
+    def from_json(cls, json_str: str) -> 'Metadata':
+        """
+        Creates a Metadata object from a JSON string.
+        """
+        data = json.loads(json_str)
+        return cls.from_dict(data)

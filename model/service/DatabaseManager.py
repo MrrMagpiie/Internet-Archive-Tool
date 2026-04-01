@@ -2,8 +2,20 @@ import sqlite3
 from pathlib import Path
 from queue import Queue
 from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot
+import hashlib
+import secrets
+import json
 
 from model.data.document import Document
+from model.data.metadata import Metadata
+from model.logic.metadata import update_metadata_file
+
+VALID_FILTERS = {
+    'doc_id', 'metadata', 'deskewed', 'needs_approval', 'approved', 
+    'rejected', 'uploaded', 'path', 'metadata_file', 'metadata_file_type', 
+    'metadata_json', 'last_modified', 'error_msg'
+}
+
 
 class DatabaseManager(QObject):
     """
@@ -28,6 +40,8 @@ class DatabaseManager(QObject):
             print('Database Manager queue running')
             self.db_path.parent.mkdir(parents=True, exist_ok=True)
             self.conn = sqlite3.connect(self.db_path)
+            self.conn.row_factory = sqlite3.Row
+            self.conn.execute("PRAGMA foreign_keys = ON;")
             self._create_tables()
 
             while True:
@@ -45,12 +59,7 @@ class DatabaseManager(QObject):
                             filter_data = data
                             docs = self._load_documents(filter_data)
                             if not signals.is_cancelled():
-                                signals.data.emit(docs,signals.job_id)
-                        case 'load_single_document':
-                            doc_id = data
-                            doc = self._load_single_document(doc_id)
-                            if not signals.is_cancelled():
-                                signals.data.emit(doc,signals.job_id)
+                                signals.data.emit(docs, signals.job_id)
                         case 'save_document':
                             document = data
                             self._save_document(document)
@@ -112,12 +121,12 @@ class DatabaseManager(QObject):
             return True, "User created successfully."
             
         except sqlite3.IntegrityError:
-            # The username already exists! Roll back the transaction.
+            # The username already exists Roll back the transaction.
             self.conn.rollback()
             return False, f"The username '{username}' is already taken."
             
         except Exception as e:
-            # Catch any other weird database errors (like a locked file)
+            # Catch any other database errors (like a locked file)
             self.conn.rollback()
             return False, f"Database error: {str(e)}"
 
@@ -136,6 +145,7 @@ class DatabaseManager(QObject):
                 path TEXT,
                 metadata_file TEXT,
                 metadata_file_type TEXT,
+                metadata_json TEXT,
                 last_modified TEXT NOT NULL,
                 error_msg TEXT
             )
@@ -158,54 +168,80 @@ class DatabaseManager(QObject):
                 sort_order TEXT,
                 original_path TEXT NOT NULL,
                 processed_path TEXT NOT NULL,
+                changes TEXT,
                 FOREIGN KEY (doc_id) REFERENCES documents (doc_id) ON DELETE CASCADE
             )
         ''')
-        self.conn.commit()
+            
+        # Safely migrate existing databases to include new columns if missing
+        # will need to be expanded to cover other possible changes
+        cursor.execute("PRAGMA table_info(documents)")
+        existing_columns = {col[1] for col in cursor.fetchall()}
+        
+        if 'metadata_json' not in existing_columns:
+            cursor.execute("ALTER TABLE documents ADD COLUMN metadata_json TEXT")
 
-    def _load_documents(self, filter_status: dict[str, bool] | None = None) -> dict[str, Document]:
-        """Internal method. Loads documents and their images."""
+        self.conn.commit()
+    
+    def _load_documents(self, filters: dict = None) -> dict[str, Document]:
+        """method for fetching documents. Safely uses parameterized queries with a column whitelist."""
         docs = {}
         cursor = self.conn.cursor()
         
-        sql_query = "SELECT doc_id, metadata, deskewed, needs_approval, approved, rejected, uploaded, path, metadata_file, metadata_file_type, last_modified, error_msg FROM documents"
+        sql_query = "SELECT doc_id, metadata, deskewed, needs_approval, approved, rejected, uploaded, path, metadata_file, metadata_file_type, metadata_json, last_modified, error_msg FROM documents"
         params = []
         
-        if filter_status:
+        if filters:
             conditions = []
-            for status_key, status_value in filter_status.items():
-                db_value = 1 if status_value else 0
-                conditions.append(f"{status_key} = ?")
-                params.append(db_value)
+        
+            for key, value in filters.items():
+                if key != 'or_filters':
+                    if key not in VALID_FILTERS:
+                        raise ValueError(f"Invalid filter column: {key}")
+                    db_value = 1 if value is True else (0 if value is False else value)
+                    conditions.append(f"{key} = ?")
+                    params.append(db_value)
+            
+            if 'or_filters' in filters:
+                or_conditions = []
+                for or_key, or_value in filters['or_filters'].items():
+                    if or_key not in VALID_FILTERS:
+                        raise ValueError(f"Invalid filter column: {or_key}")
+                    db_value = 1 if or_value is True else (0 if or_value is False else or_value)
+                    or_conditions.append(f"{or_key} = ?")
+                    params.append(db_value)
+                
+                if or_conditions:
+                    or_string = " OR ".join(or_conditions)
+                    conditions.append(f"({or_string})")
             
             if conditions:
                 sql_query += " WHERE " + " AND ".join(conditions)
 
         cursor.execute(sql_query, tuple(params))
-        
         for row in cursor.fetchall():
-            doc_id, metadata, deskewed, needs_approval, approved, rejected, uploaded, path, metadata_file, metadata_file_type, last_modified, error_msg = row
-            status = { 
-                'metadata': bool(metadata),
-                'deskewed': bool(deskewed),
-                'needs_approval': bool(needs_approval),
-                'approved': bool(approved),
-                'rejected': bool(rejected),
-                'uploaded': bool(uploaded)
-            }
-            docs[doc_id] = Document(doc_id=doc_id, status=status, path=path, metadata_file=metadata_file, metadata_file_type=metadata_file_type, last_modified=last_modified, error_msg=error_msg)
+            doc = Document.from_db_row(row)
+            docs[doc.doc_id] = doc
             
         if docs:
             doc_ids = tuple(docs.keys())
             placeholders = ','.join('?' for _ in doc_ids)
             
-            image_query = f"SELECT image_id, doc_id, sort_order, original_path, processed_path FROM images WHERE doc_id IN ({placeholders})"
+            image_query = f"SELECT image_id, doc_id, sort_order, original_path, processed_path, changes FROM images WHERE doc_id IN ({placeholders})"
             cursor.execute(image_query, doc_ids)
             
             for row in cursor.fetchall():
-                image_id, doc_id, order, orig_path, proc_path = row
+                image_id = row['image_id']
+                doc_id = row['doc_id']
+                order = row['sort_order']
+                orig_path = row['original_path']
+                proc_path = row['processed_path']
+                changes = row['changes']
+                
+                if changes:
+                    changes = json.loads(changes)
                 if doc_id in docs:
-                    docs[doc_id].add_image(image_id, order, orig_path, proc_path)
+                    docs[doc_id].add_image(image_id, order, orig_path, proc_path,changes)
         
         return docs
 
@@ -238,6 +274,7 @@ class DatabaseManager(QObject):
 
     def _save_document(self, doc: Document):
         """Internal method. Saves a single Document object."""
+        update_metadata_file(doc)
         cursor = self.conn.cursor()
         status = doc.status
         params_tuple = (
@@ -250,21 +287,22 @@ class DatabaseManager(QObject):
                 int(status.get('uploaded', 0)), 
                 str(doc.path), 
                 str(doc.metadata_file) if doc.metadata_file else None, 
-                str(doc.metadata_file_type) if doc.metadata_file_type else None, 
+                str(doc.metadata_file_type) if doc.metadata_file_type else None,
+                doc.metadata.to_json() if doc.metadata else None,
                 doc.last_modified, doc.error_msg if doc.error_msg else None
                 )
 
         cursor.execute('''
             INSERT OR REPLACE INTO documents (doc_id, metadata, deskewed, needs_approval,
-            approved, rejected, uploaded, path, metadata_file, metadata_file_type, last_modified, error_msg)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            approved, rejected, uploaded, path, metadata_file, metadata_file_type, metadata_json, last_modified, error_msg)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''',params_tuple )
         
         for image_id, image_data in doc.images.items():
             cursor.execute('''
-                INSERT OR REPLACE INTO images (image_id, doc_id, sort_order, original_path, processed_path)
-                VALUES (?, ?, ?, ?, ?)
-            ''', (image_id, doc.doc_id, image_data['order'], image_data['original'], image_data['processed']))
+                INSERT OR REPLACE INTO images (image_id, doc_id, sort_order, original_path, processed_path, changes)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ''', (image_id, doc.doc_id, image_data['order'], image_data['original'], image_data['processed'], json.dumps(image_data['changes'])))
         self.conn.commit()
 
     def _verify_login(self, username, plaintext_password) -> tuple[bool, str | None]:

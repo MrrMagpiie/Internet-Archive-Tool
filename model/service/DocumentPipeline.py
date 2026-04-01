@@ -39,8 +39,8 @@ class DocumentPipelineWorker(QObject):
                 try:
                     match command:
                         case 'discover':
-                            in_dir, out_dir = data
-                            doc = self.discover(in_dir,out_dir)
+                            in_dir = data
+                            doc = self.single_discover(in_dir)
                             if isinstance(doc,Document) and  not signals.is_cancelled():
                                 signals.data.emit(doc,signals.job_id)
                                 self.success.emit(doc,signals.job_id)
@@ -48,7 +48,7 @@ class DocumentPipelineWorker(QObject):
                         case 'metadata':
                             doc, metadata, metadata_type = data
                             if isinstance(doc,Document):
-                                doc = add_metadata_to_document(doc, metadata,metadata_type)
+                                doc = update_metadata_file(doc)
                                 doc.status['metadata'] = True
                             if not signals.is_cancelled():
                                 signals.data.emit(doc,signals.job_id)
@@ -57,7 +57,7 @@ class DocumentPipelineWorker(QObject):
                         case 'deskew':
                             doc = data
                             if isinstance(doc,Document):
-                                self.deskew(doc)
+                                self.deskew(doc,ticket=signals)
                                 doc.status['deskewed'] = True
                             if not signals.is_cancelled():
                                 signals.data.emit(doc,signals.job_id)
@@ -71,13 +71,13 @@ class DocumentPipelineWorker(QObject):
             self.error.emit(e,'')
             traceback.print_exc()
 
-    def discover(self,in_dir,out_dir):
+    def single_discover(self,in_dir):
             image_list = discover_images(in_dir)
 
             try:
                 documents_dict = images_to_documents(image_list)
             except Exception as e:
-                self.error.emit(f'Images to Document Error: {e}')
+                raise ImageDiscoveryError() from e
 
             if len(documents_dict.keys()) == 1:
                 for doc_id in documents_dict.keys():
@@ -85,14 +85,6 @@ class DocumentPipelineWorker(QObject):
                         doc = create_document(doc_id,documents_dict[doc_id])
                         return doc
                     except Exception as e:
-                        raise(f'Document Creation Error: {doc_id}',{e})
+                        raise DocumentCreationError(doc_id)
             else:
-                print('more that one Doc in folder')
-                return False
-            
-    def deskew(self,doc:Document):
-        try:
-            deskew_document(doc)
-        except Exception as e:
-            raise(f'Deskewing Error: {doc.doc_id},{e}')
-    
+                raise ImageDiscoveryError('Directory formated incorrectly for single document scan') from e
