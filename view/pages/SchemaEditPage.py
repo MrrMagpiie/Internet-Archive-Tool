@@ -5,7 +5,8 @@ from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout,
     QPushButton, QTextEdit, QLineEdit,
     QFileDialog, QProgressBar, QTableWidget,
-    QComboBox, QLabel, QFormLayout, QMessageBox
+    QComboBox, QLabel, QFormLayout, QMessageBox,
+    QScrollArea
 )
 from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot
 from view.components.Page import Page
@@ -64,20 +65,43 @@ class SchemaEditPage(Page):
             self.form.new_form(self.current_schema)
         else:
             self.form.new_form()
-            
+        
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setWidget(self.form)
+        
         self.form.new_format.connect(self._save_schema)
-        metadata_layout.addWidget(self.form)
+        metadata_layout.addWidget(scroll_area)
+
+        save_btn = QPushButton('Save Schema')
+        save_btn.setObjectName("primaryActionBtn") 
+        save_btn.clicked.connect(self.form.save)
 
         # The Delete Button
         delete_btn = QPushButton('Delete Schema')
         delete_btn.setObjectName("dangerBtn") 
         delete_btn.clicked.connect(self._confirm_deletion)
 
+        btn_layout = QHBoxLayout()
+        
+        default_btn = QPushButton('New Default Template')
+        default_btn.setObjectName("schemaSecondaryBtn") 
+        default_btn.clicked.connect(self.form.new_default)
+        btn_layout.addWidget(default_btn)
+        
+        field_btn = QPushButton('New Field')
+        field_btn.setObjectName("schemaSecondaryBtn")
+        field_btn.clicked.connect(self.form.new_field)
+        btn_layout.addWidget(field_btn)
+
         # Assemble Main Layout Safely (No duplicates)
         self.main_layout.addLayout(title_layout)
         self.main_layout.addSpacing(10)
         self.main_layout.addLayout(metadata_layout)
+        self.main_layout.addLayout(btn_layout)
         self.main_layout.addStretch()
+        self.main_layout.addWidget(save_btn)
+        self.main_layout.addSpacing(10)
         self.main_layout.addWidget(delete_btn)
 
         # Wire up the combo box AFTER the form is instantiated
@@ -167,5 +191,7 @@ class SchemaEditPage(Page):
 
     @pyqtSlot()
     def _reset(self):
+        current_schema_name = self.doc_type_combo.currentText()
         clear_layout(self.main_layout)
         self._create_layout()
+        self.doc_type_combo.setCurrentText(current_schema_name)

@@ -134,25 +134,6 @@ class EditableSchemaForm(SchemaForm):
         self.form_layout = QFormLayout() 
         main_layout = QVBoxLayout(self)
         main_layout.addLayout(self.form_layout)
-        
-        btn_layout = QHBoxLayout()
-        
-        default_btn = QPushButton('New Default Template')
-        default_btn.setObjectName("schemaSecondaryBtn") 
-        default_btn.clicked.connect(self.new_default)
-        btn_layout.addWidget(default_btn)
-        
-        field_btn = QPushButton('New Field')
-        field_btn.setObjectName("schemaSecondaryBtn")
-        field_btn.clicked.connect(self.new_field)
-        btn_layout.addWidget(field_btn)
-
-        save_btn = QPushButton("Save Schema")
-        save_btn.setObjectName("schemaPrimaryBtn") 
-        save_btn.clicked.connect(self._save)
-
-        main_layout.addLayout(btn_layout)
-        main_layout.addWidget(save_btn)
 
     def _load_ia_keys(self):
         keys_path = RESOURCES_PATH / 'IAMetadataKeys.json'
@@ -324,7 +305,7 @@ class EditableSchemaForm(SchemaForm):
         self.schema_dict['fields'] = new_fields
         self.schema_dict['defaults'] = new_defaults
 
-    def _save(self):
+    def save(self):
         self._write_form_to_schema()
         # Clean up temporary 'blank' counters before saving
         self.schema_dict['fields'].pop('blank', None)
