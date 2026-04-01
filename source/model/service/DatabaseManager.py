@@ -105,35 +105,29 @@ class DatabaseManager(QObject):
             if self.conn:
                 self.conn.close()
 
-    def _create_user(self, username, password) -> tuple[bool, str]:
-        """Generates a new user and safely handles duplicate usernames."""
-        cursor = self.conn.cursor()
-        salt = secrets.token_hex(16)
-        hashed_pw = hashlib.pbkdf2_hmac(
-            'sha256', 
-            password.encode('utf-8'), 
-            salt.encode('utf-8'), 
-            100000 
-        ).hex()
+    def ensure_table_schema(conn: sqlite3.Connection, table_name: str, primary_key:str,table_schema):
+        cursor = conn.cursor()
+        
+        cursor.execute(f"""
+            CREATE TABLE IF NOT EXISTS {table_name} (
+                {primary_key} TEXT PRIMARY KEY
+            )
+        """)
+        
+        # 3. Query the current state of the table
+        cursor.execute(f"PRAGMA table_info({table_name})")
+        existing_columns = {row[1] for row in cursor.fetchall()}
+        
+        # 4. Find and add any missing columns
+        for col_name, col_type in table_schema.items():
+            if col_name not in existing_columns:
+                print(f"Upgrading database schema: Adding column '{col_name}'...")
+                try:
+                    cursor.execute(f"ALTER TABLE {table_name} ADD COLUMN {col_name} {col_type}")
+                except sqlite3.OperationalError as e:
+                    print(f"Failed to add column {col_name}: {e}")
 
-        try:
-            cursor.execute('''
-                INSERT INTO users (username, password_hash, salt, role)
-                VALUES (?, ?, ?, ?)
-            ''', (username, hashed_pw, salt, 'admin'))
-            
-            self.conn.commit()
-            return True, "User created successfully."
-            
-        except sqlite3.IntegrityError:
-            # The username already exists Roll back the transaction.
-            self.conn.rollback()
-            return False, f"The username '{username}' is already taken."
-            
-        except Exception as e:
-            # Catch any other database errors (like a locked file)
-            self.conn.rollback()
-            return False, f"Database error: {str(e)}"
+        conn.commit()
 
     def _create_tables(self):
         """Internal method to create tables. Called by run()."""
@@ -188,6 +182,36 @@ class DatabaseManager(QObject):
 
         self.conn.commit()
     
+    def _create_user(self, username, password) -> tuple[bool, str]:
+        """Generates a new user and safely handles duplicate usernames."""
+        cursor = self.conn.cursor()
+        salt = secrets.token_hex(16)
+        hashed_pw = hashlib.pbkdf2_hmac(
+            'sha256', 
+            password.encode('utf-8'), 
+            salt.encode('utf-8'), 
+            100000 
+        ).hex()
+
+        try:
+            cursor.execute('''
+                INSERT INTO users (username, password_hash, salt, role)
+                VALUES (?, ?, ?, ?)
+            ''', (username, hashed_pw, salt, 'admin'))
+            
+            self.conn.commit()
+            return True, "User created successfully."
+            
+        except sqlite3.IntegrityError:
+            # The username already exists Roll back the transaction.
+            self.conn.rollback()
+            return False, f"The username '{username}' is already taken."
+            
+        except Exception as e:
+            # Catch any other database errors (like a locked file)
+            self.conn.rollback()
+            return False, f"Database error: {str(e)}"
+
     def _load_documents(self, filters: dict = None) -> dict[str, Document]:
         """method for fetching documents. Safely uses parameterized queries with a column whitelist."""
         docs = {}
