@@ -110,20 +110,7 @@ def update_metadata(doc:Document, metadata:dict):
     doc.add_metadata(metadata)
     update_metadata_file(doc)
 
-def upload(doc:Document, files:list,edit= False):
-    metadata_dict = doc.metadata.to_dict()
-    identifier = metadata_dict.get('identifier')
-    if not identifier:
-        raise MetadataError(f"Error: 'identifier' not found in metadata for {doc.doc_id}")
-
-    if DEV_MODE:
-        print("DEV MODE ACTIVE: Redirecting upload to test_collection...")
-        metadata_dict['collection'] = 'test_collection'
-        identifier = f"{identifier}_TEST"
-        metadata_dict['identifier'] = identifier
-        update_metadata(doc,metadata_dict)
-
-def _upload(doc:Document, files:list,edit = False):
+def upload(doc:Document, files:list,edit = False):
     metadata_dict = doc.metadata.to_dict()
     identifier = metadata_dict.get('identifier')
     if not identifier:
