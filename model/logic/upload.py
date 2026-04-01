@@ -25,18 +25,21 @@ def uploadDocument(doc:Document,ticket:JobTicket):
         pdf_path = create_pdf_from_tiffs(doc)
         upload(doc,[zip_path,pdf_path])
 
-def zip_doc(doc):
+def zip_doc(doc, ticket=None, base_progress=0, max_progress=100):
     output_dir = Path(doc.path)
     zip_file_path = output_dir / f"{doc.doc_id}.zip"
     print(f"Creating zip file: {zip_file_path}")
     try:
         with zipfile.ZipFile(zip_file_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
-            print(doc.images)
-            for image in doc.images.values():
-                print(image)
+            images = list(doc.images.values())
+            total = len(images)
+            for i, image in enumerate(images):
                 file_path = Path(image['processed'])
                 # Add file to zip
                 zipf.write(file_path, arcname=file_path.name)
+                if ticket:
+                    current_prog = base_progress + int(((i + 1) / total) * (max_progress - base_progress))
+                    ticket.update_progress(current_prog, f"Zipping files... {i+1}/{total}")
         print("Zip file created successfully.")
         return str(zip_file_path)
     except Exception as e:
@@ -47,9 +50,13 @@ def pdf_from_tiffs(images_dict, pdf_path, queue):
     try:
         from wand.image import Image
         with Image() as pdf:
-            for tiff in images_dict.values():
+            images = list(images_dict.values())
+            total = len(images)
+            for i, tiff in enumerate(images):
                 with Image(filename=tiff.get('processed')) as img:
                     pdf.sequence.append(img)
+                progress_pct = int(((i + 1) / total) * 100)
+                queue.put({"status": "progress", "progress": progress_pct, "step": f"Generating PDF... {i+1}/{total}"})
             
             pdf.save(filename=str(pdf_path))
             queue.put({"status": "success", "pdf_path": str(pdf_path)})

@@ -43,7 +43,7 @@ class DocumentPipelineWorker(QObject):
                     match command:
                         case 'discover':
                             in_dir = data
-                            doc = self.single_discover(in_dir)
+                            doc = self.single_discover(in_dir, signals)
                             if isinstance(doc,Document) and  not signals.is_cancelled():
                                 signals.data.emit(doc,signals.job_id)
                                 self.success.emit(doc,signals.job_id)
@@ -90,10 +90,12 @@ class DocumentPipelineWorker(QObject):
             self.error.emit(e,'')
             traceback.print_exc()
 
-    def single_discover(self,in_dir):
+    def single_discover(self, in_dir, ticket):
+            ticket.update_progress(10, "Scanning directory for images...")
             image_list = discover_images(in_dir)
 
             try:
+                ticket.update_progress(40, "Grouping images into documents...")
                 documents_dict = images_to_documents(image_list)
             except Exception as e:
                 raise ImageDiscoveryError() from e
@@ -101,28 +103,37 @@ class DocumentPipelineWorker(QObject):
             if len(documents_dict.keys()) == 1:
                 for doc_id in documents_dict.keys():
                     try:
+                        ticket.update_progress(80, "Building document structure...")
                         doc = create_document(doc_id,documents_dict[doc_id])
+                        ticket.update_progress(100, "Discovery Complete!")
                         return doc
                     except Exception as e:
                         raise DocumentCreationError(doc_id)
             else:
                 raise ImageDiscoveryError('Directory formated incorrectly for single document scan') from e
             
-    def batch_discover(self,in_dir,signals):
+    def batch_discover(self, in_dir, ticket):
+            ticket.update_progress(10, "Scanning directory for images...")
             image_list = discover_images(in_dir)
             try:
+                ticket.update_progress(30, "Grouping images into documents...")
                 documents_dict = images_to_documents(image_list)
             except Exception as e:
                 raise ImageDiscoveryError(f'Images to Document Error') from e
 
-            for doc_id in documents_dict.keys():
+            items = list(documents_dict.items())
+            total = len(items)
+            for i, (doc_id, doc_data) in enumerate(items):
+                ticket.update_progress(30 + int((i / total) * 70), f"Processing document {i+1}/{total}...")
                 try:
-                    doc = create_document(doc_id,documents_dict[doc_id])
-                    if isinstance(doc,Document) and  not signals.is_cancelled():
-                        signals.data.emit(doc,signals.job_id)
-                        self.success.emit(doc,signals.job_id)
+                    doc = create_document(doc_id, doc_data)
+                    if isinstance(doc,Document) and  not ticket.is_cancelled():
+                        ticket.data.emit(doc,ticket.job_id)
+                        self.success.emit(doc,ticket.job_id)
                 except Exception as e:
                     raise DocumentCreationError(f'Document Creation Error: {doc_id}')
+            
+            ticket.update_progress(100, "Batch Discovery Complete!")
 
     def deskew(self, doc: Document, ticket: JobTicket):
         """Runs inside your PyQt QThread Worker."""
@@ -130,7 +141,11 @@ class DocumentPipelineWorker(QObject):
         doc_directory.mkdir(parents=True, exist_ok=True)
         
         try:
-            for image_id, image_task in doc.images.items():
+            images_items = list(doc.images.items())
+            total = len(images_items)
+            
+            for i, (image_id, image_task) in enumerate(images_items):
+                ticket.update_progress(int((i / total) * 100), f"Deskewing page {i+1}/{total}...")
                 in_file = Path(image_task["original"])
                 out_file = Path(image_task["processed"])
 
@@ -161,6 +176,7 @@ class DocumentPipelineWorker(QObject):
                 else:
                     raise DeskewError(in_file,out_file,"The deskew process crashed without returning data.")
 
+            ticket.update_progress(100, "Deskew Complete!")
             return doc
 
         except DeskewError as e:

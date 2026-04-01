@@ -13,7 +13,7 @@ class ProcessItem(QFrame):
     def __init__(self, title, ticket: JobTicket):
         super().__init__()
         self.ticket = ticket
-        self.setFixedHeight(50)
+        self.setFixedHeight(65)
         self.setObjectName("processItem")
         
         layout = QHBoxLayout()
@@ -71,7 +71,7 @@ class ProcessCategoryWidget(QFrame):
         self.is_expanded = False
         
         self.HEADER_HEIGHT = 40
-        self.ITEM_HEIGHT = 60
+        self.ITEM_HEIGHT = 65
         
         self.setObjectName("processCategoryWidget")
         self.layout = QVBoxLayout()
@@ -251,6 +251,7 @@ class ProcessManagerWidget(QWidget):
             self.list_layout.insertWidget(self.list_layout.count() - 1, cat_widget)
 
         # 2. Build and route the item
+        ticket.progress.connect(self.update_task_progress)
         ticket.canceled.connect(self.remove_task)
         item = ProcessItem(f"{task_command} {task_item}", ticket)
         item.cancel_requested.connect(self.remove_task)
@@ -275,8 +276,8 @@ class ProcessManagerWidget(QWidget):
             widget.deleteLater()
             self._recalculate_height()
 
-    @pyqtSlot(str, int, str)
-    def update_task_progress(self, job_id, progress, step_text):
+    @pyqtSlot(str, int, object)
+    def update_task_progress(self, job_id: str, progress: int, step_text: object):
         if job_id in self.task_routing:
             category_name = self.task_routing[job_id]
             self.categories[category_name].update_task(job_id, progress, step_text)
