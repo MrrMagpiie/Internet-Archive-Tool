@@ -2,6 +2,9 @@ from sqlite3 import OperationalError
 from pathlib import Path
 from queue import Queue
 from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot
+import traceback
+import multiprocessing
+import shutil
 
 from model.data.document import Document
 from model.logic.discover import *
@@ -44,7 +47,11 @@ class DocumentPipelineWorker(QObject):
                             if isinstance(doc,Document) and  not signals.is_cancelled():
                                 signals.data.emit(doc,signals.job_id)
                                 self.success.emit(doc,signals.job_id)
-                            
+
+                        case 'batch_discover':
+                            in_dir = data
+                            self.batch_discover(in_dir, signals)
+
                         case 'metadata':
                             doc, metadata, metadata_type = data
                             if isinstance(doc,Document):
@@ -100,6 +107,23 @@ class DocumentPipelineWorker(QObject):
                         raise DocumentCreationError(doc_id)
             else:
                 raise ImageDiscoveryError('Directory formated incorrectly for single document scan') from e
+            
+    def batch_discover(self,in_dir,signals):
+            image_list = discover_images(in_dir)
+            try:
+                documents_dict = images_to_documents(image_list)
+            except Exception as e:
+                raise ImageDiscoveryError(f'Images to Document Error') from e
+
+            for doc_id in documents_dict.keys():
+                try:
+                    doc = create_document(doc_id,documents_dict[doc_id])
+                    if isinstance(doc,Document) and  not signals.is_cancelled():
+                        signals.data.emit(doc,signals.job_id)
+                        self.success.emit(doc,signals.job_id)
+                except Exception as e:
+                    raise DocumentCreationError(f'Document Creation Error: {doc_id}')
+
     def delete_document_files(self,document_path) -> bool:
         """
         deletes all physical files associated with a Document.

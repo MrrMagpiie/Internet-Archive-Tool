@@ -4,9 +4,12 @@ from model.settings_manager import app_settings
 
 from pathlib import Path
 
+image_formats = ['.tif', '.tiff', '.jpg', '.jpeg', '.png']
+
 def discover_images(directory) -> list:
     path = Path(directory)
-    return list(path.glob("*.tif"))
+    return [p for p in path.iterdir() if p.suffix.lower() in image_formats]
+    #return list(path.glob("*.tif"))
 
 def images_to_documents(image_list) -> dict:
     documents = {}
@@ -25,14 +28,16 @@ def images_to_documents(image_list) -> dict:
                 documents[doc_id] = [(file,image_id,order)]
     
         except Exception as e:
-            raise
+            raise 
     return documents
-    
+
 def create_document(doc_id,images):
     Doc = Document(doc_id=doc_id)
     Doc.path = Path(app_settings.get('DEFAULT_OUTPUT_DIR')) / doc_id
+    sorted_images = sorted(images, key=lambda x: int(x[2]))
     print(Doc.path)
-    for file, image_id, order in images:
+
+    for file, image_id, order in sorted_images:
         Doc.add_image(
                     image_id=image_id,
                     order=order,
@@ -43,7 +48,7 @@ def create_document(doc_id,images):
 
 def batch_create_documents(documents_dict):
     documents = []
-    for doc_id in documents_dict.keys():
-        doc = create_document(doc_id,documents_dict[doc_id])
+    for doc_id, images in documents_dict.items():
+        doc = create_document(doc_id,images)
         documents.append(doc)
     return documents

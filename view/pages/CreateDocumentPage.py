@@ -1,152 +1,319 @@
-
 import os
 from pathlib import Path
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout,
     QPushButton, QTextEdit, QLineEdit,
-    QFileDialog, QProgressBar,QTableWidget,
-    QComboBox,QLabel,QFormLayout,QFrame,QSplitter,
-    QScrollArea,QMessageBox
+    QFileDialog, QProgressBar, QTableWidget,
+    QComboBox, QLabel, QFormLayout, QFrame, QSplitter,
+    QScrollArea, QMessageBox
 )
 from PyQt6.QtGui import QPixmap
 from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot, Qt
-from view.components.Page import Page
-from view.components.SchemaForm import SchemaForm, EditableSchemaForm
-from view.components.CenteredFlowLayout import CenteredFlowLayout
-from view.components.ThumbnailCard import ThumbnailCard
-from view.components.InteractiveImageView import InteractiveImageViewer
+
+from view.components import (
+    Page, SchemaForm, EditableSchemaForm,CenteredFlowLayout,ThumbnailCard,InteractiveImageViewer,AnimatedToggle
+)
+
 from model.data.metadata import Metadata
 from model.data.document import Document
 from model.data.schema import DocumentSchema
-from model.logic.helpers import clear_layout
+from model.logic.helpers import clear_layout, load_metadata_formats
+from model.logic.metadata import update_metadata_file
 from model.service.signals import JobTicket
 import json
-from config import RESOURCES_PATH
 
-class CreateDocumentPage(Page):
-    doc_ready = pyqtSignal(Document)
-    discover_document = pyqtSignal(tuple,QObject)
-    deskew_document = pyqtSignal(Document,QObject)
-    image_request = pyqtSignal(Path,QObject)
-    new_document = pyqtSignal(Document)
-    next_stage = pyqtSignal()
-
-    def __init__(self,parent):
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QPushButton, QFrame, QLabel
+from PyQt6.QtCore import Qt, pyqtSlot
+from model.data.document import Document
+from model.logic.helpers import clear_layout
+class DocumentExpandableCard(QFrame):
+    def __init__(self, document: Document, parent=None):
         super().__init__(parent)
-        self.form = None
+        self.document = document
+        self.setObjectName("documentCard") 
+        
+        # Give the card a nice border and background (hooks into your stylesheet)
+        self.setStyleSheet("""
+            QFrame#documentCard {
+                border: 1px solid #444;
+                border-radius: 6px;
+                background-color: rgba(255, 255, 255, 0.02);
+            }
+        """)
+        
+        self.layout = QVBoxLayout(self)
+        self.layout.setContentsMargins(0, 0, 0, 0)
+        self.layout.setSpacing(0)
+        
+        # 1. The Header Button
+        self.header_btn = QPushButton()
+        self.header_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.header_btn.setStyleSheet("""
+            QPushButton {
+                text-align: left;
+                padding: 12px;
+                font-size: 14px;
+                font-weight: bold;
+                background-color: transparent;
+                border: none;
+            }
+            QPushButton:hover {
+                background-color: rgba(255, 255, 255, 0.05);
+            }
+        """)
+        self.header_btn.clicked.connect(self.toggle_expand)
+        
+        self.content_widget = QWidget()
+        self.content_widget.setVisible(False)
+        self.content_layout = QVBoxLayout(self.content_widget)
+        self.content_layout.setContentsMargins(30, 0, 10, 15)
+        self.content_layout.setSpacing(5)
+        
+        # Add a subtle line to separate header from content
+        self.content_layout.addWidget(self._create_separator())
+
+        # 3. Populate the images inside the content area
+        sorted_images = sorted(
+            self.document.images.items(), 
+            key=lambda x: int(x[1].get('order', 0))
+        )
+        
+        for img_id, img_data in sorted_images:
+            page_num = img_data.get('order', 'N/A')
+            lbl = QLabel(f"📄 Page {page_num}: {img_id}")
+            lbl.setStyleSheet("color: #aaaaaa; font-size: 12px;")
+            self.content_layout.addWidget(lbl)
+            
+        self.layout.addWidget(self.header_btn)
+        self.layout.addWidget(self.content_widget)
+        
+        # Set the initial text
+        self._update_header_text(is_expanded=False)
+
+    def _create_separator(self):
+        line = QFrame()
+        line.setFrameShape(QFrame.Shape.HLine)
+        line.setStyleSheet("border-top: 1px solid #333; margin-bottom: 5px;")
+        return line
+
+    def toggle_expand(self):
+        """Switches the visibility of the content area."""
+        is_visible = self.content_widget.isVisible()
+        self.content_widget.setVisible(not is_visible)
+        self._update_header_text(is_expanded=not is_visible)
+        
+    def _update_header_text(self, is_expanded: bool):
+        arrow = "▼" if is_expanded else "▶"
+        self.header_btn.setText(
+            f"{arrow}   {self.document.doc_id}   ({len(self.document.images)} pages)"
+        )
+class CountWidget(QWidget):
+    """A simple wrapper for a label to display a count."""
+    def __init__(self, label_text="Count:", parent=None):
+        super().__init__(parent)
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        self.count = 0
+        
+        self.prefix_lbl = QLabel(label_text)
+        self.prefix_lbl.setObjectName("boldLabel")
+        
+        self.count_lbl = QLabel(str(self.count))
+        self.count_lbl.setObjectName("highlightLabel")
+        
+        layout.addWidget(self.prefix_lbl)
+        layout.addStretch()
+        layout.addWidget(self.count_lbl)
+
+    def set_count(self, value):
+        self.count = value
+        self.count_lbl.setText(str(self.count))
+
+    def get_count(self):
+        return self.count
+
+    def increment(self,value: int =1):
+        self.set_count(self.count + value)
+
+class BatchDocumentList(QWidget):
+    """A container to hold all the DocumentAccordions."""
+    def __init__(self, parent=None):
+        super().__init__(parent)
         self.main_layout = QVBoxLayout(self)
-        self.all_cards = {}
-        self.pending_requests = {}
-        self.create_layout()
-        self.current_document = None
-
-    def create_layout(self):
-        splitter = QSplitter(Qt.Orientation.Horizontal)
+        self.main_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+        self.list = []
+        self._create_layout()
         
-        # Left Side
-        controls_widget = QWidget()
-        controls_layout = QVBoxLayout()
 
-        # Input
-        input_widget = QWidget()
-        input_layout = QVBoxLayout()
+    def _create_layout(self):
+        self.count_widget = CountWidget('Found:')
+        self.main_layout.addWidget(self.count_widget)
+        self.setObjectName("thumbnailGridContainer")
+
+        self.layout = QVBoxLayout()
+        self.layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+        self.layout.setContentsMargins(20, 20, 20, 20)
+        self.layout.setSpacing(10)
+        self.main_layout.addLayout(self.layout)
+
+
+    def add_document(self, document: Document):
+        self.list.append(document)
+        card = DocumentExpandableCard(document)
+        self.layout.addWidget(card)
+        self.count_widget.set_count(len(self.list))
+
+    def get_list(self):
+        return self.list
+
+    def clear_list(self):
+        clear_layout(self.layout)
+        self.list.clear()
+        self.count_widget.set_count(0)
+
+class DiscoverControls(QWidget):
+    run_discover = pyqtSignal(Path)
+    run_deskew = pyqtSignal()
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setObjectName("createDocControlsPanel") 
+        self._create_layout()
+        self.populate_formats_combo()
+
+    def _create_layout(self):
+        self.controls_layout = QVBoxLayout(self)
+        self.controls_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+        self.controls_layout.setSpacing(20)
+        
         self.input_dir_field = QLineEdit()
-        input_layout.addWidget(self.input_dir_field)
-        input_browse_btn = QPushButton("Select Document Folder")
-        input_browse_btn.clicked.connect(lambda: self.select_directory(self.input_dir_field))
-        input_layout.addWidget(input_browse_btn)
-        find_pages_btn = QPushButton("Find Pages")
-        find_pages_btn.clicked.connect(self.run_discover)
-        input_layout.addWidget(find_pages_btn)
-        input_widget.setLayout(input_layout)
-    
-        # Page Count    
-        pages_widget = QWidget()
-        pages_layout = QHBoxLayout()
-        pages_lbl = QLabel('Pages Found:')
-        self.pages_count = QLabel('0')
-        pages_layout.addWidget(pages_lbl)
-        pages_layout.addWidget(self.pages_count)
-        pages_widget.setLayout(pages_layout)
+        self.input_dir_field.setPlaceholderText("Select Document Folder...")
+        self.controls_layout.addWidget(self.input_dir_field)
         
-        nxt_step_btn = QPushButton('Deskew Images')
-        nxt_step_btn.clicked.connect(self._to_next_stage)
-
-        controls_layout.addWidget(input_widget)
-        controls_layout.addStretch()
-        controls_layout.addWidget(pages_widget)
-        controls_layout.addWidget(nxt_step_btn)
-
-        controls_widget.setLayout(controls_layout)
-
-
-        # Right Side
-        # 1. The Scroll Area
-        self.scroll_area = QScrollArea()
-        self.scroll_area.setWidgetResizable(True)
-        self.scroll_area.setFrameShape(QFrame.Shape.NoFrame)
-        self.scroll_area.setStyleSheet("background-color: white;")
+        input_browse_btn = QPushButton("Browse...")
+        input_browse_btn.clicked.connect(self.select_directory)
+        self.controls_layout.addWidget(input_browse_btn)
+        input_browse_btn.setObjectName("primaryActionBtn")
         
-        # 2. The Container for Layout
-        self.grid_container = QWidget()
+        line = QFrame()
+        line.setFrameShape(QFrame.Shape.HLine)
+        line.setFrameShadow(QFrame.Shadow.Sunken)
+        self.controls_layout.addWidget(line)
+
+        find_metadata_layout = QHBoxLayout()
+        self.find_metadata_toggle = AnimatedToggle()
+        self.find_metadata_toggle.toggled.connect(self.metadata_toggled)
+        find_metadata_label = QLabel('Auto Create Metadata')
+
+        find_metadata_layout.addWidget(self.find_metadata_toggle)
+        find_metadata_layout.addWidget(find_metadata_label)
+        self.controls_layout.addLayout(find_metadata_layout)
+
+        self.doc_type_combo = QComboBox()
+        self.doc_type_combo.setVisible(False)
+        self.doc_type_combo.setObjectName("formComboBox")
+        self.controls_layout.addWidget(self.doc_type_combo)
+
+        self.find_btn = QPushButton("Discover")
+        self.find_btn.setObjectName("primaryActionBtn") 
+        self.find_btn.clicked.connect(self.discover_callback)
+        self.controls_layout.addWidget(self.find_btn)
         
-        # 3. The Layout (Using the CenteredFlowLayout you added earlier)
+        self.deskew_btn = QPushButton('Deskew Images')
+        self.deskew_btn.setObjectName("primaryActionBtn")
+        self.deskew_btn.setVisible(False)
+        self.deskew_btn.clicked.connect(self.run_deskew.emit)
+        self.controls_layout.addWidget(self.deskew_btn)
+       
+    def select_directory(self):
+        dir_path = QFileDialog.getExistingDirectory(self, "Select Directory", options=QFileDialog.Option.DontUseNativeDialog)
+        if dir_path:
+            self.input_dir_field.setText(dir_path)
+
+    def discover_callback(self):
+        input_dir = self.input_dir_field.text().strip()
+        if input_dir and os.path.isdir(input_dir):
+            self.run_discover.emit(Path(input_dir))
+            self.deskew_btn.setVisible(True)
+        else:
+            QMessageBox.information(self, 'Select Document Folder', 'Please choose the documents location')
+
+    def populate_formats_combo(self):
+        self.metadata_formats = load_metadata_formats()
+        self.doc_type_combo.clear()
+        for key,value in self.metadata_formats.items():
+            if value['filename_template'] != '': 
+                self.doc_type_combo.addItem(value['schema_name'], key)
+
+    def metadata_toggled(self):
+        self.doc_type_combo.setVisible(self.find_metadata_toggle.isChecked())
+        if self.find_metadata_toggle.isChecked():
+            self.find_btn.setText('Find + Create Metadata')
+        else:
+            self.find_btn.setText('Find')
+
+    def get_metadata_type(self):
+        return self.doc_type_combo.currentData()
+
+    def reset(self):
+        self.input_dir_field.setText('')
+        #self.discover_count.setText('0')
+
+class CardGrid(QWidget):
+    image_request = pyqtSignal(Path, QObject)
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.all_cards = {}
+        self.setObjectName("thumbnailGridContainer")
+        self.main_layout = QVBoxLayout(self)
+        self.main_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+
+        self._create_layout()
+        self.pending_requests = {}
+        
+    def _create_layout(self):
+        count_widget = CountWidget('Found:')
+        self.discover_count = count_widget.count_lbl
+        
         self.flow_layout = CenteredFlowLayout()
         self.flow_layout.setContentsMargins(20, 20, 20, 20)
         self.flow_layout.setSpacing(20)
         
-        self.grid_container.setLayout(self.flow_layout)
-        self.scroll_area.setWidget(self.grid_container)
+        self.main_layout.addWidget(count_widget)
+        self.main_layout.addLayout(self.flow_layout)
 
-
-        splitter.addWidget(controls_widget)
-        splitter.addWidget(self.scroll_area)
+    def add_card(self, pixmap, job_id):
+        '''Add a card to the grid that creates an image popout when clicked'''
         
-        self.main_layout.addWidget(splitter)
+        def create_image_popout(self,page_id): 
+            if page_id in self.all_cards:
+                card = self.all_cards[page_id]
+                self.interactive_popout = InteractiveImageViewer()
+                self.interactive_popout.set_pixmap(card.image_view._original_pixmap)
+                self.interactive_popout.show()
+        
+        if job_id not in self.pending_requests:
+            return
+            
+        ticket, image_indx = self.pending_requests.pop(job_id)
+        
+        if image_indx not in self.all_cards:
+            new_card = ThumbnailCard(image_indx, pixmap)
+            new_card.clicked.connect(lambda i = image_indx: create_image_popout(i))
+            self.flow_layout.addWidget(new_card)
+            self.all_cards[image_indx] = new_card
+            self.discover_count.setText(str(len(self.all_cards)))
 
-    def set_current_document(self, document:Document):
-        self.current_document = document
-        self._reset()
-        if document != None:
-            self.input_dir_field.setText(str(document.path))
-            self.fetch_images(document)
+    def clear_image_cards(self):
+        self.all_cards.clear()
+        clear_layout(self.flow_layout)
 
-    # --- Discovery stuff --- 
-    def select_directory(self, field):
-        dir_path = QFileDialog.getExistingDirectory(self, "Select Directory",options=QFileDialog.Option.DontUseNativeDialog)
-        if dir_path:
-            field.setText(dir_path)
+    def reset(self):
+        self.clear_image_cards()
+        for job_id, (ticket, task_type) in list(self.pending_requests.items()):
+                ticket.cancel()
+                self.pending_requests.pop(job_id)
 
-    def get_paths(self):
-        input_dir = self.input_dir_field.text().strip()
-        output_dir = input_dir
-
-        if not input_dir or not os.path.isdir(input_dir):
-            return None, None
-        print(input_dir,output_dir)
-        return input_dir, output_dir
-
-    def run_discover(self):
-        input_dir, out_dir = self.get_paths()
-        if input_dir and out_dir:
-            data = (input_dir,out_dir)
-            ticket = JobTicket()
-            ticket.data.connect(self.discover_return)
-            ticket.error.connect(self.doc_error)
-            self.pending_requests[ticket.job_id] = (ticket,"discover")
-            self.discover_document.emit(data,ticket)
-        else:
-            QMessageBox.information(self,'Select Document Folder','Please choose the documents location')
-
-    # --- Deskew Stuff ---
-    def run_deskew(self):
-        ticket = JobTicket()
-        ticket.data.connect(self.deskew_return)
-        ticket.error.connect(self.doc_error)
-        self.pending_requests[ticket.job_id] = (ticket,'deskew')
-        self.deskew_document.emit(self.current_document,ticket)
-
-    # --- Display stuff ---
+    # --- Requests ---
     def fetch_images(self, document: Document):
         images = document.images
         for image in images.values():
@@ -155,73 +322,182 @@ class CreateDocumentPage(Page):
             ticket.data.connect(self.image_return)
             ticket.error.connect(self.image_error)
             self.pending_requests[ticket.job_id] = (ticket, image['order'])
-            self.image_request.emit(image_path,ticket)
+            self.image_request.emit(image_path, ticket)
 
-    def add_card(self,pixmap,job_id):
-        ticket, image_indx = self.pending_requests.pop(job_id)
-        if image_indx not in self.all_cards.keys():
-            new_card = ThumbnailCard(image_indx, pixmap)
-            new_card.clicked.connect(self.handle_card_selection)
-            self.flow_layout.addWidget(new_card)
-            self.all_cards[image_indx]=new_card
-            self.pages_count.setText(str(len(self.all_cards)))
-            self.grid_container.adjustSize()
+    @pyqtSlot(object, str)
+    def image_return(self, pixmap, job_id):
+        self.add_card(pixmap, job_id)
 
-    def clear_image_cards(self):
-        self.all_cards.clear()
-        clear_layout(self.flow_layout)
+    @pyqtSlot(Exception, str)
+    def image_error(self, error, job_id):
+        pass
+
+class DiscoverPage(Page):
+    doc_ready = pyqtSignal(Document)
+    discover_document = pyqtSignal(Path, QObject)
+    deskew_document = pyqtSignal(Document, QObject)
+    save_metadata = pyqtSignal(tuple, JobTicket)
+    new_document = pyqtSignal(Document)
+    next_stage = pyqtSignal()
+
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.form = None
+        self.pending_requests = {}
+        self.current_document = None
+        self._create_layout()
+
+    def _create_layout(self):
+        self.main_layout = QVBoxLayout(self)
+
+        splitter = QSplitter(Qt.Orientation.Horizontal)
+        splitter.setChildrenCollapsible(False)
+        
+        # --- Left Side: Controls ---
+        self.controls_widget = DiscoverControls()
+        self.controls_widget.run_discover.connect(self.run_discover)
+        self.controls_widget.run_deskew.connect(self.run_deskew)
+        
+        # --- Right Side: Flow Layout Grid ---
+        self.scroll_area = QScrollArea()
+        self.scroll_area.setWidgetResizable(True)
+        self.scroll_area.setFrameShape(QFrame.Shape.NoFrame)
+        
+        splitter.addWidget(self.controls_widget)
+        splitter.addWidget(self.scroll_area)
+        
+        self.main_layout.addWidget(splitter)
+
+    def set_current_document(self, document: Document):
+        self._reset()
+        self.current_document = document
+        if document != None:
+            self.controls_widget.input_dir_field.setText(str(document.path))
+            self.controls_widget.deskew_btn.setVisible(True)
+
+    def run_metadata(self,document:Document):
+        filename = Path(document.path).stem
+        metadata_type = self.controls_widget.get_metadata_type()
+        schema = DocumentSchema.from_dict(load_metadata_formats()[metadata_type])
+        metadata = schema.generate_metadata_from_name(filename)
+        
+        document.metadata_file_type = metadata_type
+        document.add_metadata(metadata)
+
+    def run_discover(self, input_dir:Path):
+        data = input_dir
+        ticket = JobTicket()
+        ticket.data.connect(self.discover_return)
+        ticket.error.connect(self.doc_error)
+        self.pending_requests[ticket.job_id] = (ticket, "discover")
+        self.discover_document.emit(data, ticket)
+
+    def run_deskew(self,document:Document = None):
+        if  not document:
+            document = self.current_document
+        ticket = JobTicket()
+        ticket.data.connect(self.deskew_return)
+        ticket.error.connect(self.doc_error)
+        self.pending_requests[ticket.job_id] = (ticket, 'deskew')
+        self.deskew_document.emit(document, ticket)
+    
+    def _to_next_stage(self):
+            self.next_stage.emit()
 
     def _reset(self):
-        for ticket, value in self.pending_requests.values():
-            if value != 'deskew' and value != 'discover':
-                ticket.cancel() 
-        self.clear_image_cards()
-        self.input_dir_field.setText('')
-        self.pages_count.setText(str(len(self.all_cards)))
+        for job_id, (ticket, task_type) in list(self.pending_requests.items()):
+            if task_type != 'deskew' and task_type != 'discover':
+                ticket.cancel()
+                self.pending_requests.pop(job_id)
 
-    # --- Next Page ---
-    def _to_next_stage(self):
-        print('next page clicked')
-        # check if document has been discovered
-        if self.current_document:
-            self.next_stage.emit()
-            self.run_deskew()   
-        else:
-            QMessageBox.information(self,'Find Pages','Please discover the document before deskewing')
-
-    # --- Logic: Handle Selection ---
-    def handle_card_selection(self, page_id):
-        print(f"User selected Page {page_id}")
-        card = self.all_cards[page_id]
-        self.create_image_popout(card.pixmap)
-
-    def create_image_popout(self,pixmap):
-        self.interactive_popout = InteractiveImageViewer()
-        self.interactive_popout.set_pixmap(pixmap)
-        self.interactive_popout.show()
-
+        self.controls_widget.reset()
+        self.current_document = None
+            
     # --- Slots ---
-    @pyqtSlot(Document)
-    def db_update(self,doc):
-        pass
-
-    @pyqtSlot(Document,str)
-    def discover_return(self,document,job_id):
-        self.new_document.emit(document)
-    
-    @pyqtSlot(Document,str)
-    def deskew_return(self,document,job_id):
+    @pyqtSlot(Document, str)
+    def deskew_return(self, document, job_id):
         print('deskew success')
 
-    @pyqtSlot(str,str)
-    def doc_error(self,error_msg,job_id):
-        print(error_msg)
+    @pyqtSlot(Exception, str)
+    def doc_error(self, error, job_id):
+        print(error)
 
-    @pyqtSlot(object,str)
-    def image_return(self,pixmap,job_id):
-        self.add_card(pixmap,job_id)
-
-    @pyqtSlot(str,str)
-    def image_error(self,msg,job_id):
+    @pyqtSlot(Document, str)
+    def discover_return(self, document, job_id):
         pass
 
+class BatchDocumentPage(DiscoverPage):
+    batch_request = pyqtSignal(Path, QObject)
+
+    def __init__(self, parent):
+        super().__init__(parent)
+
+    def _create_layout(self):
+        super()._create_layout()
+        self.scroll_area.setObjectName("batchScrollArea")
+        
+        self.document_list = BatchDocumentList()
+        self.scroll_area.setWidget(self.document_list)
+
+    def run_discover(self, input_dir:Path):
+        data = input_dir
+        ticket = JobTicket()
+        ticket.data.connect(self.discover_return)
+        ticket.error.connect(self.doc_error)
+        self.pending_requests[ticket.job_id] = (ticket, "discover")
+        self.batch_request.emit(data, ticket)
+
+    def run_deskew(self):
+        for document in self.document_list.get_list():
+            super().run_deskew(document)
+        self._complete()
+
+    def _reset(self):
+        """Ensure the list clears when the user runs a new discovery."""
+        super()._reset()
+        if hasattr(self, 'document_list'):
+            self.document_list.clear_list()
+
+    def _complete(self):
+        self.next_stage.emit()
+
+    @pyqtSlot(Document, str)
+    def discover_return(self, document, job_id):
+        self.document_list.add_document(document)
+        if self.controls_widget.find_metadata_toggle.isChecked():
+            self.run_metadata(document)
+
+class SingleDocumentPage(DiscoverPage):
+    image_request = pyqtSignal(Path, QObject)
+    def __init__(self,parent):
+        super().__init__(parent)
+
+    def _create_layout(self):
+        super()._create_layout()
+        self.scroll_area.setObjectName("thumbnailScrollArea")
+
+        self.thumbnail_grid = CardGrid()
+        self.thumbnail_grid.image_request.connect(self.image_request)
+        self.scroll_area.setWidget(self.thumbnail_grid)
+
+    def _reset(self):
+        super()._reset()
+        self.thumbnail_grid.clear_image_cards()
+
+    def set_current_document(self, document: Document):
+        super().set_current_document(document)
+        if document != None:
+            self.thumbnail_grid.fetch_images(document)
+
+    def _to_next_stage():
+        if self.current_document:
+            self.next_stage.emit()
+            self.run_deskew()
+        else:
+            QMessageBox.information(self, 'Find Pages', 'Please discover the document before deskewing')
+
+    @pyqtSlot(Document, str)
+    def discover_return(self, document, job_id):
+        self.new_document.emit(document)
+        if self.controls_widget.find_metadata_toggle.isChecked():
+            self.run_metadata(document)

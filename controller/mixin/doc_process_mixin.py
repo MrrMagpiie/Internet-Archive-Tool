@@ -26,6 +26,11 @@ class ProcessingMixin:
         self.register_task('discover', ticket, str(data))
         self.proc_queue.put(('discover', ticket, data))
 
+    @pyqtSlot(Path,QObject)
+    def request_batch_discovery(self,data,ticket):
+        self.register_task('batch_discover', ticket)
+        self.proc_queue.put(('batch_discover', ticket, data))
+
     @pyqtSlot(tuple, QObject)
     def request_deskew(self, data, ticket):
         self.register_task('deskew', ticket,data.doc_id)

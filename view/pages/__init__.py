@@ -2,7 +2,7 @@ from .Dashboard import DashboardPage
 from .MainWindow import MainWindow
 from .MetadataPage import MetadataPage
 from .DocumentReviewPage import DocumentReviewPage
-from .CreateDocumentPage import CreateDocumentPage
+from .CreateDocumentPage import SingleDocumentPage, BatchDocumentPage
 from .SettingsPage import SettingsPage
 from .UploadDashboard import UploadDashboard
 from .HelpPage import HelpPage

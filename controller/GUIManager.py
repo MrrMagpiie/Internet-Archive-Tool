@@ -55,9 +55,14 @@ class GUIManager(QObject):
         review_page.save_metadata.connect(self.process_manager.request_update_doc)
         return review_page
 
-    def CreateDocumentPage(self):
-        create_doc_page = CreateDocumentPage(self)
-        self.process_manager.db_update.connect(create_doc_page.db_update)
+    def CreateDocumentPage(self,batch = False):
+        if batch:
+            create_doc_page = BatchDocumentPage(self)
+            create_doc_page.batch_request.connect(self.process_manager.request_batch_discovery)
+        else:
+            create_doc_page = SingleDocumentPage(self)
+            create_doc_page.image_request.connect(self.process_manager.request_image)
+        
         create_doc_page.discover_document.connect(self.process_manager.request_discovery)
         create_doc_page.deskew_document.connect(self.process_manager.request_deskew)
         create_doc_page.save_metadata.connect(self.process_manager.request_update_doc)
