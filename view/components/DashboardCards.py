@@ -1,135 +1,106 @@
-import sys
+import qtawesome as qta
+from config import DEV_MODE
 from PyQt6.QtWidgets import (
-    QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 
-    QListWidget, QStackedWidget, QLabel, QPushButton, QSplitter, 
-    QListWidgetItem, QFrame, QFormLayout, QLineEdit, QDateEdit,
-    QProgressBar, QComboBox, QGraphicsView, QGraphicsScene,QGridLayout,
-    QScrollArea,QSizePolicy, QLayout
+    QFrame, QVBoxLayout, QLabel, QProgressBar,QMenu, QMessageBox
 )
-from PyQt6.QtCore import Qt, QSize, pyqtSignal, QRect, QPoint
-from PyQt6.QtGui import QIcon, QFont, QColor, QCursor
+from PyQt6.QtCore import Qt, pyqtSignal, QObject
+from PyQt6.QtGui import QCursor
 from model.data.document import Document
+from model.service.signals import DatabaseTicket
+from model.service.SessionManager import SessionManager
+
+
 
 stages = {
-    0:(10,"#0969da",'Discovered'),
-    1:(50, "#d29922",'Needs Metadata'),
-    2:(100,"#2da44e",'Needs Review'),
+    0: (10, 'Discovered'),
+    1: (50, 'Needs Metadata'),
+    2: (80, 'Needs Review'),
+    3: (100, 'Uploaded')
 }
 
 class DocumentCard(QFrame):
-    clicked = pyqtSignal(Document,int)
-    def __init__(self, document: Document,stage: int):
+    clicked = pyqtSignal(Document, int)
+    def __init__(self, document: Document, stage: int):
         super().__init__()
+        self.setObjectName("docuCard")
         self.doc = document
         self.title = self.doc.doc_id
         self.stage = stage 
-        self.prog,self.color,self.status = stages[stage]
+        self.prog, self.status = stages[stage]
         
-        
-        # Style the Card to look like a distinct container
+        # 1. Base Card Setup
         self.setFrameShape(QFrame.Shape.StyledPanel)
         self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.setStyleSheet(f"""
-            DocumentCard {{
-                background-color: white;
-                border: 1px solid #e1e4e8;
-                border-radius: 8px;
-            }}
-            DocumentCard:hover {{
-                border: 1px solid #0366d6;
-                background-color: #f6f8fa;
-            }}
-        """)
-        
-        # Layout inside the card
+        self.setFixedSize(280, 160)
+         # Link to QSS
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+
         layout = QVBoxLayout()
         
-        # Icon/Color Indicator (Top Strip)
-        status_strip = QFrame()
-        status_strip.setFixedHeight(4)
-        status_strip.setStyleSheet(f"background-color: {self.color}; border-radius: 2px;")
-        layout.addWidget(status_strip)
+        # 2. Icon/Color Indicator (Top Strip)
+        self.status_strip = QFrame()
+        self.status_strip.setFixedHeight(4)
+        # Dynamically name it so QSS can color it based on the stage
+        self.status_strip.setObjectName(f"statusStrip_{stage}") 
+        layout.addWidget(self.status_strip)
         
-        # Title
-        lbl_title = QLabel(self.title)
-        lbl_title.setFont(QFont("Segoe UI", 12, QFont.Weight.Bold))
-        lbl_title.setStyleSheet("border: none; background: transparent;") # Reset style
-        layout.addWidget(lbl_title)
+        # 3. Title
+        self.lbl_title = QLabel(self.title)
+        self.lbl_title.setObjectName("cardTitle")
+        layout.addWidget(self.lbl_title)
         
-        # Subtitle (e.g. "Status: Processing")
-        lbl_subtitle = QLabel(self.status)
-        lbl_subtitle.setStyleSheet("color: #586069; border: none; background: transparent;")
-        layout.addWidget(lbl_subtitle)
+        # 4. Subtitle
+        self.lbl_subtitle = QLabel(self.status)
+        self.lbl_subtitle.setObjectName("cardSubtitle")
+        layout.addWidget(self.lbl_subtitle)
         
-        # Spacer to push progress bar to bottom
         layout.addStretch()
         
-        # Progress Bar
-        pbar = QProgressBar()
-        pbar.setValue(self.prog)
-        pbar.setTextVisible(False)
-        pbar.setFixedHeight(6)
-        pbar.setStyleSheet(f"""
-            QProgressBar {{
-                border: none;
-                background-color: #eaeaea;
-                border-radius: 3px;
-            }}
-            QProgressBar::chunk {{
-                background-color: {self.color};
-                border-radius: 3px;
-            }}
-        """)
-        layout.addWidget(pbar)
+        # 5. Progress Bar
+        self.pbar = QProgressBar()
+        self.pbar.setValue(self.prog)
+        self.pbar.setTextVisible(False)
+        self.pbar.setFixedHeight(6)
+        self.pbar.setObjectName(f"cardProgressBar_{stage}")
+        layout.addWidget(self.pbar)
         
         self.setLayout(layout)
-        
-        # Fix the size of the card
-        self.setFixedSize(280, 160)
-        self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
 
-    # Capture the mouse click
     def mousePressEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:
-            # Emit the signal with this card's title
-            print(f'{self.title} Emit')
-            self.clicked.emit(self.doc,self.stage)
+            self.clicked.emit(self.doc, self.stage)
             
-            
-        # Standard event processing
         super().mousePressEvent(event)
 
 class ActionCard(QFrame):
-    def __init__(self,title,icon_text,description):
+    clicked = pyqtSignal()
+    
+    def __init__(self,icon,text):
         super().__init__()
-        self.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.setFrameShape(QFrame.Shape.StyledPanel)
-        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding) 
-        self.setObjectName("actionCardFrame") 
-
-        layout = QHBoxLayout()
-        layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+        self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.setObjectName("actionCard")
         
-        self.icon_label = QLabel(icon_text)
-        self.icon_label.setObjectName("cardIconLabel")
-        layout.addWidget(self.icon_label)
+        # Center the content
+        layout = QVBoxLayout()
+        layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
         
-
-        text_layout = QVBoxLayout(self)
-        # Title: Font size determined dynamically
-        self.title_label = QLabel(f"<span id='cardTitleText'>{title}</span>") 
-        self.title_label.setObjectName("cardTitleLabel")
-        self.title_label.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.MinimumExpanding) 
-        text_layout.addWidget(self.title_label)
-        layout.addSpacing(3)
-
-        # Description: Font size determined dynamically
-        self.desc_label = QLabel(f"<span id='cardDescText'>{description}</span>")
-        self.desc_label.setWordWrap(True)
-        self.desc_label.setObjectName("cardDescLabel")
-        self.desc_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.MinimumExpanding)
-        text_layout.addWidget(self.desc_label)
-        layout.addLayout(text_layout)
+        # The Plus Icon
+        icon_lbl = QLabel(icon)
+        icon_lbl.setObjectName("actionCardIcon") 
+        icon_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
         
+        # The Text
+        text_lbl = QLabel(text)
+        text_lbl.setObjectName("actionCardText") 
+        text_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        
+        layout.addWidget(icon_lbl)
+        layout.addWidget(text_lbl)
         
         self.setLayout(layout)
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.clicked.emit()
+        super().mousePressEvent(event)
+
