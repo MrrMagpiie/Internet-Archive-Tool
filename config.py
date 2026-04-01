@@ -37,7 +37,7 @@ DOCUMENT_SCHEMA_PATH = USER_RESOURCES_DIR / "document_schema.json"
 FIELD_TYPES_PATH = USER_RESOURCES_DIR / "field_types.json"
 
 DB_PATH = APPDATA_DIR / "database" / "archive_database.db"
-VERSION_STRING = '0.0.1'
+VERSION_STRING = '0.1.0'
 
 
 
