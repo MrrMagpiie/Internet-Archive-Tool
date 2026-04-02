@@ -2,7 +2,6 @@
 AppId={{a9317892-bad6-4999-8720-b7c5534f57e4}}
 AppName=Library Archive Tool
 AppVersion=0.1.1
-AppPublisher=Your Library/Name
 ArchitecturesInstallIn64BitMode=x64
 ; {autopf} magically resolves to "Program Files" for All Users, and "LocalAppData\Programs" for Current User
 DefaultDirName={autopf}\ArchivePipeline
