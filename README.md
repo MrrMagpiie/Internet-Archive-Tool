@@ -23,8 +23,7 @@ This application is distributed as a Windows executable (`.exe`). It requires an
 
 ### Installation
 1. Navigate to the [Releases](../../releases) page of this repository.
-2. Download the latest `LibraryArchive.exe` file.
-3. Place the file in your preferred directory and run it.
+2. Download the latest `ArchivePipeline_setup.exe` file and run it
 
 ---
 

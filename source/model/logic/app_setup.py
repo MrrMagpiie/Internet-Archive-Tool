@@ -1,52 +1,40 @@
-import os
-import sys
 import shutil
-from pathlib import Path
-from config import USER_RESOURCES_DIR, LIVE_SETTINGS_FILE, APPDATA_DIR, DB_PATH, DOCUMENT_SCHEMA_PATH, FIELD_TYPES_PATH, DEFAULT_OUTPUT_DIR
-from model.settings_manager import app_settings
+from config import (
+    LIVE_SETTINGS_FILE, DOCUMENT_SCHEMA_PATH, FIELD_TYPES_PATH, 
+    DEFAULT_OUTPUT_DIR, DATA_DIR, CONFIG_DIR, RESOURCES_PATH
+)
 
+def init_directories():
+    """Ensure all required application directories exist."""
+    CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    DEFAULT_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def init_app_environment():
     """Action function: Physically builds the required file system."""
-    
-    # 1. Create the directories
-    USER_RESOURCES_DIR.mkdir(parents=True, exist_ok=True)
-    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
-    
-    # 2. Copy the template if needed
-    if not LIVE_SETTINGS_FILE.exists():
-        if hasattr(sys, '_MEIPASS'):
-            setting_template_path = Path(sys._MEIPASS) / "resources" / "default_settings.json"
+    init_directories()
+    # Map the internal template files to their live destinations
+    file_mappings = {
+        "default_settings.json": LIVE_SETTINGS_FILE,
+        "default_schema.json": DOCUMENT_SCHEMA_PATH,
+        "default_field_types.json": FIELD_TYPES_PATH
+    }
 
-        else:
-            settings_template_path = Path("resources") / "default_settings.json"
+    # Loop through and copy any missing files
+    for template_name, live_path in file_mappings.items():
+        if not live_path.exists():
+            # config.py guarantees this path is correct!
+            template_path = RESOURCES_PATH / template_name 
             
-        if settings_template_path.exists():
-            shutil.copy(settings_template_path, LIVE_SETTINGS_FILE)
-            print("Environment initialized: Default settings copied.")
-            
-    if not DOCUMENT_SCHEMA_PATH.exists():
-        if hasattr(sys, '_MEIPASS'):
-            schema_template_path = Path(sys._MEIPASS) / "resources" / "default_schema.json"
-        else:
-            schema_template_path = Path("resources") / "default_schema.json"
-            
-        if schema_template_path.exists():
-            shutil.copy(schema_template_path, DOCUMENT_SCHEMA_PATH)
-            print("Environment initialized: Default schema copied.")
-    
-    if not FIELD_TYPES_PATH.exists():
-        if hasattr(sys, '_MEIPASS'):
-            field_template_path = Path(sys._MEIPASS) / "resources" / "default_field_types.json"
-        else:
-            field_template_path = Path("resources") / "default_field_types.json"
-            
-        if field_template_path.exists():
-            shutil.copy(field_template_path, FIELD_TYPES_PATH)
-            print("Environment initialized: Default field types copied.")
+            if template_path.exists():
+                shutil.copy(template_path, live_path)
+                print(f"Environment initialized: Copied {template_name} -> {live_path.name}")
+            else:
+                print(f"CRITICAL WARNING: Base template '{template_path}' is missing!")
 
-
+    # Load and verify core settings
+    from model.settings_manager import app_settings
     app_settings.load()
-    app_settings.set('DEFAULT_OUTPUT_DIR',str(DEFAULT_OUTPUT_DIR))
+    app_settings.set('DEFAULT_OUTPUT_DIR', str(DEFAULT_OUTPUT_DIR))
     app_settings.save()

@@ -27,12 +27,12 @@ jobs:
 
     - name: Build with PyInstaller
       run: |
-        pyinstaller LibraryArchive.spec
+        pyinstaller ArchivePipeline.spec
 
     # 1. Prepare Artifact 1: The Zip
     - name: Zip the Application
       run: |
-        Compress-Archive -Path dist/LibraryArchive/* -DestinationPath LibraryArchive-Windows.zip
+        Compress-Archive -Path dist/ArchivePipeline/* -DestinationPath ArchivePipeline-Windows.zip
 
     # 2. Prepare Artifact 2: The Installer
     - name: Compile Installer
@@ -45,7 +45,7 @@ jobs:
       uses: softprops/action-gh-release@v2
       with:
         files: |
-          LibraryArchive-Windows.zip
-          Output/LibraryArchive_Setup.exe
+          ArchivePipeline-Windows.zip
+          Output/ArchivePipeline_Setup.exe
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
