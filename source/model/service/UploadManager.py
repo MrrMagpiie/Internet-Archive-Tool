@@ -5,6 +5,7 @@ from model.logic.upload import *
 from model.exceptions import MetadataError, PdfGenerationError, TaskCancelledError
 from model.data import Document
 from model.logic.metadata import get_metadata_from_file 
+from model.service.Signals import JobTicket
 
 import sys
 import multiprocessing
