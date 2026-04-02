@@ -8,15 +8,11 @@ from PyQt6.QtWidgets import QDialog
 # Import Mixins
 from controller.mixin import *
 
-
-
 # Import Data Models
 from model.data.document import Document
 from model.data.schema import DocumentSchema
 from config import IA_CONFIG_PATH, DB_PATH
-from model.service import JobTicket, DatabaseTicket
-
-
+from model.service.Signals import JobTicket, DatabaseTicket
 
 class ProcessManager(QObject, DatabaseMixin, ProcessingMixin, UploadMixin, ImageMixin, SchemaMixin):
     """

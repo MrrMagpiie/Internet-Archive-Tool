@@ -3,9 +3,9 @@ from PyQt6.QtWidgets import (
     QPushButton, QFrame, QLineEdit, QMessageBox
 )
 from PyQt6.QtCore import Qt, pyqtSignal, pyqtSlot
-from view.components import Page
-from model.service import SessionManager
-from model.service import DatabaseTicket
+from view.components.Page import Page
+from model.service.SessionManager import SessionManager
+from model.service.Signals import DatabaseTicket
 
 class LoginPage(Page):
     login_successful = pyqtSignal()

@@ -9,7 +9,7 @@ from view.pages import SchemaEditPage
 from model.settings_manager import app_settings
 import qdarktheme
 from model.logic.helpers import setup_theme
-from model.service import SessionManager
+from model.service.SessionManager import SessionManager
 
 class SettingsPage(Page):
     def __init__(self, parent=None):

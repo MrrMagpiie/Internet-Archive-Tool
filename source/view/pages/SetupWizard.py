@@ -3,7 +3,7 @@ from PyQt6.QtWidgets import (
     QFormLayout, QMessageBox,QHBoxLayout, QPushButton
 )
 from PyQt6.QtCore import pyqtSignal, Qt, pyqtSlot
-from model.service import JobTicket, DatabaseTicket
+from model.service.Signals import JobTicket, DatabaseTicket
 
 
 # ==========================================

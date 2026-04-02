@@ -11,8 +11,8 @@ from view.components import (
     Page, CenteredFlowLayout, DocumentCard,
     SchemaForm,NavigationBar
 )
-from model.data import Document
-from model.service import DatabaseTicket, JobTicket
+from model.data.document import Document
+from model.service.Signals import DatabaseTicket, JobTicket
 from model.logic.helpers import clear_layout
 
 

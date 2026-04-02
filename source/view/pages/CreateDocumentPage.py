@@ -19,13 +19,8 @@ from model.data.document import Document
 from model.data.schema import DocumentSchema
 from model.logic.helpers import clear_layout, load_metadata_formats
 from model.logic.metadata import update_metadata_file
-from model.service import JobTicket
+from model.service.Signals import JobTicket
 import json
-
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QPushButton, QFrame, QLabel
-from PyQt6.QtCore import Qt, pyqtSlot
-from model.data.document import Document
-from model.logic.helpers import clear_layout
 class DocumentExpandableCard(QFrame):
     def __init__(self, document: Document, parent=None):
         super().__init__(parent)

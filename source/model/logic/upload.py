@@ -5,11 +5,11 @@ import os
 import json
 from pathlib import Path
 import datetime
+
 from model.exceptions import*
 from model.logic.metadata import update_metadata_file, get_metadata_from_file
-
-from model.data import Document
-from model.service import JobTicket
+from model.data.document import Document
+from model.service.Signals import JobTicket
 
 def setup(email: str, password: str):
         try:

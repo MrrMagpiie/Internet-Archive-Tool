@@ -4,13 +4,11 @@ from PyQt6.QtWidgets import (
     QPushButton, QScrollArea, QFrame, QSizePolicy
 )
 from PyQt6.QtCore import Qt, QSize, pyqtSignal, QPropertyAnimation, QEasingCurve, pyqtSlot
-from model.service import JobTicket
-
 # --- A Single Row in the Process List ---
 class ProcessItem(QFrame):
     cancel_requested = pyqtSignal(str) # Signal to stop the thread
 
-    def __init__(self, title, ticket: JobTicket):
+    def __init__(self, title, ticket: 'JobTicket'):
         super().__init__()
         self.ticket = ticket
         self.setFixedHeight(65)

@@ -11,11 +11,11 @@ from PyQt6.QtGui import QFont
 
 from view.components.SchemaForm import SchemaForm
 from model.data.document import Document
-from view.components import DocumentCard
+from view.components.DashboardCards import DocumentCard
 from view.components.Page import Page
 from model.logic.helpers import clear_layout
 from model.logic.upload import IdentifierStatus
-from model.service import JobTicket, DatabaseTicket
+from model.service.Signals import JobTicket, DatabaseTicket
 from model.settings_manager import app_settings
 
 

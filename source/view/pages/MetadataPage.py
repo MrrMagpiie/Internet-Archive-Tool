@@ -6,11 +6,11 @@ from PyQt6.QtWidgets import (
     QComboBox,QLabel,QFormLayout
 )
 from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot, Qt
-from view.components import Page
-from view.components import SchemaForm, EditableSchemaForm
-from model.service import JobTicket, DatabaseTicket
+from view.components.Page import Page
+from view.components.SchemaForm import SchemaForm, EditableSchemaForm
+from model.service.Signals import JobTicket, DatabaseTicket
 from model.data import Metadata,Document,DocumentSchema
-from model.logic import *
+#from model.logic import *
 from model.logic.helpers import clear_layout, load_metadata_formats
 import json
 from config import DOCUMENT_SCHEMA_PATH
@@ -96,6 +96,8 @@ class MetadataPage(Page):
     def to_next_stage(self):
         metadata = self.form.get_metadata()
         metadata_type = self.doc_type_combo.currentData()
+        if self.current_document == None:
+            return
         self.current_document.metadata_file_type = metadata_type
         self.current_document.add_metadata(metadata)
         

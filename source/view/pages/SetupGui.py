@@ -3,7 +3,7 @@ from PyQt6.QtWidgets import (
     QPushButton, QFormLayout, QMessageBox
 )
 from PyQt6.QtCore import Qt, pyqtSignal, pyqtSlot
-from model.service import JobTicket
+from model.service.Signals import JobTicket
 
 class FirstRunSetupDialog(QDialog):
     creds = pyqtSignal(object, object)

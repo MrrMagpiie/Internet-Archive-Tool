@@ -2,9 +2,9 @@ from PyQt6.QtCore import QThread, pyqtSlot
 from queue import Queue
 from pathlib import Path
 import os
-from model.service import UploadManager
+from model.service.UploadManager import UploadManager
 from config import IA_CONFIG_PATH
-from model.service import JobTicket, DatabaseTicket
+from model.service.Signals import JobTicket, DatabaseTicket
 
 
 class UploadMixin:
