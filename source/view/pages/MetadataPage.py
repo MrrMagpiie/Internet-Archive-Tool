@@ -6,9 +6,9 @@ from PyQt6.QtWidgets import (
     QComboBox,QLabel,QFormLayout
 )
 from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot, Qt
-from view.components.Page import Page
-from view.components.SchemaForm import SchemaForm, EditableSchemaForm
-from model.service.signals import JobTicket, DatabaseTicket
+from view.components import Page
+from view.components import SchemaForm, EditableSchemaForm
+from model.service import JobTicket, DatabaseTicket
 from model.data import Metadata,Document,DocumentSchema
 from model.logic import *
 from model.logic.helpers import clear_layout, load_metadata_formats

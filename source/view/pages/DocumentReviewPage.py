@@ -15,7 +15,7 @@ from view.components import DocumentCard
 from view.components.Page import Page
 from model.logic.helpers import clear_layout
 from model.logic.upload import IdentifierStatus
-from model.service.signals import JobTicket, DatabaseTicket
+from model.service import JobTicket, DatabaseTicket
 from model.settings_manager import app_settings
 
 

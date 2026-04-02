@@ -1,9 +1,9 @@
 from PyQt6.QtCore import QThread, pyqtSlot, QObject
 from queue import Queue
-from model.data.document import Document
-from model.service.DocumentPipeline import DocumentPipelineWorker
+from model.data import Document
+from model.service import DocumentPipelineWorker
 from pathlib import Path
-from model.service.signals import DatabaseTicket, JobTicket
+from model.service import DatabaseTicket, JobTicket
 
 
 class ProcessingMixin:

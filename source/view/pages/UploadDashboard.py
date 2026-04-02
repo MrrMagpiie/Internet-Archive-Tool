@@ -12,7 +12,7 @@ from view.components import (
     SchemaForm,NavigationBar
 )
 from model.data import Document
-from model.service.signals import DatabaseTicket, JobTicket
+from model.service import DatabaseTicket, JobTicket
 from model.logic.helpers import clear_layout
 
 

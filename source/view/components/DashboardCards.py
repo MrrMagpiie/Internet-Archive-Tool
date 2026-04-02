@@ -5,9 +5,9 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import Qt, pyqtSignal, QObject
 from PyQt6.QtGui import QCursor
-from model.data.document import Document
-from model.service.signals import DatabaseTicket
-from model.service.SessionManager import SessionManager
+from model.data import Document
+from model.service import DatabaseTicket
+from model.service import SessionManager
 
 
 

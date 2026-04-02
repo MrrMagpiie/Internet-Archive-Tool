@@ -1,7 +1,7 @@
 from PyQt6.QtCore import QThread, pyqtSlot, QObject
 from pathlib import Path
 from queue import Queue
-from model.service.ImageLoader import ImageLoader
+from model.service import ImageLoader
 
 class ImageMixin:
     """Handles Image Processing & Discovery logic."""

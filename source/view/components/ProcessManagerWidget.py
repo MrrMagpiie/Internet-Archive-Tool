@@ -4,7 +4,7 @@ from PyQt6.QtWidgets import (
     QPushButton, QScrollArea, QFrame, QSizePolicy
 )
 from PyQt6.QtCore import Qt, QSize, pyqtSignal, QPropertyAnimation, QEasingCurve, pyqtSlot
-from model.service.signals import JobTicket
+from model.service import JobTicket
 
 # --- A Single Row in the Process List ---
 class ProcessItem(QFrame):

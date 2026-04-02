@@ -1,7 +1,7 @@
 from PyQt6.QtCore import QThread, pyqtSlot, pyqtSignal,QObject
 from queue import Queue
-from model.service.DatabaseManager import DatabaseManager
-from model.service.signals import JobTicket, DatabaseTicket
+from model.service import DatabaseManager
+from model.service import JobTicket, DatabaseTicket
 from config import DB_PATH
 from functools import partial
 from model.data.document import Document

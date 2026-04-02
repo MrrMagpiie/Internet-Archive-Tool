@@ -4,14 +4,12 @@ from PyQt6.QtWidgets import (
     QPushButton, QFormLayout, QCheckBox, QSpinBox, QDoubleSpinBox, QMessageBox
 )
 from PyQt6.QtCore import Qt
-from view.components import AnimatedToggle
-from view.components.Page import Page
-from view.components.SchemaForm import *
-from view.pages.SchemaEditPage import SchemaEditPage
+from view.components import AnimatedToggle,Page, SchemaForm, EditableSchemaForm
+from view.pages import SchemaEditPage
 from model.settings_manager import app_settings
 import qdarktheme
 from model.logic.helpers import setup_theme
-from model.service.SessionManager import SessionManager
+from model.service import SessionManager
 
 class SettingsPage(Page):
     def __init__(self, parent=None):

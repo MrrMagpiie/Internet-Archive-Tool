@@ -14,7 +14,7 @@ from controller.mixin import *
 from model.data.document import Document
 from model.data.schema import DocumentSchema
 from config import IA_CONFIG_PATH, DB_PATH
-from model.service.signals import JobTicket, DatabaseTicket
+from model.service import JobTicket, DatabaseTicket
 
 
 

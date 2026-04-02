@@ -9,7 +9,7 @@ from PyQt6.QtCore import pyqtSignal, pyqtSlot, Qt, QObject
 from model.data import Document
 from view.components import ImageLabel
 from view.components.InteractiveImageView import InteractiveImageViewer
-from model.service.signals import JobTicket
+from model.service import JobTicket
 from pathlib import Path
 
 class DocumentImagePanel(QWidget):

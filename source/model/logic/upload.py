@@ -8,8 +8,8 @@ import datetime
 from model.exceptions import*
 from model.logic.metadata import update_metadata_file, get_metadata_from_file
 
-from model.data.document import Document
-from model.service.signals import JobTicket
+from model.data import Document
+from model.service import JobTicket
 
 def setup(email: str, password: str):
         try:

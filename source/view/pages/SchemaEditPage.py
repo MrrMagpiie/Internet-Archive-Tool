@@ -9,12 +9,12 @@ from PyQt6.QtWidgets import (
     QScrollArea
 )
 from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot
-from view.components.Page import Page
-from view.components.SchemaForm import SchemaForm, EditableSchemaForm
-from model.service.signals import JobTicket
-from model.data.metadata import Metadata
-from model.data.document import Document
-from model.data.schema import DocumentSchema
+from view.components import Page
+from view.components import SchemaForm, EditableSchemaForm
+from model.service import JobTicket
+from model.data import Metadata
+from model.data import Document
+from model.data import DocumentSchema
 from model.logic.helpers import clear_layout 
 from config import DOCUMENT_SCHEMA_PATH
 

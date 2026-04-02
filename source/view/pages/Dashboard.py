@@ -6,9 +6,9 @@ from PyQt6.QtCore import Qt, pyqtSignal, pyqtSlot, QObject
 from PyQt6.QtGui import QCursor
 
 from view.components import Page, CenteredFlowLayout, DocumentCard, NavigationBar, ActionCard
-from model.data.document import Document
+from model.data import Document
 from model.logic.helpers import clear_layout
-from model.service.signals import DatabaseTicket
+from model.service import DatabaseTicket
 
 
 class DashboardPage(Page):

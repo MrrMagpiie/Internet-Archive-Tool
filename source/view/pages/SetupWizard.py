@@ -1,26 +1,10 @@
 from PyQt6.QtWidgets import (
     QWizard, QWizardPage, QVBoxLayout, QLabel, QLineEdit, 
-    QFormLayout, QMessageBox,QHBoxLayout, QPushButton,
+    QFormLayout, QMessageBox,QHBoxLayout, QPushButton
 )
 from PyQt6.QtCore import pyqtSignal, Qt, pyqtSlot
-from model.service.signals import JobTicket
+from model.service import JobTicket, DatabaseTicket
 
-from PyQt6.QtWidgets import (
-    QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, 
-    QPushButton, QFormLayout, QMessageBox
-)
-from PyQt6.QtCore import Qt, pyqtSignal, pyqtSlot
-from model.service.signals import JobTicket,DatabaseTicket
-
-# ==========================================
-# PAGE 1: Internet Archive Link
-# ==========================================
-from PyQt6.QtWidgets import (
-    QWizard, QWizardPage, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, 
-    QPushButton, QFormLayout, QMessageBox
-)
-from PyQt6.QtCore import pyqtSignal, pyqtSlot, Qt
-from model.service.signals import JobTicket
 
 # ==========================================
 # PAGE 1: Internet Archive Link

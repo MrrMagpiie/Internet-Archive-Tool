@@ -11,8 +11,8 @@ from PyQt6.QtGui import QFont, QColor, QPixmap, QPainter, QIcon
 
 from config import DEV_MODE, VERSION_STRING
 from model.settings_manager import app_settings
-from model.service.SessionManager import SessionManager
-from view.pages.LoginPage import LoginPage
+from model.service import SessionManager
+from view.pages import LoginPage
 
 
 
