@@ -3,6 +3,7 @@ AppId={{a9317892-bad6-4999-8720-b7c5534f57e4}}
 AppName=Library Archive Tool
 AppVersion=0.1.1
 AppPublisher=Your Library/Name
+ArchitecturesInstallIn64BitMode=x64
 ; {autopf} magically resolves to "Program Files" for All Users, and "LocalAppData\Programs" for Current User
 DefaultDirName={autopf}\ArchivePipeline
 DefaultGroupName= Internet Archive Tool
@@ -39,8 +40,11 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 // Helper function to safely check both Admin and User registry hives
 function IsImageMagickInstalled: Boolean;
 begin
+  // Check 64-bit and 32-bit paths, and check for both 'Current' and version-specific keys
   Result := RegKeyExists(HKEY_LOCAL_MACHINE, 'SOFTWARE\ImageMagick\Current') or
-            RegKeyExists(HKEY_CURRENT_USER, 'SOFTWARE\ImageMagick\Current');
+            RegKeyExists(HKEY_CURRENT_USER, 'SOFTWARE\ImageMagick\Current') or
+            RegKeyExists(HKEY_LOCAL_MACHINE, 'SOFTWARE\ImageMagick') or
+            RegValueExists(HKEY_LOCAL_MACHINE, 'SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\magick.exe', '');
 end;
 
 // InitializeSetup runs BEFORE the wizard even appears on screen
