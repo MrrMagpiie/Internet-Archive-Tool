@@ -281,15 +281,15 @@ class CardGrid(QWidget):
         self.main_layout.addWidget(count_widget)
         self.main_layout.addLayout(self.flow_layout)
 
-    def add_card(self, pixmap, job_id):
-        '''Add a card to the grid that creates an image popout when clicked'''
-        
-        def create_image_popout(self,page_id): 
+    def create_image_popout(self,page_id): 
             if page_id in self.all_cards:
                 card = self.all_cards[page_id]
                 self.interactive_popout = InteractiveImageViewer()
-                self.interactive_popout.set_pixmap(card.image_view._original_pixmap)
+                self.interactive_popout.set_pixmap(card.image_view._original_image)
                 self.interactive_popout.show()
+
+    def add_card(self, pixmap, job_id):
+        '''Add a card to the grid that creates an image popout when clicked'''
         
         if job_id not in self.pending_requests:
             return
@@ -298,7 +298,7 @@ class CardGrid(QWidget):
         
         if image_indx not in self.all_cards:
             new_card = ThumbnailCard(image_indx, pixmap)
-            new_card.clicked.connect(lambda i = image_indx: create_image_popout(i))
+            #new_card.clicked.connect(self.create_image_popout)
             self.flow_layout.addWidget(new_card)
             self.all_cards[image_indx] = new_card
             self.discover_count.setText(str(len(self.all_cards)))
