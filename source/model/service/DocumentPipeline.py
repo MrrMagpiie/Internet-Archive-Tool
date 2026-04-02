@@ -11,6 +11,7 @@ from model.logic.discover import *
 from model.logic.deskew import *
 from model.logic.metadata import *
 from model.exceptions import DeskewError, ImageDiscoveryError, DocumentCreationError, DocumentDeletionError, TaskCancelledError
+from model.service.Signals import JobTicket
 class DocumentPipelineWorker(QObject):
     """
     A QObject worker that runs the full document pipeline

@@ -59,7 +59,7 @@ class Document:
         if self.last_modified is None:
             self.last_modified = datetime.now(timezone.utc).isoformat()
 
-    def add_image(self, image_id: str, order: int, original_path: str, processed_path: str = None,changes: list[str, Any] = None):
+    def add_image(self, image_id: str, order: int, original_path: str, processed_path: str = None,changes: list[Any] = None):
         """Adds or updates an image entry in the document."""
         self.images[image_id] = {
             "order": order,
