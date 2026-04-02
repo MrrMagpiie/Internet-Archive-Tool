@@ -35,10 +35,14 @@ jobs:
         Compress-Archive -Path dist/ArchivePipeline/* -DestinationPath ArchivePipeline-Windows.zip
 
     # 2. Prepare Artifact 2: The Installer
+    # 2a. Install Inno Setup via Chocolatey
+    - name: Install Inno Setup
+      run: choco install innosetup --no-progress
+
+    # 2b. Run the compiler using the absolute path to guarantee it finds it
     - name: Compile Installer
-      uses: minicomp/iscc-action@v3
-      with:
-        iss-file: installer.iss
+      run: |
+        & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss
 
     # 3. Upload both Artifacts
     - name: Upload Artifacts to GitHub Release
