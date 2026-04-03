@@ -1,9 +1,7 @@
 name: Build Windows EXE (Internal Test)
 
 on:
-  workflow_dispatch: # Allows manual triggering from the Actions tab
-  push:
-    branches: [ main, dev ] # Optional: builds automatically on push to these branches
+  workflow_dispatch:
 
 jobs:
   build:
