@@ -1,14 +1,19 @@
 [Settings]
 DEFAULT_OUTPUT_DIR = 'Set the output directory for processed documents'
 ADMIN_UPLOAD = 'Toggle this off if you what all users to be able to upload files'
+ADMIN_REVIEW = 'when on all documents need to be reviewed by an admin before they can be uploaded'
 AUTO_GENERATE_OFFLINE_IDENTIFIERS = "Toggle this setting on if you don't want to be asked about generating new identifiers if an inactive Identifer match is found"
 AUTO_DESKEW =  'This settings currently does nothing as deskewing is always automatic'
+AUTO_UPLOAD = 'Toggle this on if you want reviewd documents to be automatically uploaded'
+POST_UPLOAD_REMOVE = 'When on documents will be removed from the database (this will not delete the processed or unprocessed files)'
+
 
 [Dashboard]
 BATCH_PROCESS = 'Process a folder containing images for more than one Document'
-BATCH_PROCESS_REQUIRES = 'Requires a Document naming schema defined for that type of document'
+AUTO_METADATA_REQUIRES = 'Requires a Document naming schema defined for this type of document'
 NEW_DOCUMENT = 'Process a folder containing images for a single Document'
 
 [Document]
 FIND_METADATA = 'Use a predefined Filename format to create metadata for scanned documents'
 CHOOSE_SCHEMA = 'Choose a Schema that has a defined filemane template'
+
