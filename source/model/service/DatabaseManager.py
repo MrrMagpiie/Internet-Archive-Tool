@@ -87,6 +87,10 @@ class DatabaseManager(QObject):
                                 else:
                                     signals.error.emit(msg, signals.job_id)
                             
+                        case 'check_admin':
+                            if not signals.is_cancelled():
+                                signals.data.emit(self._has_admin(), signals.job_id)
+
 
                 except sqlite3.OperationalError as e:
                     if "interrupted" in str(e).lower():
@@ -344,6 +348,30 @@ class DatabaseManager(QObject):
             return True, role
             
         return False, None
+
+    def _has_admin(self) -> bool:
+        """Checks if there is at least one admin account in the database."""
+        cursor = self.conn.cursor()
+        cursor.execute("SELECT 1 FROM users WHERE role = 'admin' LIMIT 1")
+        return cursor.fetchone() is not None
+
+    def has_admin_sync(self) -> bool:
+        """
+        Synchronously checks if an admin account exists. 
+        Useful for initial startup checks before the worker loop is running.
+        """
+        if not self.db_path.exists():
+            return False
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='users'")
+                if not cursor.fetchone():
+                    return False
+                cursor.execute("SELECT 1 FROM users WHERE role = 'admin' LIMIT 1")
+                return cursor.fetchone() is not None
+        except sqlite3.Error:
+            return False
 
     def cancel_current_query(self):
         """Called by the main GUI thread to instantly abort the active SQLite query."""
