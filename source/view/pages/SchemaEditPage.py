@@ -33,11 +33,11 @@ class SchemaEditPage(Page):
 
     def _create_layout(self):
         title_layout = QHBoxLayout()
-        page_title = QLabel("Schema Editor")
-        page_title.setObjectName("sectionTitle") 
-        title_layout.addWidget(page_title)
+        self.page_title = QLabel("Schema Editor")
+        self.page_title.setObjectName("sectionTitle") 
+        title_layout.addWidget(self.page_title)
         
-        metadata_layout = QVBoxLayout()
+        self.metadata_layout = QVBoxLayout()
         doc_type_layout = QVBoxLayout()
 
         # Add document type select
@@ -56,7 +56,7 @@ class SchemaEditPage(Page):
         doc_type_layout.addWidget(copy_btn)
         
 
-        metadata_layout.addLayout(doc_type_layout)
+        self.metadata_layout.addLayout(doc_type_layout)
         
         # Add metadata input table
         self.form = EditableSchemaForm()
@@ -70,38 +70,38 @@ class SchemaEditPage(Page):
         scroll_area.setWidget(self.form)
         
         self.form.new_format.connect(self._save_schema)
-        metadata_layout.addWidget(scroll_area)
+        self.metadata_layout.addWidget(scroll_area)
 
-        save_btn = QPushButton('Save Schema')
-        save_btn.setObjectName("primaryActionBtn") 
-        save_btn.clicked.connect(self.form.save)
+        self.save_btn = QPushButton('Save Schema')
+        self.save_btn.setObjectName("primaryActionBtn") 
+        self.save_btn.clicked.connect(self.form.save)
 
         # The Delete Button
-        delete_btn = QPushButton('Delete Schema')
-        delete_btn.setObjectName("dangerBtn") 
-        delete_btn.clicked.connect(self._confirm_deletion)
+        self.delete_btn = QPushButton('Delete Schema')
+        self.delete_btn.setObjectName("dangerBtn") 
+        self.delete_btn.clicked.connect(self._confirm_deletion)
 
         btn_layout = QHBoxLayout()
         
-        default_btn = QPushButton('New Default Template')
-        default_btn.setObjectName("schemaSecondaryBtn") 
-        default_btn.clicked.connect(self.form.new_default)
-        btn_layout.addWidget(default_btn)
+        self.default_btn = QPushButton('New Default Template')
+        self.default_btn.setObjectName("schemaSecondaryBtn") 
+        self.default_btn.clicked.connect(self.form.new_default)
+        btn_layout.addWidget(self.default_btn)
         
-        field_btn = QPushButton('New Field')
-        field_btn.setObjectName("schemaSecondaryBtn")
-        field_btn.clicked.connect(self.form.new_field)
-        btn_layout.addWidget(field_btn)
+        self.field_btn = QPushButton('New Field')
+        self.field_btn.setObjectName("schemaSecondaryBtn")
+        self.field_btn.clicked.connect(self.form.new_field)
+        btn_layout.addWidget(self.field_btn)
 
         # Assemble Main Layout Safely (No duplicates)
         self.main_layout.addLayout(title_layout)
         self.main_layout.addSpacing(10)
-        self.main_layout.addLayout(metadata_layout)
+        self.main_layout.addLayout(self.metadata_layout)
         self.main_layout.addLayout(btn_layout)
         self.main_layout.addStretch()
-        self.main_layout.addWidget(save_btn)
+        self.main_layout.addWidget(self.save_btn)
         self.main_layout.addSpacing(10)
-        self.main_layout.addWidget(delete_btn)
+        self.main_layout.addWidget(self.delete_btn)
 
         # Wire up the combo box AFTER the form is instantiated
         self.doc_type_combo.currentTextChanged.connect(self._on_select_schema)
@@ -129,29 +129,30 @@ class SchemaEditPage(Page):
 
     def new_schema_page(self,schema = None):
         schema_name = "New Schema"
-        clear_layout(self.main_layout)
+        clear_layout(self.metadata_layout)
         
         title_layout = QHBoxLayout()
-        page_title = QLabel("Create New Schema")
-        page_title.setObjectName("sectionTitle")
-        title_layout.addWidget(page_title)
+        self.page_title.setText("Create New Schema")
         
-        metadata_layout = QVBoxLayout()
-
         self.doc_type_line = QLineEdit(schema_name)
         self.doc_type_line.setObjectName("formLineEdit")
-        metadata_layout.addWidget(self.doc_type_line)
+        self.metadata_layout.addWidget(self.doc_type_line)
         
         self.form = EditableSchemaForm()
         self.form.new_form(schema)
         self.form.new_format.connect(self._save_schema)
-        metadata_layout.addWidget(self.form)
         
-        self.main_layout.addLayout(title_layout)
-        self.main_layout.addSpacing(10)
-        self.main_layout.addLayout(metadata_layout)
-        self.main_layout.addStretch()
+        self.field_btn.clicked.connect(self.form.new_field)
+        self.default_btn.clicked.connect(self.form.new_default)
+        self.save_btn.clicked.connect(self.form.save)
+        self.delete_btn.setVisible(False)
+
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setWidget(self.form)
         
+        self.metadata_layout.addWidget(scroll_area)
+
     def _confirm_deletion(self):
         reply = QMessageBox.question(
             self, 
@@ -172,15 +173,17 @@ class SchemaEditPage(Page):
         schema_dict = schema.to_dict()
         
         if hasattr(self, 'doc_type_line') and self.doc_type_line.isVisible():
-            schema_dict['schema_name'] = self.doc_type_line.text()
+            current_schema = self.doc_type_line.text()
+            schema_dict['schema_name'] = current_schema
         elif hasattr(self, 'doc_type_combo') and self.doc_type_combo.isVisible():
-            schema_dict['schema_name'] = self.doc_type_combo.currentText()
+            current_schema = self.doc_type_combo.currentText()
+            schema_dict['schema_name'] = current_schema
         else:
             schema_dict['schema_name'] = "Custom Schema"
             
         schema = DocumentSchema.from_dict(schema_dict)
         self.new_schema.emit(schema)
-        self._reset()
+        self._reset(current_schema)
 
     def _delete_schema(self):
         if self.current_schema:
@@ -189,8 +192,8 @@ class SchemaEditPage(Page):
             self._reset()
 
     @pyqtSlot()
-    def _reset(self):
-        current_schema_name = self.doc_type_combo.currentText()
+    def _reset(self,schema_name=None):
         clear_layout(self.main_layout)
         self._create_layout()
-        self.doc_type_combo.setCurrentText(current_schema_name)
+        if schema_name:
+            self.doc_type_combo.setCurrentText(schema_name)
