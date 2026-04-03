@@ -7,6 +7,8 @@ import multiprocessing
 import shutil
 
 from model.data.document import Document, update_metadata_file
+from model.logic.discover import images_to_documents, get_image_list
+from model.logic.deskew import deskew_task
 from model.exceptions import DeskewError, ImageDiscoveryError, DocumentCreationError, DocumentDeletionError, TaskCancelledError
 from model.service.Signals import JobTicket
 from model.settings_manager import app_settings
@@ -92,7 +94,7 @@ class DocumentPipelineWorker(QObject):
 
     def single_discover(self, in_dir, ticket):
             ticket.update_progress(10, "Scanning directory for images...")
-            image_list = discover_images(in_dir)
+            image_list = get_image_list(in_dir)
 
             try:
                 ticket.update_progress(40, "Grouping images into documents...")
@@ -116,7 +118,7 @@ class DocumentPipelineWorker(QObject):
             
     def batch_discover(self, in_dir, ticket):
             ticket.update_progress(10, "Scanning directory for images...")
-            image_list = discover_images(in_dir)
+            image_list = get_image_list(in_dir)
             try:
                 ticket.update_progress(30, "Grouping images into documents...")
                 documents_dict = images_to_documents(image_list)
@@ -155,7 +157,7 @@ class DocumentPipelineWorker(QObject):
 
                 queue = multiprocessing.Queue()
                 self.process = multiprocessing.Process(
-                    target=deskew_image,
+                    target=deskew_task,
                     args=(str(in_file), str(out_file), queue) 
                 )
                 self.process.start()

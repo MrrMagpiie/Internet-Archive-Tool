@@ -1,8 +1,3 @@
-import qdarktheme
-import darkdetect
-from pathlib import Path
-from model.settings_manager import app_settings
-from view.theme import LIGHT_PALETTE, DARK_PALETTE
 from config import RESOURCES_PATH, DOCUMENT_SCHEMA_PATH
 import json
 
@@ -23,3 +18,4 @@ def clear_layout(layout):
 def load_metadata_formats():
     with open(DOCUMENT_SCHEMA_PATH,'r') as f:
             return json.load(f)
+
