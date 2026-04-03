@@ -165,7 +165,7 @@ class AdminPage(QWizardPage):
         ticket.data.connect(self._handle_admin_success)
         ticket.error.connect(self._handle_admin_error)
         
-        self.admin_setup_data.emit((user, password), ticket)
+        self.admin_setup_data.emit((user, password, 'admin'), ticket)
 
     @pyqtSlot(object, str)
     def _handle_admin_success(self, success, job_id):

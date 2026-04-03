@@ -68,9 +68,30 @@ class DatabaseMixin:
         
     @pyqtSlot(tuple,DatabaseTicket)
     def new_user(self,data,ticket:DatabaseTicket):
+        try:
+            username, password, role = data
+        except:
+            username, password = data
+            role = 'user'
+            data = (username, password, role)
+
         ticket.interupt.connect(self.db_interupt)
         self.register_task('new_user', ticket)
         self.db_queue.put(('new_user', ticket, data))
+
+    @pyqtSlot(DatabaseTicket)
+    def request_users(self, ticket:DatabaseTicket):
+        ticket.interupt.connect(self.db_interupt)
+        self.register_task('get_users', ticket)
+        self.db_queue.put(('get_users', ticket, None))  
+
+    @pyqtSlot(str,DatabaseTicket)
+    def request_user_delete(self, user_id, ticket:DatabaseTicket):
+        ticket.interupt.connect(self.db_interupt)
+        self.register_task('delete_user', ticket)
+        self.db_queue.put(('delete_user', ticket, user_id))
+
+
 
     @pyqtSlot()
     def db_interupt():
