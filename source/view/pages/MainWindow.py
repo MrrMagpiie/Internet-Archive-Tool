@@ -171,7 +171,6 @@ class MainWindow(QMainWindow):
         self.gui_manager.process_manager.closeEvent()
         QApplication.instance().quit()
 
-
     def add_menu_item(self, name, icon_enum):
         item = QListWidgetItem(name)
         std_icon = self.style().standardIcon(icon_enum)
@@ -268,6 +267,7 @@ class MainWindow(QMainWindow):
                 
             elif clicked == btn_bg and self.tray_available:
                 event.ignore()
+                self.shutdown_pending = True
                 self.hide()
 
                 # Show a little native OS bubble notification down by the clock

@@ -50,7 +50,6 @@ class DatabaseManager(QObject):
                             continue
                 print(f'db running {command}')
                 
-
                 try:
                     match command: 
                         case 'load_documents':
@@ -109,7 +108,7 @@ class DatabaseManager(QObject):
                 self.conn.close()
 
     def ensure_table_schema(conn: sqlite3.Connection, table_name: str, primary_key:str,table_schema):
-        cursor = conn.cursor()
+        cursor = self.conn.cursor()
         
         cursor.execute(f"""
             CREATE TABLE IF NOT EXISTS {table_name} (

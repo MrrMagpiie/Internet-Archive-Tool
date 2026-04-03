@@ -12,7 +12,6 @@ from view.components import (
     Page,CenteredFlowLayout,ThumbnailCard,InteractiveImageViewer,AnimatedToggle,CardGrid,CountWidget
 )
 
-from model.data.metadata import Metadata
 from model.data.document import Document, update_metadata_file
 from model.data.schema import DocumentSchema
 from model.logic.helpers import clear_layout, load_metadata_formats

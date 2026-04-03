@@ -196,6 +196,7 @@ class DocumentReviewPage(Page):
         ticket.data.connect(self._handle_upload_success)
         ticket.error.connect(self._handle_upload_error)
         self.upload.emit(self.current_document, ticket)
+        self.next_stage.emit()
 
     @pyqtSlot(object, str)
     def _handle_upload_success(self, doc, job_id):
