@@ -29,25 +29,3 @@ def images_to_documents(image_list) -> dict:
         except Exception as e:
             raise 
     return documents
-
-def create_document(doc_id,images):
-    Doc = Document(doc_id=doc_id)
-    Doc.path = Path(app_settings.get('DEFAULT_OUTPUT_DIR')) / doc_id
-    sorted_images = sorted(images, key=lambda x: int(x[2]))
-    print(Doc.path)
-
-    for file, image_id, order in sorted_images:
-        Doc.add_image(
-                    image_id=image_id,
-                    order=order,
-                    original_path=file,
-                    processed_path= Doc.path / image_id
-                )
-    return Doc
-
-def batch_create_documents(documents_dict):
-    documents = []
-    for doc_id, images in documents_dict.items():
-        doc = create_document(doc_id,images)
-        documents.append(doc)
-    return documents

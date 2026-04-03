@@ -6,12 +6,11 @@ import traceback
 import multiprocessing
 import shutil
 
-from model.data.document import Document
-from model.logic.discover import *
-from model.logic.deskew import *
-from model.logic.metadata import *
+from model.data.document import Document, update_metadata_file
 from model.exceptions import DeskewError, ImageDiscoveryError, DocumentCreationError, DocumentDeletionError, TaskCancelledError
 from model.service.Signals import JobTicket
+from model.settings_manager import app_settings
+
 class DocumentPipelineWorker(QObject):
     """
     A QObject worker that runs the full document pipeline
@@ -102,10 +101,12 @@ class DocumentPipelineWorker(QObject):
                 raise ImageDiscoveryError() from e
 
             if len(documents_dict.keys()) == 1:
-                for doc_id in documents_dict.keys():
+                for doc_id, image_list in documents_dict.keys():
                     try:
                         ticket.update_progress(80, "Building document structure...")
-                        doc = create_document(doc_id,documents_dict[doc_id])
+                        doc = Document.from_images(doc_id,image_list)
+                        doc.set_output_path(Path(app_settings.get('DEFAULT_OUTPUT_DIR')) / doc_id)
+                        doc.path.mkdir(parents=True, exist_ok=True)
                         ticket.update_progress(100, "Discovery Complete!")
                         return doc
                     except Exception as e:
@@ -124,10 +125,12 @@ class DocumentPipelineWorker(QObject):
 
             items = list(documents_dict.items())
             total = len(items)
-            for i, (doc_id, doc_data) in enumerate(items):
+            for i, (doc_id, image_list) in enumerate(items):
                 ticket.update_progress(30 + int((i / total) * 70), f"Processing document {i+1}/{total}...")
                 try:
-                    doc = create_document(doc_id, doc_data)
+                    doc = Document.from_images(doc_id, image_list)
+                    doc.set_output_path(Path(app_settings.get('DEFAULT_OUTPUT_DIR')) / doc_id)
+                    doc.path.mkdir(parents=True, exist_ok=True)
                     if isinstance(doc,Document) and  not ticket.is_cancelled():
                         ticket.data.emit(doc,ticket.job_id)
                         self.success.emit(doc,ticket.job_id)

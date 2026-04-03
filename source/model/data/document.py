@@ -67,9 +67,23 @@ class Document:
             "processed": str(processed_path) if processed_path else None,
             "changes": changes if changes else []
         }
+        self.last_modified = datetime.now(timezone.utc).isoformat()
 
     def add_change(self,image_id,change):
         self.images[image_id]['changes'].append(change)
+        self.last_modified = datetime.now(timezone.utc).isoformat()
+
+    def add_metadata(self, metadata):
+        if isinstance(metadata, Metadata):
+            self.metadata = metadata
+        elif isinstance(metadata, dict):
+            self.metadata = Metadata.from_dict(metadata)
+        elif isinstance(metadata, str):
+            self.metadata = Metadata.from_json(metadata)
+        else:
+            return
+        self.status['metadata'] = True
+        self.last_modified = datetime.now(timezone.utc).isoformat()
 
     def to_dict(self) -> dict:
         """Converts the Document object to a dictionary for JSON serialization."""
@@ -85,16 +99,27 @@ class Document:
             "error_msg": self.error_msg
         }
 
-    def add_metadata(self, metadata):
-        if isinstance(metadata, Metadata):
-            self.metadata = metadata
-        elif isinstance(metadata, dict):
-            self.metadata = Metadata.from_dict(metadata)
-        elif isinstance(metadata, str):
-            self.metadata = Metadata.from_json(metadata)
-        else:
-            return
-        self.status['metadata'] = True
+    def set_output_path(self,path):
+        self.path = Path(path)
+        for image_id,image in self.images.items():
+            image['processed'] = str(self.path / image_id)
+        self.last_modified = datetime.now(timezone.utc).isoformat()
+
+    @classmethod
+    def from_images(cls,doc_id,image_list) -> 'Document':
+        '''
+        Creates a Document instance from a list of images.
+        '''
+        Doc = Document(doc_id=doc_id)
+        sorted_images = sorted(image_list, key=lambda x: int(x[2]))
+        for file, image_id, order in sorted_images:
+            Doc.add_image(
+                        image_id=image_id,
+                        order=order,
+                        original_path=file,
+                        processed_path= None
+                    )
+        return Doc
 
     @classmethod
     def from_db_row(cls, row) -> 'Document':
@@ -124,3 +149,36 @@ class Document:
             doc.add_metadata(row['metadata_json'])
 
         return doc
+
+from model.exceptions import MetadataError
+
+def update_metadata_file(doc:'Document'):
+    '''
+    Takes a document and updates or creates its metadata file.
+    '''
+    if not doc.metadata:
+        raise MetadataError(doc.doc_id,"No metadata found")
+
+    if not doc.metadata_file or not doc.metadata_file.exists():
+        doc.metadata_file = doc.path / 'metadata.json'
+        
+    data = doc.metadata.to_dict()
+
+    try:
+        doc.metadata_file.parent.mkdir(parents=True, exist_ok=True)
+        with open(doc.metadata_file,'w') as f:
+            json.dump(data,f,indent=4)
+
+        return doc
+    except Exception as e:
+        raise f"Error saving metadata file for {doc.doc_id}: {e}"  
+
+def get_metadata_from_file(doc:'Document'):
+    '''
+    Takes a document and returns the metadata stored in its metadata files.
+    '''
+    if doc.metadata_file and doc.metadata_file.exists():
+        with open(doc.metadata_file,'r') as f:
+            return json.load(f)
+    else:
+        return None

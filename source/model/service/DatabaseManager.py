@@ -6,9 +6,8 @@ import hashlib
 import secrets
 import json
 
-from model.data.document import Document
+from model.data.document import Document, update_metadata_file
 from model.data.metadata import Metadata
-from model.logic.metadata import update_metadata_file
 
 VALID_FILTERS = {
     'doc_id', 'metadata', 'deskewed', 'needs_approval', 'approved', 

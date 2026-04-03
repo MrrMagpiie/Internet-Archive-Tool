@@ -3,8 +3,7 @@ from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot
 
 from model.logic.upload import *
 from model.exceptions import MetadataError, PdfGenerationError, TaskCancelledError
-from model.data import Document
-from model.logic.metadata import get_metadata_from_file 
+from model.data import Document, get_metadata_from_file 
 from model.service.Signals import JobTicket
 
 import sys

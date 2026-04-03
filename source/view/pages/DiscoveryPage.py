@@ -13,10 +13,9 @@ from view.components import (
 )
 
 from model.data.metadata import Metadata
-from model.data.document import Document
+from model.data.document import Document, update_metadata_file
 from model.data.schema import DocumentSchema
 from model.logic.helpers import clear_layout, load_metadata_formats
-from model.logic.metadata import update_metadata_file
 from model.service.Signals import JobTicket
 import json
 class DocumentExpandableCard(QFrame):
