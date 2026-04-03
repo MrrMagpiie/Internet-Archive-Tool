@@ -2,12 +2,12 @@ import sys
 import qtawesome as qta
 from PyQt6.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QHBoxLayout,
-    QPushButton, QStackedWidget, QMainWindow, QFrame,
+    QStackedWidget, QMainWindow, QFrame,
     QLabel, QListWidget, QListWidgetItem, QSystemTrayIcon, 
     QMenu, QMessageBox
 )
 from PyQt6.QtCore import pyqtSignal, QSize, Qt
-from PyQt6.QtGui import QFont, QColor, QPixmap, QPainter, QIcon
+from PyQt6.QtGui import QFont, QColor, QPixmap, QPainter
 
 from config import DEV_MODE, VERSION_STRING
 from model.settings_manager import app_settings
@@ -181,7 +181,7 @@ class MainWindow(QMainWindow):
         self._main_dashboard()
         if SessionManager.is_admin() or not app_settings.get('ADMIN_UPLOAD'):
             self._review_page()
-        self._settings_page()
+        self._config_page()
         self._help_page()
     
     def add_menu_item(self, name, icon_enum):
@@ -205,11 +205,11 @@ class MainWindow(QMainWindow):
         self.views['dashboard'] = self.dashboard
         self.add_menu_item("Document", "mdi.file-document-edit")
 
-    def _settings_page(self):
-        self.settings = self.gui_manager.create_settings_page()
+    def _config_page(self):
+        self.settings = self.gui_manager.create_config_dashboard()
         self.stack.addWidget(self.settings)
-        self.views['settings'] = self.settings
-        self.add_menu_item("Settings", "fa5s.cog")
+        self.views['config'] = self.settings
+        self.add_menu_item("Confiuration", "fa5s.cog")
         
     def _review_page(self):
         self.review = self.gui_manager.create_upload_dashboard()
@@ -223,7 +223,6 @@ class MainWindow(QMainWindow):
         self.views['help'] = self.help
         self.add_menu_item("Help", "mdi.help-circle-outline")
     
-
     def handle_auto_shutdown(self):
         """Triggered every time the background queue hits 0."""
         
