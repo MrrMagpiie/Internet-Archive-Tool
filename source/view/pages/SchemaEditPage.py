@@ -1,17 +1,14 @@
-import os
 import json
 from pathlib import Path
 from PyQt6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout,
-    QPushButton, QTextEdit, QLineEdit,
-    QFileDialog, QProgressBar, QTableWidget,
-    QComboBox, QLabel, QFormLayout, QMessageBox,
+    QVBoxLayout, QHBoxLayout,
+    QPushButton, QLineEdit,
+    QComboBox, QLabel, QMessageBox,
     QScrollArea
 )
 from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot
 from view.components.Page import Page
 from view.components.SchemaForm import SchemaForm, EditableSchemaForm
-from model.data.metadata import Metadata
 from model.data.document import Document
 from model.data.schema import DocumentSchema
 from model.logic.helpers import clear_layout 
@@ -145,7 +142,9 @@ class SchemaEditPage(Page):
         self.field_btn.clicked.connect(self.form.new_field)
         self.default_btn.clicked.connect(self.form.new_default)
         self.save_btn.clicked.connect(self.form.save)
-        self.delete_btn.setVisible(False)
+        self.delete_btn.setText("Cancel")
+        self.delete_btn.clicked.disconnect()
+        self.delete_btn.clicked.connect(self._reset)
 
         scroll_area = QScrollArea()
         scroll_area.setWidgetResizable(True)

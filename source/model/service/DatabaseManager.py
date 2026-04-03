@@ -75,16 +75,25 @@ class DatabaseManager(QObject):
                             if not signals.is_cancelled():
                                 result = {'success': success, 'role': role, 'username': username}
                                 signals.data.emit(result, signals.job_id)
-
                         case 'new_user':
-                            username, password = data
+                            username, password, role = data
                             if not signals.is_cancelled():
-                                success, msg = self._create_user(username, password)
+                                success, msg = self._create_user(username, password, role)
                                 if success:
                                     signals.data.emit(True, signals.job_id)
                                 else:
                                     signals.error.emit(msg, signals.job_id)
-                            
+                        case 'get_users':
+                            if not signals.is_cancelled():
+                                users = self._get_users()
+                                signals.data.emit(users, signals.job_id)
+                        case 'delete_user':
+                            user_id = data
+                            if not signals.is_cancelled():
+                                success, msg = self._delete_user(user_id)
+                                if success:
+                                    signals.data.emit(True, signals.job_id)
+
                         case 'check_admin':
                             if not signals.is_cancelled():
                                 signals.data.emit(self._has_admin(), signals.job_id)
@@ -184,7 +193,7 @@ class DatabaseManager(QObject):
 
         self.conn.commit()
     
-    def _create_user(self, username, password) -> tuple[bool, str]:
+    def _create_user(self, username, password,role) -> tuple[bool, str]:
         """Generates a new user and safely handles duplicate usernames."""
         cursor = self.conn.cursor()
         salt = secrets.token_hex(16)
@@ -199,7 +208,7 @@ class DatabaseManager(QObject):
             cursor.execute('''
                 INSERT INTO users (username, password_hash, salt, role)
                 VALUES (?, ?, ?, ?)
-            ''', (username, hashed_pw, salt, 'admin'))
+            ''', (username, hashed_pw, salt, role))
             
             self.conn.commit()
             return True, "User created successfully."
@@ -213,6 +222,24 @@ class DatabaseManager(QObject):
             # Catch any other database errors (like a locked file)
             self.conn.rollback()
             return False, f"Database error: {str(e)}"
+
+    def _get_users(self):
+        cursor = self.conn.cursor()
+        cursor.execute("SELECT user_id, username, role FROM users")
+        return [dict(row) for row in cursor.fetchall()]
+
+    def _delete_user(self, user_id):
+        try:
+            cursor = self.conn.cursor()
+            cursor.execute("DELETE FROM users WHERE user_id = ?", (user_id,))
+            if self._has_admin():
+                self.conn.commit()
+                return True, "User deleted."
+            else:
+                raise ValueError("Cannot delete last admin account.")
+        except Exception as e:
+            self.conn.rollback()
+            raise
 
     def _load_documents(self, filters: dict = None) -> dict[str, Document]:
         """method for fetching documents. Safely uses parameterized queries with a column whitelist."""

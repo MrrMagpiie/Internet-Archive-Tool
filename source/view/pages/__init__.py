@@ -4,6 +4,8 @@ from .MetadataPage import MetadataPage
 from .DocumentReviewPage import DocumentReviewPage
 from .DiscoveryPage import SingleDiscoveryPage, BatchDiscoveryPage
 from .SettingsPage import SettingsPage
+from .ConfigDashboard import ConfigsPage
+from .UserManagementPage import UsersPage
 from .UploadDashboard import UploadDashboard
 from .HelpPage import HelpPage
 from .SchemaEditPage import SchemaEditPage

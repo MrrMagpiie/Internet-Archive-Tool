@@ -71,6 +71,18 @@ class GUIManager(QObject):
     def create_settings_page(self):
         settings_page = SettingsPage(self)
         return settings_page
+
+    def create_users_page(self):
+        users_page = UsersPage(self)
+        users_page.request_users.connect(self.process_manager.request_users)
+        users_page.request_new_user.connect(self.process_manager.new_user)
+        users_page.request_user_delete.connect(self.process_manager.request_user_delete)
+        users_page.load_users()
+        return users_page
+
+    def create_config_dashboard(self):
+        config_page = ConfigsPage(self)
+        return config_page
      
     def create_metadata_page(self):
         metadata_page = MetadataPage(self)
