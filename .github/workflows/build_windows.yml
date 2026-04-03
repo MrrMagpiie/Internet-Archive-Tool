@@ -1,15 +1,13 @@
-name: Build and Release Windows EXE
+name: Build Windows EXE (Internal Test)
 
 on:
-  release:
-    types: [published]
+  workflow_dispatch: # Allows manual triggering from the Actions tab
+  push:
+    branches: [ main, dev ] # Optional: builds automatically on push to these branches
 
 jobs:
   build:
     runs-on: windows-latest
-    permissions:
-      contents: write 
-
     steps:
     - name: Checkout Code
       uses: actions/checkout@v4
@@ -26,30 +24,20 @@ jobs:
         pip install pyinstaller
 
     - name: Build with PyInstaller
-      run: |
-        pyinstaller ArchivePipeline.spec
+      run: pyinstaller ArchivePipeline.spec
 
-    # 1. Prepare Artifact 1: The Zip
-    - name: Zip the Application
-      run: |
-        Compress-Archive -Path dist/ArchivePipeline/* -DestinationPath ArchivePipeline-Windows.zip
-
-    # 2. Prepare Artifact 2: The Installer
-    # 2a. Install Inno Setup via Chocolatey
     - name: Install Inno Setup
       run: choco install innosetup --no-progress
 
-    # 2b. Run the compiler using the absolute path to guarantee it finds it
     - name: Compile Installer
       run: |
         & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss
 
-    # 3. Upload both Artifacts
-    - name: Upload Artifacts to GitHub Release
-      uses: softprops/action-gh-release@v2
+    - name: Upload Build Artifacts
+      uses: actions/upload-artifact@v4
       with:
-        files: |
-          ArchivePipeline-Windows.zip
+        name: Windows-Build-Package
+        path: |
+          dist/ArchivePipeline/
           Output/ArchivePipeline_Setup.exe
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        retention-days: 1
