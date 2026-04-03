@@ -3,7 +3,7 @@ from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot
 
 from model.logic.upload import *
 from model.exceptions import MetadataError, PdfGenerationError, TaskCancelledError
-from model.data import Document, get_metadata_from_file 
+from model.data import Document, get_metadata_from_file, update_metadata_file
 from model.service.Signals import JobTicket
 
 import sys
@@ -65,19 +65,13 @@ class UploadManager(QObject):
             raise MetadataError("Metadata file not found",doc.doc_id)
         '''elif doc.metadata is None:
             doc.add_metadata(get_metadata_from_file(doc))'''
-
-        ticket.update_progress(0, "Zipping files...")
-        zip_path = zip_doc(doc, ticket, 0, 30)
-        
-        ticket.update_progress(30, "Generating PDF...")
-        pdf_path = Path(doc.path) / f'{doc.doc_id}.pdf'
         
         queue = multiprocessing.Queue()
         
         try:
             self.process = multiprocessing.Process(
-                target=pdf_from_tiffs,
-                args=(doc.images, pdf_path, queue)
+                target=build_IA_payload,
+                args=(doc.doc_id, doc.images, doc.path, queue)
             )
             self.process.start()
 
@@ -90,21 +84,28 @@ class UploadManager(QObject):
                 
                 try:
                     result = queue.get(timeout=0.2)
-                    if result['status'] == 'progress':
-                        scaled_progress = 30 + int((result['progress'] / 100) * 40)
-                        ticket.update_progress(scaled_progress, result['step'])
-                    elif result['status'] == 'error':
-                        raise PdfGenerationError(result['error'])
-                    elif result['status'] == 'success':
-                        success = True
-                        break
+                    match result['status']:
+                        case 'success':
+                            zip_path = result['zip_path']
+                            pdf_path = result['pdf_path']
+                            success = True
+                        case 'error':
+                            raise result['error']
+                        case 'zip_progress':
+                            scaled_progress = 30 + int((result['progress'] / 100) * 40)
+                            ticket.update_progress(scaled_progress, result['step'])
+                        case 'pdf_progress':
+                            scaled_progress = 70 + int((result['progress'] / 100) * 30)
+                            ticket.update_progress(70, result['step'])
+                        case _:
+                            raise ValueError(f"Unknown status: {result['status']}")
                 except Empty:
                     if not self.process.is_alive():
                         break
 
             self.process.join()
             if not success:
-                raise PdfGenerationError("PDF Worker crashed silently.")
+                raise PdfGenerationError("Payload generation Worker crashed silently.")
                 
         finally:
             queue.close()
@@ -117,10 +118,21 @@ class UploadManager(QObject):
              
         # Intercept stderr to catch tqdm progress from the internetarchive library
         original_stderr = sys.stderr
-        sys.stderr = ticket.interceptor(70, 100)
+        sys.stderr = ticket.interceptor(70, 100, 2)
         try:
-            response = upload(doc, [zip_path, str(pdf_path)])
+            self.check_DEV_MODE(doc)
+            response = upload(doc.metadata.to_dict(), [zip_path, str(pdf_path)])
         finally:
             sys.stderr = original_stderr
         
         ticket.update_progress(100, "Upload Complete!")
+
+    def check_DEV_MODE(self,document:Document):
+        metadata_dict = document.metadata.to_dict()
+        if DEV_MODE:
+            print("DEV MODE ACTIVE: Redirecting upload to test_collection...")
+            metadata_dict['collection'] = 'test_collection'
+            current_identifier = metadata_dict['identifier'] 
+            metadata_dict['identifier'] = f"{current_identifier}_TEST"
+            document.add_metadata(metadata_dict)
+            update_metadata_file(document)

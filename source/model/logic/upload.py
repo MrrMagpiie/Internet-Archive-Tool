@@ -7,7 +7,7 @@ from pathlib import Path
 import datetime
 
 from model.exceptions import *
-from model.data.document import Document, update_metadata_file, get_metadata_from_file
+from model.data.document import Document
 from model.service.Signals import JobTicket
 
 def setup(email: str, password: str):
@@ -16,49 +16,65 @@ def setup(email: str, password: str):
         except Exception as e:
             raise e 
 
-def uploadDocument(doc:Document,ticket:JobTicket):
-        if not doc.metadata_file or not Path(doc.metadata_file).is_file():
-            raise MetadataError(doc.doc_id,f"Metadata file not found")
-
-        zip_path = zip_doc(doc)
-        pdf_path = create_pdf_from_tiffs(doc)
-        upload(doc,[zip_path,pdf_path])
-
-def zip_doc(doc, ticket=None, base_progress=0, max_progress=100):
-    output_dir = Path(doc.path)
-    zip_file_path = output_dir / f"{doc.doc_id}.zip"
-    print(f"Creating zip file: {zip_file_path}")
+def build_zip(image_dict, output_path, progress_callback=None):
+    """Creates a Zip file from a dict of images.
+    if successfull returns output path. 
+    progress_callback emits current step and total steps"""
     try:
-        with zipfile.ZipFile(zip_file_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
-            images = list(doc.images.values())
+        with zipfile.ZipFile(output_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+            images = list(image_dict.values())
             total = len(images)
             for i, image in enumerate(images):
                 file_path = Path(image['processed'])
                 # Add file to zip
                 zipf.write(file_path, arcname=file_path.name)
-                if ticket:
-                    current_prog = base_progress + int(((i + 1) / total) * (max_progress - base_progress))
-                    ticket.update_progress(current_prog, f"Zipping files... {i+1}/{total}")
-        print("Zip file created successfully.")
-        return str(zip_file_path)
+                if progress_callback:
+                    progress_callback(i+1, total)
+        return str(output_path)
     except Exception as e:
-        raise e
+        raise
 
-def pdf_from_tiffs(images_dict, pdf_path, queue):
-    """The isolated Laborer. Do not pass the full Document object, just what it needs!"""
+def build_pdf(image_dict, pdf_path, progress_callback=None):
+    """Creates a PDF from a dict of images using wand.
+    if successfull returns pdf_path.
+    progress_callback emits current step and total steps"""
     try:
         from wand.image import Image
         with Image() as pdf:
-            images = list(images_dict.values())
+            images = list(image_dict.values())
             total = len(images)
             for i, tiff in enumerate(images):
                 with Image(filename=tiff.get('processed')) as img:
                     pdf.sequence.append(img)
-                progress_pct = int(((i + 1) / total) * 100)
-                queue.put({"status": "progress", "progress": progress_pct, "step": f"Generating PDF... {i+1}/{total}"})
+                if progress_callback:
+                    progress_callback(i+1, total)
             
             pdf.save(filename=str(pdf_path))
-            queue.put({"status": "success", "pdf_path": str(pdf_path)})
+            return str(pdf_path)
+    except Exception as e:
+        raise
+
+def build_IA_payload(doc_id, image_dict, output_dir, queue):
+    """thread task to build the final upload files for IA"""
+    def zip_progress(step, total):
+        progress_pct = int((step / total) * 100)
+        queue.put({"status": "zip_progress", "progress": progress_pct, "step": f"Generating PDF... {step}/{total}"})
+
+    def pdf_progress(step,total):
+        progress_pct = int((step / total) * 100)
+        queue.put({"status": "pdf_progress", "progress": progress_pct, "step":f"Zipping files... {step}/{total}"})
+
+    # ensure output path exists
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    pdf_path = output_dir / f'{doc_id}.pdf'
+    zip_file_path = output_dir / f"{doc_id}.zip"
+    
+    try:
+        build_zip(image_dict, zip_file_path, zip_progress)
+        build_pdf(image_dict, pdf_path, pdf_progress)
+        queue.put({"status": "success", "pdf_path": str(pdf_path), "zip_path": str(zip_file_path)})
     except Exception as e:
         queue.put({"status": "error", "error": str(e)})
 
@@ -68,7 +84,7 @@ class IdentifierStatus(Enum):
     ACTIVE = 2
     OFFLINE = 3
 
-def _check_identifier_status(identifier: str) -> IdentifierStatus:
+def check_identifier_status(identifier: str) -> IdentifierStatus:
     """Pings the IA database and returns the current state of the identifier."""
     item = ia.get_item(identifier)
     
@@ -79,9 +95,6 @@ def _check_identifier_status(identifier: str) -> IdentifierStatus:
         return IdentifierStatus.OFFLINE
         
     return IdentifierStatus.ACTIVE
-
-def check_identifier_status(identifier: str) -> IdentifierStatus:
-    return IdentifierStatus.FREE
 
 def get_unique_identifier(base_identifier:str) -> str:
     """
@@ -105,29 +118,17 @@ def get_unique_identifier(base_identifier:str) -> str:
         
     return current_id
 
-def update_metadata(doc:Document, metadata:dict):
-    doc.add_metadata(metadata)
-    update_metadata_file(doc)
-
-def upload(doc:Document, files:list,edit = False):
-    metadata_dict = doc.metadata.to_dict()
-    identifier = metadata_dict.get('identifier')
+def upload(metadata:dict, files:list,edit = False):
+    identifier = metadata.get('identifier')
     if not identifier:
-        raise MetadataError(f"Error: 'identifier' not found in metadata for {doc.doc_id}")
-
-    if DEV_MODE:
-        print("DEV MODE ACTIVE: Redirecting upload to test_collection...")
-        metadata_dict['collection'] = 'test_collection'
-        identifier = f"{identifier}_TEST"
-        metadata_dict['identifier'] = identifier
-        update_metadata(doc,metadata_dict)
+        raise MetadataError(f"Error: 'identifier' not found in metadata")
 
     print(f"Starting upload for item: {identifier}...")
     try:
         r = ia.upload(
             identifier=identifier,
             files=files,
-            metadata=metadata_dict,
+            metadata=metadata,
             verbose=True
         )
         return r

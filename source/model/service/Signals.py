@@ -50,11 +50,12 @@ import re
 
 class TqdmInterceptor:
     """Catches terminal output, extracts the percentage, and emits it to the GUI."""
-    def __init__(self, ticket, base_progress, max_progress):
+    def __init__(self, ticket, base_progress, max_progress,steps=1):
         self.ticket = ticket
         self.base_progress = base_progress
         self.max_progress = max_progress
         self.progress_range = max_progress - base_progress
+        self.steps = steps
         
         # Save a reference to the real terminal output so we don't break the console
         self.original_stderr = sys.stderr
@@ -69,7 +70,7 @@ class TqdmInterceptor:
             file_pct = int(match.group(1))
             
             # 3. Scale the file's 0-100% into our UI's remaining 75-95% block
-            overall_pct = self.base_progress + int((file_pct / 100) * self.progress_range)
+            overall_pct = self.base_progress + (int(((file_pct / 100))/self.steps) * self.progress_range)
             
             # 4. Emit the signal back to your PyQt window!
             self.ticket.update_progress(overall_pct, f"Uploading file... {file_pct}%")
