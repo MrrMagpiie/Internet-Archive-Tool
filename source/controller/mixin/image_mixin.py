@@ -40,7 +40,7 @@ class ImageMixin:
         for indx in keys_to_remove:
             del self.image_cache[indx]
 
-    def load_document(self,document:Document):
+    def load_document(self,document:'Document'):
         for image_id, image in document.images.items():
             if image['processed']:
                 image_cache[image_id] = image['processed']
