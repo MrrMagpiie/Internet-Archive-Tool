@@ -17,10 +17,11 @@ class DashboardPage(Page):
     def __init__(self, parent, list_view, workflow_view):
         super().__init__(parent=parent)
         
-        self.layout = QVBoxLayout()
+        self.layout = QVBoxLayout(self)
         self.layout.setContentsMargins(0, 0, 0, 0)
         
         self.stack = QStackedWidget()
+        self.layout.addWidget(self.stack)
         
         # --- View 1: The Grid (Existing ListView) ---
         self.list_view = list_view
@@ -31,11 +32,9 @@ class DashboardPage(Page):
         self.workflow_view = workflow_view
         self.workflow_view.back_to_dashboard.connect(self.close_project)
         
-        self.stack.addWidget(self.list_view) # Index 0
-        self.stack.addWidget(self.workflow_view)     # Index 1
+        self.stack.addWidget(self.list_view)
+        self.stack.addWidget(self.workflow_view)
         
-        self.layout.addWidget(self.stack)
-        self.setLayout(self.layout)
         self.list_view.request_documents()
 
     def open_project(self, doc, stage):
@@ -78,29 +77,33 @@ class WorkflowView(Page):
         # Default to Scan
         self.switch_stage(0)
     
-    def _create_pages(self, batch=False):
+    def _create_batch_page(self):
         self.clear_stack()
-        self.create_doc_page = self.parent.CreateDocumentPage(batch=batch)
-        self.create_doc_page.new_document.connect(self.set_current_document)
-        self.stage_stack.addWidget(self.create_doc_page)
-
         self.nav_bar.add_button('1. Files',0,lambda:self.switch_stage(0))
-        if not batch:
-            self.create_doc_page.next_stage.connect(self.next_stage)
+        discovery_page = self.parent.create_batch_discovery_page()
+        discovery_page.next_stage.connect(self.return_to_dashboard)
+        self.stage_stack.addWidget(discovery_page)
+
+
+    def _create_pages(self):
+        self.clear_stack()
+        discovery_page = self.parent.create_discovery_page()
+        discovery_page.new_document.connect(self.set_current_document)
+        discovery_page.next_stage.connect(self.next_stage)
+        
+        metadata_page = self.parent.create_metadata_page()
+        metadata_page.next_stage.connect(self.next_stage)
+
+        review_page = self.parent.create_document_review_page()
+        review_page.next_stage.connect(self.return_to_dashboard)
+        
+        self.nav_bar.add_button('1. Files',0,lambda:self.switch_stage(0))
+        self.stage_stack.addWidget(discovery_page)
+        self.stage_stack.addWidget(metadata_page)
+        self.nav_bar.add_button('2. Metadata',1,lambda:self.switch_stage(1))
+        self.stage_stack.addWidget(review_page)
+        self.nav_bar.add_button('3. Review',2,lambda:self.switch_stage(2))
             
-            metadata_page = self.parent.MetadataPage()
-            metadata_page.next_stage.connect(self.next_stage)
-
-            review_page = self.parent.DocumentReviewPage()
-            review_page.next_stage.connect(self.return_to_dashboard)
-
-            self.stage_stack.addWidget(metadata_page)
-            self.nav_bar.add_button('2. Metadata',1,lambda:self.switch_stage(1))
-            self.stage_stack.addWidget(review_page)
-            self.nav_bar.add_button('3. Review',2,lambda:self.switch_stage(2))
-        else:
-            self.create_doc_page.next_stage.connect(self.return_to_dashboard)
-
     def clear_stack(self):
         while self.stage_stack.count() > 0:
             page = self.stage_stack.widget(0)
@@ -112,7 +115,7 @@ class WorkflowView(Page):
             button.deleteLater()
 
     def new_batch(self):
-        self._create_pages(batch=True)
+        self._create_batch_page()
 
         self.nav_bar.set_title('New Batch')
         self.switch_stage(0)

@@ -20,21 +20,19 @@ class GUIManager(QObject):
         self.process_manager.need_setup.connect(self.run_setup)
         self.main_window = None
 
-
-    def MainWindow(self):
-        self.MainWindow = MainWindow(self)
-        return self.MainWindow
+    def create_main_window(self):
+        self.main_window = MainWindow(self)
+        return self.maine_window
 
     # --- Pages --- 
     
-    def LoginPage(self):
+    def create_login_page(self):
         login_page = LoginPage()
         login_page.login_request.connect(self.process_manager.request_login)
         login_page.login_successful.connect(self.transition_to_app)
         return login_page
 
-
-    def DashboardPage(self,navigation_stack):
+    def create_dashboard_page(self,navigation_stack):
         workflow_view = Dashboard.WorkflowView(self)
         list_view = Dashboard.ListView(self)
         list_view.db_request.connect(self.process_manager.request_docs_by_status)
@@ -45,7 +43,7 @@ class GUIManager(QObject):
     
         return dashboard_page
 
-    def DocumentReviewPage(self):
+    def create_document_review_page(self):
         review_page = DocumentReviewPage(self)
         review_page.document_reviewed.connect(self.process_manager.request_update_doc)
         self.process_manager.document_update.connect(review_page.document_update)
@@ -55,29 +53,32 @@ class GUIManager(QObject):
         review_page.save_metadata.connect(self.process_manager.request_update_doc)
         return review_page
 
-    def CreateDocumentPage(self,batch = False):
-        if batch:
-            create_doc_page = BatchDocumentPage(self)
-            create_doc_page.batch_request.connect(self.process_manager.request_batch_discovery)
-        else:
-            create_doc_page = SingleDocumentPage(self)
-            create_doc_page.image_request.connect(self.process_manager.request_image)
-        
-        create_doc_page.discover_document.connect(self.process_manager.request_discovery)
-        create_doc_page.deskew_document.connect(self.process_manager.request_deskew)
-        create_doc_page.save_metadata.connect(self.process_manager.request_update_doc)
-        return create_doc_page
+    def create_discovery_page(self):
+        discovery_page = SingleDiscoveryPage(self)
+        discovery_page.image_request.connect(self.process_manager.request_image)
+        discovery_page.discover_document.connect(self.process_manager.request_discovery)
+        discovery_page.deskew_document.connect(self.process_manager.request_deskew)
+        discovery_page.save_metadata.connect(self.process_manager.request_update_doc)
+        return discovery_page
 
-    def SettingsPage(self):
+    def create_batch_discovery_page(self):
+        discovery_page = BatchDiscoveryPage(self)
+        discovery_page.batch_request.connect(self.process_manager.request_batch_discovery)
+        discovery_page.discover_document.connect(self.process_manager.request_discovery)
+        discovery_page.deskew_document.connect(self.process_manager.request_deskew)
+        discovery_page.save_metadata.connect(self.process_manager.request_update_doc)
+        return discovery_page
+
+    def create_settings_page(self):
         settings_page = SettingsPage(self)
         return settings_page
      
-    def MetadataPage(self):
+    def create_metadata_page(self):
         metadata_page = MetadataPage(self)
         metadata_page.save_metadata.connect(self.process_manager.request_update_doc)
         return metadata_page
 
-    def UploadDashboard(self):
+    def create_upload_dashboard(self):
         upload_page = UploadDashboard(self)
         upload_page.db_request.connect(self.process_manager.request_docs_by_status)
         upload_page.request_documents()
@@ -85,11 +86,11 @@ class GUIManager(QObject):
         self.process_manager.document_delete.connect(upload_page.request_documents)
         return upload_page
 
-    def HelpPage(self):
+    def create_help_page(self):
         help_page = HelpPage(self)
         return help_page
 
-    def SchemaEditPage(self):
+    def create_schema_edit_page(self):
         schema_page = SchemaEditPage(self)
         schema_page.new_schema.connect(self.process_manager.save_schema)
         schema_page.delete_schema.connect(self.process_manager.delete_schema)
@@ -97,13 +98,13 @@ class GUIManager(QObject):
 
     # --- Components ---
 
-    def ProcessManagerWidget(self):
+    def create_process_manager_widget(self):
         process_widget = ProcessManagerWidget()
         self.process_manager.task_started.connect(process_widget.add_task)
         self.process_manager.task_finished.connect(process_widget.remove_task)
         return process_widget
 
-    def DocumentImagePanel(self):
+    def create_document_image_panel(self):
         image_panel = DocumentImagePanel(self)
         image_panel.image_request.connect(self.process_manager.request_image)
         return image_panel

@@ -107,9 +107,8 @@ class MainWindow(QMainWindow):
         
 
         # --- Process Manager Widget ---
-        self.process_manager_widget = self.gui_manager.ProcessManagerWidget()
+        self.process_manager_widget = self.gui_manager.create_process_manager_widget()
         
-
         # --- C. Bottom Version Area ---
         version_lbl = QLabel(VERSION_STRING)
         version_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -202,25 +201,25 @@ class MainWindow(QMainWindow):
     # ---------------- Pages ----------------
 
     def _main_dashboard(self):
-        self.dashboard = self.gui_manager.DashboardPage(self.stack)
+        self.dashboard = self.gui_manager.create_dashboard_page(self.stack)
         self.stack.addWidget(self.dashboard)
         self.views['dashboard'] = self.dashboard
         self.add_menu_item("Document", "mdi.file-document-edit")
 
     def _settings_page(self):
-        self.settings = self.gui_manager.SettingsPage()
+        self.settings = self.gui_manager.create_settings_page()
         self.stack.addWidget(self.settings)
         self.views['settings'] = self.settings
         self.add_menu_item("Settings", "fa5s.cog")
         
     def _review_page(self):
-        self.review = self.gui_manager.UploadDashboard()
+        self.review = self.gui_manager.create_upload_dashboard()
         self.stack.addWidget(self.review)
         self.views['review'] = self.review
         self.add_menu_item("Upload", "fa5s.file-upload")
 
     def _help_page(self):
-        self.help = self.gui_manager.HelpPage()
+        self.help = self.gui_manager.create_help_page()
         self.stack.addWidget(self.help)
         self.views['help'] = self.help
         self.add_menu_item("Help", "mdi.help-circle-outline")

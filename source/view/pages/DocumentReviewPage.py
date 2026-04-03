@@ -48,7 +48,7 @@ class DocumentReviewPage(Page):
         self.deskew_ready_text.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignHCenter)
         self.deskew_ready_text.setObjectName("warningText") 
        
-        self.image_panel = self.parent.DocumentImagePanel()
+        self.image_panel = self.parent.create_document_image_panel()
         
         image_widget_layout.addWidget(self.deskew_ready_text)
         image_widget_layout.addWidget(self.image_panel)
@@ -289,7 +289,7 @@ class CollisionResolutionDialog(QDialog):
     def request_unique_identifier(self):
         ticket = JobTicket()
         ticket.data.connect(self._handle_unique_identifier)
-        self.parent().unique_identifier.emit(self.parent().current_document.metadata.identifier, ticket)
+        self.parent.unique_identifier.emit(self.parent.current_document.metadata.identifier, ticket)
     
     @pyqtSlot(object, str)
     def _handle_unique_identifier(self, unique_identifier: str, job_id):

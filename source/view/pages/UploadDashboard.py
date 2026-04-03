@@ -103,7 +103,7 @@ class UploadDashboard(Page):
         return dashboard
 
     def _review_page(self):
-        self.review_page = self.parent.DocumentReviewPage()
+        self.review_page = self.parent.create_document_review_page()
         self.review_page.next_stage.connect(self.return_to_dashboard)
         self.review_page.approve_btn.setVisible(False)
         self.review_page.upload_btn.setVisible(True)
