@@ -15,6 +15,10 @@ class DatabaseMixin:
         self.db_thread = QThread()
         self.db_queue = Queue()
         self.db_manager = DatabaseManager(DB_PATH, self.db_queue)
+
+        #check for admin account if db exists
+        if not self.need_db:
+            self.need_db = not self.db_manager.has_admin_sync()
         
         self.db_manager.update.connect(self._handle_database_update)
         self.db_manager.error.connect(self._handle_worker_error)

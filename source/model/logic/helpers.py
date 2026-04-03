@@ -23,36 +23,3 @@ def clear_layout(layout):
 def load_metadata_formats():
     with open(DOCUMENT_SCHEMA_PATH,'r') as f:
             return json.load(f)
-
-def setup_theme(theme_choice = None):
-    """
-    Resolves the theme choice, compiles the custom QSS, 
-    and applies it to the application.
-    """
-    
-    if not theme_choice: theme_choice = app_settings.get("THEME", "auto")
-
-    # 1. Resolve "auto" to explicitly "dark" or "light"
-    if theme_choice == "auto":
-        # darkdetect returns 'Dark' or 'Light' based on the OS settings
-        os_theme = darkdetect.theme()
-        resolved_theme = os_theme.lower() if os_theme else "dark" # Fallback to dark
-    else:
-        resolved_theme = theme_choice
-
-    # 2. Pick the correct dictionary
-    palette = DARK_PALETTE if resolved_theme == "dark" else LIGHT_PALETTE
-    
-    # 3. Read your raw stylesheet
-    with open(RESOURCES_PATH / "style.qss", "r") as f:
-        raw_qss = f.read()
-        
-    # 4. Compile: Swap every {{variable}} with its hex code
-    for var_name, hex_code in palette.items():
-        raw_qss = raw_qss.replace(var_name, hex_code)
-        
-    # 5. Apply the fully compiled string to the application
-    qdarktheme.setup_theme(
-        theme=resolved_theme, 
-        additional_qss=raw_qss
-    )

@@ -1,14 +1,14 @@
+import qdarktheme
+import darkdetect
 import sys
-from pathlib import Path
-from PyQt6.QtWidgets import (
-    QApplication, QWidget, QVBoxLayout, QHBoxLayout,
-    QPushButton, QStackedWidget,QMainWindow, QGridLayout, 
-    QSizePolicy, QSpacerItem, QDialog
-)
-from PyQt6.QtCore import pyqtSlot,pyqtSignal, QSize, QObject, Qt
-from PyQt6.QtGui import QFont
+from PyQt6.QtWidgets import QApplication, QDialog
+from PyQt6.QtCore import pyqtSlot,QObject, Qt
 from view.pages import *
 from view.components import ProcessManagerWidget, DocumentImagePanel
+from model.settings_manager import app_settings
+from view.theme import *
+from config import RESOURCES_PATH
+
 
 class GUIManager(QObject):
     def __init__(self,manager):
@@ -17,7 +17,6 @@ class GUIManager(QObject):
         self.process_manager = manager
         self.process_manager.busy_start.connect(self.start_loading_cursor)
         self.process_manager.busy_stop.connect(self.stop_loading_cursor)
-        self.process_manager.need_setup.connect(self.run_setup)
         self.main_window = None
 
     def create_main_window(self):
@@ -96,6 +95,23 @@ class GUIManager(QObject):
         schema_page.delete_schema.connect(self.process_manager.delete_schema)
         return schema_page
 
+    def create_setup_wizard(self, need_setup):
+        if any(need_setup):
+            wizard = SetupWizard()
+            need_config, need_db = need_setup
+
+            if need_config:
+                ia_page = IAPage()
+                ia_page.verify_ia_creds.connect(self.process_manager.ia_config)
+                wizard.addPage(ia_page)
+            
+            if need_db:
+                admin_page = AdminPage()
+                admin_page.admin_setup_data.connect(self.process_manager.new_user)
+                wizard.addPage(admin_page)
+        
+        return wizard
+
     # --- Components ---
 
     def create_process_manager_widget(self):
@@ -121,39 +137,42 @@ class GUIManager(QObject):
         """Helper to restore the default cursor."""
         QApplication.restoreOverrideCursor()
 
-    @pyqtSlot(tuple)    
-    def run_setup(self, need_setup):
-        
-        if any(need_setup):
-            wizard = SetupWizard()
-            need_config, need_db = need_setup
-
-            if need_config:
-                ia_page = IAPage()
-                ia_page.verify_ia_creds.connect(self.process_manager.ia_config)
-                wizard.addPage(ia_page)
-            
-            if need_db:
-                admin_page = AdminPage()
-                admin_page.admin_setup_data.connect(self.process_manager.new_user)
-                wizard.addPage(admin_page)
-            
-            result = wizard.exec() 
-                
-            if result == QDialog.DialogCode.Rejected:
-                self.process_manager.closeEvent()
-                sys.exit(1)
-
-        self.login_page = self.LoginPage()
-        self.login_page.login_successful.connect(self.transition_to_app)
-        self.login_page.show()
-
+    @pyqtSlot()
     def transition_to_app(self):
         if not self.main_window:
             self.main_window = MainWindow(self)
             self.main_window.show()
 
+    @pyqtSlot(str)
+    def setup_theme(self,theme_choice = None):
+        """
+        Resolves the theme choice, compiles the custom QSS, 
+        and applies it to the application.
+        """
+        
+        if not theme_choice: theme_choice = app_settings.get("THEME", "auto")
 
+        # 1. Resolve "auto" to explicitly "dark" or "light"
+        if theme_choice == "auto":
+            # darkdetect returns 'Dark' or 'Light' based on the OS settings
+            os_theme = darkdetect.theme()
+            resolved_theme = os_theme.lower() if os_theme else "dark" # Fallback to dark
+        else:
+            resolved_theme = theme_choice
 
-
-    
+        # 2. Pick the correct dictionary
+        palette = DARK_PALETTE if resolved_theme == "dark" else LIGHT_PALETTE
+        
+        # 3. Read your raw stylesheet
+        with open(RESOURCES_PATH / "style.qss", "r") as f:
+            raw_qss = f.read()
+            
+        # 4. Compile: Swap every {{variable}} with its hex code
+        for var_name, hex_code in palette.items():
+            raw_qss = raw_qss.replace(var_name, hex_code)
+            
+        # 5. Apply the fully compiled string to the application
+        qdarktheme.setup_theme(
+            theme=resolved_theme, 
+            additional_qss=raw_qss
+        )

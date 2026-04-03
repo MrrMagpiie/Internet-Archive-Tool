@@ -8,7 +8,6 @@ from view.components import AnimatedToggle,Page, SchemaForm, EditableSchemaForm
 from view.pages import SchemaEditPage
 from model.settings_manager import app_settings
 import qdarktheme
-from model.logic.helpers import setup_theme
 from model.service.SessionManager import SessionManager
 
 class SettingsPage(Page):
@@ -78,7 +77,7 @@ class SettingsPage(Page):
     
     def edit_document_schema(self):
         print('edit schema pressed')
-        self.new_window = self.parent.SchemaEditPage()
+        self.new_window = self.parent.create_schema_edit_page()
         self.new_window.setWindowTitle("Edit Document Schema")
         self.new_window.show()
 
@@ -126,6 +125,6 @@ class SettingsPage(Page):
         widget.addItems(qdarktheme.get_themes())
         widget.setCurrentText(app_settings.get("THEME", "auto"))
         widget.setObjectName("formComboBox")
-        widget.currentTextChanged.connect(setup_theme)
+        widget.currentTextChanged.connect(self.parent.setup_theme)
         self.dynamic_widgets['THEME'] = widget
         self.form_layout.addRow(label_text, widget)

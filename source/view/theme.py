@@ -85,38 +85,3 @@ LIGHT_PALETTE = {
     "{{status_yellow}}": "#e3b341",
     "{{status_green}}": "#3fb95f"
 }
-
-'''
-other = {
-    'bg_main'  #FBFBFD,
-    'bg_secondary' = #FFFFFF
-
-    icon = #999999
-    
-    light = #666666,
-    middle = #333333
-    dark = #222222
-    
-    accent = #AB2E33
-    off_white = #FCF5E6
-    dark_off_white = #C3AD97
-
-    white = #FFFFFF
-
-    symbol = #2C2C2C
-    heart = #FF0000
-
-    selected =#8EB8EA
-    selected_2 =#4A90E2
-
-}
-  
-
-
-  accent_1=#AA99C9
-  accent_2=#9ECC4F
-  accent_3=#00ADEF
-  accent_4=#F1644B
-  accent_5=#FAAB3C
-  accent_6=#FFCD27}
-  '''
