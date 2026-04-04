@@ -5,7 +5,7 @@ import os
 from model.service.UploadManager import UploadManager
 from config import IA_CONFIG_PATH
 from model.service.Signals import JobTicket, DatabaseTicket
-
+from model.settings_manager import app_settings
 
 class UploadMixin:
     """Handles Internet Archive Upload logic."""
@@ -23,7 +23,7 @@ class UploadMixin:
         self.upload_thread.start()
         
         os.environ['IA_CONFIG_FILE'] =str(IA_CONFIG_PATH)
-
+        
     @pyqtSlot(tuple,JobTicket)
     def ia_config(self,data,ticket:JobTicket):
         self.busy_start.emit()
@@ -46,6 +46,22 @@ class UploadMixin:
     def request_unique_identifier(self,identifier,ticket):
         self.register_task('unique_identifier',ticket)
         self.upload_queue.put(('unique_identifier',ticket,identifier))
+
+    @pyqtSlot()
+    def trigger_auto_upload(self):
+        if app_settings.get('AUTO_UPLOAD', True):
+            print("Trigger Auto Update")
+            ticket = DatabaseTicket()
+            ticket.data.connect(self._handle_auto_upload_docs)
+            filter_data = {'approved': True, 'uploaded': False}
+            self.request_docs_by_status(filter_data, ticket)
+
+    @pyqtSlot(object, str)
+    def _handle_auto_upload_docs(self, docs, job_id):
+        print("--- Auto Upload Docs ---")
+        print(docs)
+        for doc in docs.values():
+            self.request_upload(doc, JobTicket())
 
     @pyqtSlot(object,str)
     def _handle_upload_success(self, doc,job_id):

@@ -14,7 +14,7 @@ def setup(email: str, password: str):
         try:
             ia.configure(email,password=password,config_file=IA_CONFIG_PATH) 
         except Exception as e:
-            raise e 
+            raise
 
 def build_zip(image_dict, output_path, progress_callback=None):
     """Creates a Zip file from a dict of images.
@@ -133,4 +133,4 @@ def upload(metadata:dict, files:list,edit = False):
         )
         return r
     except Exception as e:
-        raise e
+        raise

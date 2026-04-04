@@ -135,12 +135,10 @@ class WorkflowView(Page):
         self.switch_stage(self.stage_stack.currentIndex()+1)
 
     def switch_stage(self, index,button=None):
-        print(f'Switching to Stage{index}')
         self.stage_stack.setCurrentIndex(index)
         self.nav_bar.set_active(index)
 
     def return_to_dashboard(self):
-        print('Return to Dashboard')
         self.back_to_dashboard.emit()
         self.set_current_document(None)
 

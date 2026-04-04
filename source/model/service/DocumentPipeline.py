@@ -103,7 +103,7 @@ class DocumentPipelineWorker(QObject):
                 raise ImageDiscoveryError() from e
 
             if len(documents_dict.keys()) == 1:
-                for doc_id, image_list in documents_dict.keys():
+                for doc_id, image_list in documents_dict.items():
                     try:
                         ticket.update_progress(80, "Building document structure...")
                         doc = Document.from_images(doc_id,image_list)
@@ -114,7 +114,7 @@ class DocumentPipelineWorker(QObject):
                     except Exception as e:
                         raise DocumentCreationError(doc_id)
             else:
-                raise ImageDiscoveryError('Directory formated incorrectly for single document scan') from e
+                raise ImageDiscoveryError('Directory formated incorrectly for single document scan')
             
     def batch_discover(self, in_dir, ticket):
             ticket.update_progress(10, "Scanning directory for images...")
@@ -175,8 +175,9 @@ class DocumentPipelineWorker(QObject):
                     
                     if result['status'] == 'success':
                         angle = result['angle']
-                        doc.add_change(image_id, f'deskew: {angle}')
-                        print(f'Deskewed {image_id} in {doc.doc_id} by {angle} degrees')
+                        if angle != 0.0: 
+                            doc.add_change(image_id, f'deskew: {angle}')
+                            print(f'Deskewed {image_id} in {doc.doc_id} by {angle} degrees')
                     else:
                         raise DeskewError(in_file,out_file,result['error'])
                 else:

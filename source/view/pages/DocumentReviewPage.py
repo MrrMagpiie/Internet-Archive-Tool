@@ -3,8 +3,8 @@ import json
 from pathlib import Path
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QGridLayout,
-    QPushButton, QLabel, QHBoxLayout, 
-    QSplitter, QDialog, QFrame
+    QPushButton, QLabel, QHBoxLayout,
+    QDialog, QFrame
 )
 from PyQt6.QtCore import pyqtSignal, pyqtSlot, Qt,  QObject
 from PyQt6.QtGui import QFont
@@ -36,9 +36,8 @@ class DocumentReviewPage(Page):
 
     def _create_layout(self):
         """Creates the widget that contains the image viewer and navigation."""
-        layout = QVBoxLayout(self)
-        splitter = QSplitter(Qt.Orientation.Horizontal)
-        splitter.setChildrenCollapsible(False)
+        main_layout = QVBoxLayout(self)
+        panel_layout = QHBoxLayout()
 
         # left side
         image_widget = QWidget()
@@ -54,7 +53,13 @@ class DocumentReviewPage(Page):
         image_widget_layout.addWidget(self.image_panel)
         
         image_widget.setLayout(image_widget_layout)
-        splitter.addWidget(image_widget)
+        panel_layout.addWidget(image_widget)
+        
+        # Minimal separator bar
+        separator = QFrame()
+        separator.setFrameShape(QFrame.Shape.VLine)
+        separator.setFrameShadow(QFrame.Shadow.Sunken)
+        panel_layout.addWidget(separator)
         
         
         # right side
@@ -70,7 +75,7 @@ class DocumentReviewPage(Page):
         metadata_layout.addWidget(self.form)
 
         metadata_widget.setLayout(metadata_layout)
-        splitter.addWidget(metadata_widget)
+        panel_layout.addWidget(metadata_widget)
 
         # review and ready text
         self.review_layout = QVBoxLayout()
@@ -90,8 +95,8 @@ class DocumentReviewPage(Page):
         self.review_layout.addWidget(self.approve_btn)
         self.review_layout.addWidget(self.upload_btn)
     
-        layout.addWidget(splitter)
-        layout.addLayout(self.review_layout)
+        main_layout.addLayout(panel_layout)
+        main_layout.addLayout(self.review_layout)
         
         self.approve_btn.clicked.connect(self._on_approve)
         self.reject_btn.clicked.connect(self._on_reject)
