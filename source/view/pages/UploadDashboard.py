@@ -113,6 +113,7 @@ class UploadDashboard(Page):
     def card_clicked(self, doc, stage=1):
         print(f'{doc.doc_id} Card Clicked')
         self.review_page.set_current_document(doc)
+        self.nav_bar.set_title(doc.doc_id)
         self.nav_bar.setVisible(True)
         self.title.setVisible(False)
         self.stack.setCurrentIndex(1)

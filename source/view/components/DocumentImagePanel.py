@@ -21,9 +21,10 @@ class DocumentImagePanel(QWidget):
         self.parent = parent
         self.current_doc: Document = None
         self.images = []
-        self.image_cache = {} 
         self.pending_requests = {}
         self.current_image_index = 0
+        self.current_qimage = None
+        self.show_original = False
         
         self._create_loading_placeholder()
         self._create_layout()
@@ -64,81 +65,105 @@ class DocumentImagePanel(QWidget):
 
         layout.addLayout(image_layout)
         layout.addLayout(nav_layout)
+        
+        self.toggle_version_btn = QPushButton("View Original Image")
+        self.toggle_version_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.toggle_version_btn.clicked.connect(self._toggle_image_version)
+        
+        toggle_layout = QHBoxLayout()
+        toggle_layout.addStretch()
+        toggle_layout.addWidget(self.toggle_version_btn)
+        toggle_layout.addStretch()
+        layout.addLayout(toggle_layout)
 
         self.prev_image_btn.clicked.connect(self._go_to_previous_image)
         self.next_image_btn.clicked.connect(self._go_to_next_image)
         
+        self.changes_label = QLabel("Modifications: None")
+        self.changes_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.changes_label.setWordWrap(True)
+        self.changes_label.setStyleSheet("color: #888888; font-size: 11px; margin-top: 5px;")
+        layout.addWidget(self.changes_label)
+        
+    def _toggle_image_version(self):
+        self.show_original = not self.show_original
+        if self.show_original:
+            self.toggle_version_btn.setText("View Processed Image")
+        else:
+            self.toggle_version_btn.setText("View Original Image")
+        self.clear_cache()
+        self.display_image()
+        self._prefetch_neighbors()
+
     def show_new_document(self, doc: Document):
         self.current_doc = doc
         self.images = list(doc.images.keys())
         self.current_image_index = 0
-        self.fetch_image_rel_current(0)
+        self.display_image()
         self._prefetch_neighbors()
 
     def _go_to_next_image(self):
         if self.current_image_index < len(self.images) - 1:
             self.current_image_index += 1
             self.display_image()
-            self.fetch_image_rel_current(1)
+            self._prefetch_neighbors()
 
     def _go_to_previous_image(self):
         if self.current_image_index > 0:
             self.current_image_index -= 1
             self.display_image()
-            self.fetch_image_rel_current(-1)
+            self._prefetch_neighbors()
 
     def display_image(self):
-        indx = self.current_image_index
-        cached_item = self.image_cache.get(indx)
-
-        if isinstance(cached_item, QImage):
-            self.image_label.set_image(cached_item)
-        else:
-            self.image_label.set_image(self.loading_image)
+        self.image_label.set_image(self.loading_image)
+        self.current_qimage = None
+        if not self.images:
+            self._update_changes_display()
+            return
             
         self.image_pos_label.setText(f"Page {self.current_image_index + 1} of {len(self.images)}")
+        self._update_changes_display()
+        path = Path(self.get_image_path(self.current_image_index))
+        self.fetch_image(path, self.current_image_index)
 
-    def fetch_image_rel_current(self, indx_diff):
-        indx = self.current_image_index + indx_diff
-        if indx >=0 and indx < len(self.images):
-            path = Path(self.get_image_path(indx))
-            if indx not in self.image_cache:
-                self.image_cache[indx] = ''
-                self.fetch_image(path, indx)
+    def _update_changes_display(self):
+        if not self.current_doc or not self.images:
+            self.changes_label.setText("Modifications: None")
+            return
+            
+        image_key = self.images[self.current_image_index]
+        changes = self.current_doc.images[image_key].get('changes')
+        
+        if not changes:
+            self.changes_label.setText("Modifications: None")
+        else:
+            if isinstance(changes, list):
+                changes_text = ", ".join(str(c) for c in changes)
+            elif isinstance(changes, dict):
+                changes_text = ", ".join(f"{k}: {v}" for k, v in changes.items())
+            else:
+                changes_text = str(changes)
+                
+            self.changes_label.setText(f"Modifications: {changes_text}")
                 
     def _prefetch_neighbors(self):
-        self.fetch_image_rel_current(-1)
-        self.fetch_image_rel_current(1)
+        if self.current_image_index > 0:
+            path = Path(self.get_image_path(self.current_image_index - 1))
+            self.fetch_image(path, self.current_image_index - 1)
+        if self.current_image_index < len(self.images) - 1:
+            path = Path(self.get_image_path(self.current_image_index + 1))
+            self.fetch_image(path, self.current_image_index + 1)
     
     def get_image_path(self, index):
         if self.current_doc and self.images:
             image_key = self.images[index]
-            image_path = self.current_doc.images[image_key]["processed"]
-            if image_path == '':
-                image_path = self.current_doc.images[image_key]['original']
-            return image_path
-
-    def _cleanup_cache(self):
-        """
-        Garbage Collection: Deletes QImages from RAM if they are more 
-        than 3 pages away from the user's current view.
-        """
-        keys_to_remove = []
-        for indx in self.image_cache.keys():
-            if abs(indx - self.current_image_index) > 3:
-                keys_to_remove.append(indx)
-                
-        for indx in keys_to_remove:
-            del self.image_cache[indx]
-
-    def cache_image(self, qimage, job_id):
-        if job_id in self.pending_requests:
-            ticket, indx = self.pending_requests.pop(job_id)
-            self.image_cache[indx] = qimage
-            self._cleanup_cache()
-            
-            if indx == self.current_image_index:
-                self.display_image()
+            if self.show_original:
+                return self.current_doc.images[image_key]['original']
+            else:
+                image_path = self.current_doc.images[image_key].get("processed", "")
+                if not image_path:
+                    image_path = self.current_doc.images[image_key]['original']
+                return image_path
 
     def fetch_image(self, path, indx):
         ticket = JobTicket()
@@ -151,12 +176,15 @@ class DocumentImagePanel(QWidget):
     def clear_cache(self):
         for ticket, indx in self.pending_requests.values():
             ticket.cancel()
-        self.image_cache.clear()
-        self.display_image()
+        self.pending_requests.clear()
         
     @pyqtSlot(object, str)
     def image_return(self, qimage, job_id):
-        self.cache_image(qimage, job_id)
+        if job_id in self.pending_requests:
+            ticket, indx = self.pending_requests.pop(job_id)
+            if indx == self.current_image_index:
+                self.image_label.set_image(qimage)
+                self.current_qimage = qimage
     
     @pyqtSlot(Exception, str)
     def image_error(self, error, job_id):
@@ -164,10 +192,8 @@ class DocumentImagePanel(QWidget):
 
     def mousePressEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:
-            cached_item = self.image_cache.get(self.current_image_index)
-            
-            if isinstance(cached_item, QImage):
-                popout_pixmap = QPixmap.fromImage(cached_item)
+            if self.current_qimage and isinstance(self.current_qimage, QImage):
+                popout_pixmap = QPixmap.fromImage(self.current_qimage)
                 
                 self.interactive_popout = InteractiveImageViewer()
                 self.interactive_popout.set_pixmap(popout_pixmap)

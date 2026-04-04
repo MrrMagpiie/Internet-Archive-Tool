@@ -243,7 +243,7 @@ class MainWindow(QMainWindow):
         """Intercepts the X button and asks what to do."""
         
         # 1. Ask the ProcessManager if it is actually doing anything!
-        if self.gui_manager.process_manager.has_active_tasks():
+        if self.gui_manager.process_manager.has_active_tasks() and self.tray_available:
             
             # 2. Build a crystal-clear custom dialog
             dialog = QMessageBox(self)

@@ -312,7 +312,8 @@ class DatabaseManager(QObject):
 
     def _save_document(self, doc: Document):
         """Internal method. Saves a single Document object."""
-        update_metadata_file(doc)
+        if doc.metadata:
+            update_metadata_file(doc)
         cursor = self.conn.cursor()
         status = doc.status
         params_tuple = (

@@ -2,6 +2,7 @@ from PyQt6.QtCore import QThread, pyqtSlot, QObject, QThreadPool
 from pathlib import Path
 from queue import Queue
 from model.logic.load_image import ImageLoadTask
+from model.data.document import Document
 
 
 class ImageMixin:
@@ -9,6 +10,7 @@ class ImageMixin:
 
     def setup_image_loading(self):
         self.image_cache = {}
+        self._pending_images = {}
         self.thread_pool = QThreadPool.globalInstance()
         self.thread_pool.setMaxThreadCount(4)
 
@@ -17,30 +19,30 @@ class ImageMixin:
         if path in self.image_cache:
             ticket.data.emit(self.image_cache[path],ticket.job_id)
             return
-        self.image_cache[ticket.job_id] = path
+            
+        self._pending_images[ticket.job_id] = path
         self.register_task('fetch_image',ticket,str(path))
         ticket.data.connect(self._handle_image_success)
         ticket.error.connect(self._handle_worker_error)
+        
         task = ImageLoadTask(path, ticket)
         self.thread_pool.start(task)
         
     def clear_cache(self):
         self.image_cache.clear()
+        self._pending_images.clear()
 
     def _cleanup_cache(self):
         """
-        Garbage Collection: Deletes QImages from RAM if they are more 
-        than 3 pages away from the user's current view.
+        Garbage Collection: Keeps only the 10 most recently loaded images in memory.
         """
-        keys_to_remove = []
-        for indx in self.image_cache.keys():
-            if abs(indx - self.current_image_index) > 3:
-                keys_to_remove.append(indx)
-                
-        for indx in keys_to_remove:
-            del self.image_cache[indx]
+        if len(self.image_cache) > 10:
+            keys = list(self.image_cache.keys())
+            for k in keys[:-10]:
+                del self.image_cache[k]
 
     def load_document(self,document:'Document'):
+        self.clear_cache()
         for image_id, image in document.images.items():
             if image['processed']:
                 image_cache[image_id] = image['processed']
@@ -49,11 +51,11 @@ class ImageMixin:
 
     @pyqtSlot(object,str)
     def _handle_image_success(self,qimage,job_id):
-        path = self.image_cache.pop(job_id)
-        self.image_cache[path] = qimage
+        if job_id in self._pending_images:
+            path = self._pending_images.pop(job_id)
+            self.image_cache[path] = qimage
+            self._cleanup_cache()
         self.task_finished.emit(job_id)
 
     def shutdown_image_loading(self):
-        '''self.image_queue.put(('shutdown', None, None))
-        self.image_thread.quit()
-        self.image_thread.wait()'''
+        self.thread_pool.clear()
