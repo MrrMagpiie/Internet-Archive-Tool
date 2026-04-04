@@ -1,4 +1,5 @@
 from pathlib import Path
+import re
 
 def get_image_list(directory) -> list:
     '''
@@ -18,9 +19,9 @@ def images_to_documents(image_list:list) -> dict:
     for file in image_list:
         file = Path(file)
         try:
-            parts = file.stem.split()
+            parts = re.split(r'[\s\-_]+', file.stem)
             order = "001"
-            if len(parts) > 1:
+            if len(parts) > 1 and any(char.isdigit() for char in parts[-1]):
                 order = "".join(char for char in parts.pop() if char.isdigit())
             doc_id = "_".join(parts)
             image_id = file.name
@@ -33,4 +34,3 @@ def images_to_documents(image_list:list) -> dict:
         except Exception as e:
             raise 
     return documents
-
