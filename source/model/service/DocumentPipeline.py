@@ -175,8 +175,9 @@ class DocumentPipelineWorker(QObject):
                     
                     if result['status'] == 'success':
                         angle = result['angle']
-                        doc.add_change(image_id, f'deskew: {angle}')
-                        print(f'Deskewed {image_id} in {doc.doc_id} by {angle} degrees')
+                        if angle != 0.0: 
+                            doc.add_change(image_id, f'deskew: {angle}')
+                            print(f'Deskewed {image_id} in {doc.doc_id} by {angle} degrees')
                     else:
                         raise DeskewError(in_file,out_file,result['error'])
                 else:
