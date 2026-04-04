@@ -154,6 +154,7 @@ class GUIManager(QObject):
         if not self.main_window:
             self.main_window = MainWindow(self)
             self.main_window.show()
+            self.process_manager.trigger_auto_upload()
 
     @pyqtSlot(str)
     def setup_theme(self,theme_choice = None):
