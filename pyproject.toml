@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ArchivePipeline"
+version = "0.1.0"
+description = "School Archive Digitization Pipeline"
+dependencies = [
+    "PyQt6==6.10.0",
+    "internetarchive==5.7.1",
+    "requests==2.32.5",
+    "Wand==0.6.13",
+    "pyqtdarktheme==2.1.0",
+    "QtAwesome==1.4.1",
+    "keyring==25.7.0"
+]
+
+[project.optional-dependencies]
+dev = [
+    "pyinstaller==6.19.0",
+    "pyinstaller-hooks-contrib==2026.2"
+]

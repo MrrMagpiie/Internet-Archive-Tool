@@ -18,8 +18,7 @@ jobs:
     - name: Install Dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -r requirements.txt
-        pip install pyinstaller
+        pip install .[dev]
 
     - name: Build with PyInstaller
       run: pyinstaller ArchivePipeline.spec
