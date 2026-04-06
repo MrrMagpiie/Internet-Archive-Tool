@@ -1,9 +1,11 @@
 from PyQt6.QtWidgets import (
     QWizard, QWizardPage, QVBoxLayout, QLabel, QLineEdit, 
-    QFormLayout, QMessageBox,QHBoxLayout, QPushButton
+    QFormLayout, QMessageBox, QHBoxLayout, QPushButton,
+    QComboBox, QFileDialog, QStackedWidget, QWidget
 )
 from PyQt6.QtCore import pyqtSignal, Qt, pyqtSlot
 from model.service.Signals import JobTicket, DatabaseTicket
+from config import DATABASE_PROVIDERS,DB_PATH
 
 
 # ==========================================
@@ -70,7 +72,6 @@ class IAPage(QWizardPage):
             QMessageBox.warning(self, "Missing Information", "Both keys are required to proceed.")
             return
             
-        # Lock the button to prevent spamming
         self.btn_retrieve.setEnabled(False)
         self.btn_retrieve.setText("Retrieving...")
 
@@ -91,7 +92,7 @@ class IAPage(QWizardPage):
             
             self.btn_retrieve.setText("Keys Secured")
             self.btn_retrieve.setObjectName("successBtn") 
-            self.btn_retrieve.setStyleSheet("") # Force QSS refresh
+            self.btn_retrieve.setStyleSheet("")
             self.ia_email_input.setEnabled(False)
             self.ia_pass_input.setEnabled(False)
         else:
@@ -173,7 +174,6 @@ class AdminPage(QWizardPage):
             QMessageBox.information(self, "Success", "Administrator created!")
             self.admin_created = True 
             
-            # Unlock the Wizard's Next/Finish button!
             self.completeChanged.emit() 
             
             self.btn_save.setText("Account Created")
@@ -186,6 +186,151 @@ class AdminPage(QWizardPage):
         self.btn_save.setEnabled(True)
         self.btn_save.setText("Create Account")
         QMessageBox.critical(self, "Error", f"Failed to create admin: {error}")
+
+
+# ==========================================
+# PAGE 3: Database Setup
+# ==========================================
+class DatabasePage(QWizardPage):
+    db_setup_data = pyqtSignal(dict)
+    
+    def __init__(self):
+        super().__init__()
+        self.setTitle("Database Configuration")
+        self.setSubTitle("Choose your database provider and storage location.")
+        
+        self.db_configured = False
+        
+        layout = QVBoxLayout()
+        form = QFormLayout()
+        
+        self.provider_combo = QComboBox()
+        for provider in DATABASE_PROVIDERS:
+            self.provider_combo.addItem(provider[0], provider[1])
+        
+        form.addRow("<b>Provider:</b>", self.provider_combo)
+        layout.addLayout(form)
+        
+        # Use QStackedWidget to swap between File UI and Server UI
+        self.stack = QStackedWidget()
+        
+        # --- 1. File-based Database UI ---
+        self.file_widget = QWidget()
+        file_layout = QHBoxLayout(self.file_widget)
+        file_layout.setContentsMargins(0, 0, 0, 0)
+        
+        self.db_path_input = QLineEdit(f'{DB_PATH}')
+        self.db_path_input.setPlaceholderText("Select database file location...")
+        
+        self.btn_browse = QPushButton("Browse...")
+        self.btn_browse.clicked.connect(self.browse_file)
+        
+        file_layout.addWidget(self.db_path_input)
+        file_layout.addWidget(self.btn_browse)
+        self.stack.addWidget(self.file_widget)
+        
+        # --- 2. Server-based Database UI ---
+        self.server_widget = QWidget()
+        server_form = QFormLayout(self.server_widget)
+        server_form.setContentsMargins(0, 0, 0, 0)
+        
+        self.db_host_input = QLineEdit()
+        self.db_port_input = QLineEdit()
+        self.db_name_input = QLineEdit()
+        self.db_user_input = QLineEdit()
+        self.db_pass_input = QLineEdit()
+        self.db_pass_input.setEchoMode(QLineEdit.EchoMode.Password)
+        
+        server_form.addRow("<b>Host:</b>", self.db_host_input)
+        server_form.addRow("<b>Port:</b>", self.db_port_input)
+        server_form.addRow("<b>DB Name:</b>", self.db_name_input)
+        server_form.addRow("<b>Username:</b>", self.db_user_input)
+        server_form.addRow("<b>Password:</b>", self.db_pass_input)
+        self.stack.addWidget(self.server_widget)
+        
+        layout.addWidget(self.stack)
+        
+        btn_layout = QHBoxLayout()
+        self.btn_save = QPushButton("Confirm Database")
+        self.btn_save.clicked.connect(self.attempt_configuration)
+        
+        btn_layout.addStretch()
+        btn_layout.addWidget(self.btn_save)
+        layout.addLayout(btn_layout)
+        
+        self.setLayout(layout)
+
+        self.provider_combo.currentIndexChanged.connect(self.on_provider_changed)
+        self.on_provider_changed()
+
+    def on_provider_changed(self):
+        if self.provider_combo.currentData() == "file":
+            self.stack.setCurrentIndex(0)
+        else:
+            self.stack.setCurrentIndex(1)
+
+    def isComplete(self):
+        return self.db_configured
+
+    def browse_file(self):
+        path, _ = QFileDialog.getSaveFileName(
+            self, 
+            "Select Database File", 
+            "library_archive.db", 
+            "SQLite Database (*.db *.sqlite);;All Files (*)"
+        )
+        if path:
+            self.db_path_input.setText(path)
+
+    def attempt_configuration(self):
+        provider_name = self.provider_combo.currentText()
+        provider_type = self.provider_combo.currentData()
+        
+        if provider_type == "file":
+            path = self.db_path_input.text().strip()
+            if not path:
+                QMessageBox.warning(self, "Missing Info", "Please specify a location to save the database file.")
+                return
+            db_config = {"provider": provider_name, "type": provider_type, "path": path}
+        else:
+            host = self.db_host_input.text().strip()
+            port = self.db_port_input.text().strip()
+            db_name = self.db_name_input.text().strip()
+            user = self.db_user_input.text().strip()
+            password = self.db_pass_input.text()
+            
+            if not all([host, port, db_name, user, password]):
+                QMessageBox.warning(self, "Missing Info", "Please fill in all database connection fields.")
+                return
+                
+            db_config = {
+                "provider": provider_name,
+                "type": provider_type,
+                "host": host,
+                "port": port,
+                "database": db_name,
+                "user": user,
+                "password": password
+            }
+        
+        self.db_configured = True
+        self.db_setup_data.emit(db_config)
+        
+        # Unlock the Wizard's Next/Finish button
+        self.completeChanged.emit() 
+        
+        self.btn_save.setText("Database Confirmed")
+        self.btn_save.setEnabled(False)
+        self.provider_combo.setEnabled(False)
+        
+        # Lock all possible inputs
+        self.db_path_input.setEnabled(False)
+        self.btn_browse.setEnabled(False)
+        self.db_host_input.setEnabled(False)
+        self.db_port_input.setEnabled(False)
+        self.db_name_input.setEnabled(False)
+        self.db_user_input.setEnabled(False)
+        self.db_pass_input.setEnabled(False)
 
 
 # ==========================================

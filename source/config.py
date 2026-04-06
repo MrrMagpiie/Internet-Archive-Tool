@@ -77,3 +77,4 @@ DEFAULT_OUTPUT_DIR = Path.home() / "Documents" / f"{APP_NAME}_Output"
 # --- MISC CONSTANTS ---
 REQUIRED_METADATA = ["identifier", "title", "date", "mediatype"]
 
+DATABASE_PROVIDERS = [("SQLite", "file")]

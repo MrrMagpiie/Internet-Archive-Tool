@@ -1,30 +1,27 @@
 from PyQt6.QtCore import QThread, pyqtSlot, pyqtSignal,QObject
 from queue import Queue
-from model.service.DatabaseManager import DatabaseManager
+from model.service.DatabaseManager import DatabaseWorker
 from model.service.Signals import JobTicket, DatabaseTicket
 from config import DB_PATH
 from functools import partial
 from model.data.document import Document
+from model.service.db_providers import SQLiteProvider
 
 
 class DatabaseMixin:
     """Handles Database Worker logic."""
     
     def setup_database(self):
-        self.need_db = not DB_PATH.exists()
         self.db_thread = QThread()
         self.db_queue = Queue()
-        self.db_manager = DatabaseManager(DB_PATH, self.db_queue)
+        self.db_provider = SQLiteProvider(DB_PATH)
+        self.db_worker = DatabaseWorker(self.db_provider, self.db_queue)
 
-        #check for admin account if db exists
-        if not self.need_db:
-            self.need_db = not self.db_manager.has_admin_sync()
+        self.db_worker.update.connect(self._handle_database_update)
+        self.db_worker.error.connect(self._handle_worker_error)
         
-        self.db_manager.update.connect(self._handle_database_update)
-        self.db_manager.error.connect(self._handle_worker_error)
-        
-        self.db_manager.moveToThread(self.db_thread)
-        self.db_thread.started.connect(self.db_manager.run)
+        self.db_worker.moveToThread(self.db_thread)
+        self.db_thread.started.connect(self.db_worker.run)
         self.db_thread.start()
 
     @pyqtSlot(object, QObject)
@@ -68,12 +65,15 @@ class DatabaseMixin:
         
     @pyqtSlot(tuple,DatabaseTicket)
     def new_user(self,data,ticket:DatabaseTicket):
-        try:
+        if len(data) == 3:
             username, password, role = data
-        except:
+        elif len(data) == 2:
             username, password = data
             role = 'user'
             data = (username, password, role)
+        else:
+            ticket.error.emit(ValueError("Invalid user data provided to DatabaseMixin."), ticket.job_id)
+            return
 
         ticket.interupt.connect(self.db_interupt)
         self.register_task('new_user', ticket)
@@ -91,11 +91,9 @@ class DatabaseMixin:
         self.register_task('delete_user', ticket)
         self.db_queue.put(('delete_user', ticket, user_id))
 
-
-
     @pyqtSlot()
-    def db_interupt():
-        self.db_manager.cancel_current_query()
+    def db_interupt(self):
+        self.db_worker.cancel_current_query()
 
     @pyqtSlot(object,str)
     def _handle_database_update(self, doc,job_id):
@@ -105,6 +103,7 @@ class DatabaseMixin:
             self.document_delete.emit(doc)
 
     def shutdown_database(self):
-        self.db_queue.put(('shutdown', None, None))
-        self.db_thread.quit()
-        self.db_thread.wait()
+        if hasattr(self, 'db_thread') and self.db_thread.isRunning():
+            self.db_queue.put(('shutdown', None, None))
+            self.db_thread.quit()
+            self.db_thread.wait()
