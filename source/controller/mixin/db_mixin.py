@@ -12,16 +12,11 @@ class DatabaseMixin:
     """Handles Database Worker logic."""
     
     def setup_database(self):
-        self.need_db = not DB_PATH.exists()
         self.db_thread = QThread()
         self.db_queue = Queue()
         self.db_provider = SQLiteProvider(DB_PATH)
         self.db_worker = DatabaseWorker(self.db_provider, self.db_queue)
 
-        #check for admin account if db exists
-        if not self.need_db:
-            self.need_db = not self.db_worker.has_admin_sync()
-        
         self.db_worker.update.connect(self._handle_database_update)
         self.db_worker.error.connect(self._handle_worker_error)
         
@@ -108,6 +103,7 @@ class DatabaseMixin:
             self.document_delete.emit(doc)
 
     def shutdown_database(self):
-        self.db_queue.put(('shutdown', None, None))
-        self.db_thread.quit()
-        self.db_thread.wait()
+        if hasattr(self, 'db_thread') and self.db_thread.isRunning():
+            self.db_queue.put(('shutdown', None, None))
+            self.db_thread.quit()
+            self.db_thread.wait()

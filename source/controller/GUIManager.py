@@ -110,7 +110,7 @@ class GUIManager(QObject):
     def create_setup_wizard(self, need_setup):
         if any(need_setup):
             wizard = SetupWizard()
-            need_config, need_db = need_setup
+            need_config, need_db, need_admin = need_setup
 
             if need_config:
                 ia_page = IAPage()
@@ -118,6 +118,11 @@ class GUIManager(QObject):
                 wizard.addPage(ia_page)
             
             if need_db:
+                db_page = DatabasePage()
+                db_page.db_setup_data.connect(self.process_manager.setup_database)
+                wizard.addPage(db_page)
+        
+            if need_admin:
                 admin_page = AdminPage()
                 admin_page.admin_setup_data.connect(self.process_manager.new_user)
                 wizard.addPage(admin_page)

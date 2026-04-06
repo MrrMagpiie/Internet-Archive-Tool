@@ -8,6 +8,8 @@ from PyQt6.QtWidgets import QDialog
 # Import Mixins
 from controller.mixin import *
 from model.data.document import Document
+from config import DB_PATH, IA_CONFIG_PATH
+
 
 class ProcessManager(QObject, DatabaseMixin, ProcessingMixin, UploadMixin, ImageMixin, SchemaMixin):
     """
@@ -31,16 +33,25 @@ class ProcessManager(QObject, DatabaseMixin, ProcessingMixin, UploadMixin, Image
     def __init__(self, parent=None):
         super().__init__(parent)
         # Initialize the subsystems from Mixins
-        self.setup_database()
         self.setup_processing()
         self.setup_upload()
         self.setup_image_loading()
         self._active_tasks = {}
 
     def check_setup(self):
-        check = (self.need_config, self.need_db)
-        return check
-        
+        # check db_exists
+        self.need_db = not DB_PATH.exists()
+        #if db exists setup db_worker and check admin exists
+        if self.need_db:
+            self.need_admin = True
+        else:
+            self.setup_database()
+            self.need_admin = not self.db_worker.has_admin_sync()
+
+        # check upload config
+        self.need_config = not IA_CONFIG_PATH.exists()
+        return (self.need_config, self.need_db, self.need_admin)
+
     # --- Task Managment ---
     def register_task(self, command: str,ticket: 'JobTicket',text=None):
         ticket.data.connect(lambda: self.complete_task(ticket.job_id))
